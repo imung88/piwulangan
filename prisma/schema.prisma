@@ -1,0 +1,276 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth ───
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(STUDENT)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  enrollments       Enrollment[]
+  progress          Progress[]
+  submissions       Submission[]
+  announcements     Announcement[]     @relation("Author")
+  coursesCreated    Course[]           @relation("Instructor")
+  bookings          Booking[]          @relation("Student")
+  availability      Availability[]
+  attendances       Attendance[]       @relation("Instructor")
+  guardianLinks     GuardianStudent[]  @relation("Guardian")
+  studentLinks      GuardianStudent[]  @relation("Student")
+}
+
+enum Role {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+  GUARDIAN
+}
+
+// Links a guardian to one or more students
+model GuardianStudent {
+  id         String  @id @default(cuid())
+  guardianId String
+  guardian   User    @relation("Guardian", fields: [guardianId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    User    @relation("Student", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([guardianId, studentId])
+}
+
+// ─── Course Structure ───
+
+model Course {
+  id             String         @id @default(cuid())
+  title          String
+  description    String?        @db.Text
+  coverImageUrl  String?
+  visibility     Visibility     @default(DRAFT)
+  enrollmentMode EnrollmentMode @default(OPEN)
+  inviteCode     String?        @unique
+  enabledModules String[]       @default([])
+
+  // Scheduling config
+  studentBookingEnabled Boolean @default(false)
+  slotDuration          Int     @default(60)
+  bufferTime            Int     @default(15)
+  maxAdvanceDays        Int     @default(30)
+  cancellationHours     Int     @default(24)
+
+  instructorId String
+  instructor   User   @relation("Instructor", fields: [instructorId], references: [id])
+
+  modules       Module[]
+  enrollments   Enrollment[]
+  announcements Announcement[]
+  bookings      Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Visibility {
+  DRAFT
+  PUBLISHED
+}
+
+enum EnrollmentMode {
+  OPEN
+  INVITE_CODE
+  MANUAL
+}
+
+model Module {
+  id       String   @id @default(cuid())
+  title    String
+  order    Int
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+}
+
+model Lesson {
+  id       String     @id @default(cuid())
+  title    String
+  content  String?    @db.LongText
+  type     LessonType @default(TEXT)
+  order    Int
+  duration Int?
+  moduleId String
+  module   Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  resources  Resource[]
+  progress   Progress[]
+  assignment Assignment?
+}
+
+enum LessonType {
+  TEXT
+  VIDEO
+  FILE
+  MIXED
+}
+
+model Resource {
+  id       String       @id @default(cuid())
+  title    String
+  url      String
+  type     ResourceType @default(LINK)
+  lessonId String
+  lesson   Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+enum ResourceType {
+  LINK
+  VIDEO
+  DOCUMENT
+}
+
+// ─── Enrollment ───
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+// ─── Progress ───
+
+model Progress {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  @@unique([userId, lessonId])
+}
+
+// ─── Scheduling ───
+
+model Availability {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  courseId   String?
+  active    Boolean  @default(true)
+
+  @@unique([userId, dayOfWeek, startTime, courseId])
+}
+
+model BlockedDate {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  courseId      String
+  course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       User          @relation("Student", fields: [studentId], references: [id])
+  instructorId  String
+  date          DateTime      @db.Date
+  startTime     String
+  endTime       String
+  status        BookingStatus @default(CONFIRMED)
+  cancelledAt   DateTime?
+  cancelReason  String?
+  createdAt     DateTime      @default(now())
+
+  attendance Attendance?
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model Attendance {
+  id           String   @id @default(cuid())
+  bookingId    String   @unique
+  booking      Booking  @relation(fields: [bookingId], references: [id])
+  instructorId String
+  instructor    User     @relation("Instructor", fields: [instructorId], references: [id])
+  present       Boolean
+  notes         String?
+  recordedAt    DateTime @default(now())
+}
+
+// ─── Assignments Module ───
+
+model Assignment {
+  id          String    @id @default(cuid())
+  lessonId    String    @unique
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title       String
+  description String?   @db.Text
+  dueDate     DateTime?
+
+  submissions Submission[]
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  textContent  String?          @db.Text
+  linkUrl      String?
+  status       SubmissionStatus @default(SUBMITTED)
+  grade        Float?
+  feedback     String?          @db.Text
+  submittedAt  DateTime         @default(now())
+  reviewedAt   DateTime?
+  isLate       Boolean          @default(false)
+
+  @@unique([assignmentId, userId])
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  REVIEWED
+  NEEDS_REVISION
+}
+
+// ─── Announcements Module ───
+
+model Announcement {
+  id        String   @id @default(cuid())
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  authorId  String
+  title     String
+  body      String   @db.Text
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
