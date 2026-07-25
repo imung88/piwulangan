@@ -185,6 +185,7 @@ npm run db:reset     # Reset database (drop + migrate + seed)
 3. **Log in as Alice** (`alice@example.com`) → see 2 courses, mark lessons complete, watch progress bar grow
 4. **Log in as guardian** (`guardian@example.com`) → see Alice's progress (read-only)
 5. **Visit Prisma Studio** (`npm run db:studio`) → browse the database directly
+password123
 
 ---
 

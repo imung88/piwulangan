@@ -105,7 +105,7 @@ model Module {
 model Lesson {
   id       String     @id @default(cuid())
   title    String
-  content  String?    @db.LongText
+  content  String?    @db.Text
   type     LessonType @default(TEXT)
   order    Int
   duration Int?
@@ -269,6 +269,7 @@ model Announcement {
   courseId   String
   course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   authorId  String
+  author    User     @relation("Author", fields: [authorId], references: [id])
   title     String
   body      String   @db.Text
   pinned    Boolean  @default(false)

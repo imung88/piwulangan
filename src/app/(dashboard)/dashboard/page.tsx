@@ -303,38 +303,38 @@ function AdminDashboard() {
       <section>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Admin Panel</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
+          <a
             href="/admin/users"
             className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
           >
             <span className="text-2xl">👥</span>
             <h3 className="mt-2 font-medium">Manage Users</h3>
             <p className="text-sm text-gray-500 mt-1">Add, edit, and link users</p>
-          </Link>
-          <Link
+          </a>
+          <a
             href="/admin/courses"
             className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
           >
             <span className="text-2xl">📖</span>
             <h3 className="mt-2 font-medium">Manage Courses</h3>
             <p className="text-sm text-gray-500 mt-1">View and manage all courses</p>
-          </Link>
-          <Link
+          </a>
+          <a
             href="/admin/schedule"
             className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
           >
             <span className="text-2xl">🗓️</span>
             <h3 className="mt-2 font-medium">Schedule</h3>
             <p className="text-sm text-gray-500 mt-1">View all sessions</p>
-          </Link>
-          <Link
+          </a>
+          <a
             href="/admin/settings"
             className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
           >
             <span className="text-2xl">⚙️</span>
             <h3 className="mt-2 font-medium">Settings</h3>
             <p className="text-sm text-gray-500 mt-1">Global configuration</p>
-          </Link>
+          </a>
         </div>
       </section>
     </div>
