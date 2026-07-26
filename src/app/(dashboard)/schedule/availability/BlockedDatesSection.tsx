@@ -41,31 +41,31 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
   }
 
   return (
-    <div className="bg-white rounded-lg border p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Blocked Dates</h2>
-      <p className="text-gray-600 text-sm mb-4">
+    <div className="metro-card p-6">
+      <h2 className="metro-section-title mb-4">blocked dates</h2>
+      <p className="text-metro-text-secondary text-sm mb-4">
         Block specific dates when you&apos;re unavailable (holidays, days off).
       </p>
 
       <form onSubmit={handleAdd} className="flex flex-wrap gap-4 mb-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">Date</label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm"
+            className="border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Reason (optional)</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">Reason (optional)</label>
           <input
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g., Holiday"
-            className="border rounded-lg px-3 py-2 text-sm w-48"
+            className="border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm w-48 focus:border-metro-blue focus:outline-none"
             maxLength={200}
           />
         </div>
@@ -73,7 +73,7 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
           <button
             type="submit"
             disabled={loading}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-50"
+            className="bg-metro-orange text-white px-4 py-2 text-sm font-medium hover:bg-metro-orange-hover disabled:opacity-50"
           >
             {loading ? "Adding..." : "Block Date"}
           </button>
@@ -81,16 +81,16 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
       </form>
 
       {blockedDates.length === 0 ? (
-        <p className="text-gray-500 text-sm">No blocked dates.</p>
+        <p className="text-metro-text-secondary text-sm">No blocked dates.</p>
       ) : (
         <div className="space-y-2">
           {blockedDates.map((bd) => (
             <div
               key={bd.id}
-              className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2"
+              className="flex items-center justify-between bg-metro-bg px-4 py-2"
             >
               <div>
-                <span className="font-medium text-gray-900">
+                <span className="font-medium text-metro-text">
                   {new Date(bd.date).toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
@@ -99,13 +99,13 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
                   })}
                 </span>
                 {bd.reason && (
-                  <span className="text-gray-500 text-sm ml-2">— {bd.reason}</span>
+                  <span className="text-metro-text-secondary text-sm ml-2">— {bd.reason}</span>
                 )}
               </div>
               <button
                 onClick={() => handleRemove(bd.id)}
                 disabled={loading}
-                className="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50"
+                className="text-metro-error hover:text-metro-orange-hover text-sm font-medium disabled:opacity-50"
               >
                 Remove
               </button>

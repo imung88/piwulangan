@@ -48,8 +48,8 @@ export default function NotificationsClient({
 
   if (notifications.length === 0) {
     return (
-      <div className="rounded-lg border bg-white p-8 text-center">
-        <p className="text-gray-500">No notifications yet.</p>
+      <div className="metro-card p-8 text-center">
+        <p className="text-metro-text-secondary">No notifications yet.</p>
       </div>
     );
   }
@@ -58,13 +58,13 @@ export default function NotificationsClient({
     <div>
       {unread > 0 && (
         <div className="mb-4 flex items-center justify-between">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-metro-text-secondary">
             {unread} unread notification{unread !== 1 ? "s" : ""}
           </span>
           <button
             onClick={handleMarkAll}
             disabled={loading}
-            className="text-sm font-medium text-blue-600 hover:underline disabled:opacity-50"
+            className="text-sm font-medium text-metro-blue hover:underline disabled:opacity-50"
           >
             Mark all as read
           </button>
@@ -76,25 +76,27 @@ export default function NotificationsClient({
           <button
             key={n.id}
             onClick={() => handleClick(n)}
-            className={`block w-full rounded-lg border p-4 text-left transition-colors hover:bg-gray-50 ${
-              n.read ? "bg-white" : "border-blue-200 bg-blue-50"
+            className={`w-full text-left ${
+              n.read
+                ? "metro-card hover:bg-metro-bg"
+                : "metro-card metro-card-accent bg-metro-blue-light hover:bg-metro-blue-light"
             }`}
           >
             <div className="flex items-start gap-3">
               <span className="text-lg">{TYPE_ICONS[n.type] || "🔔"}</span>
               <div className="flex-1">
-                <p className={`text-sm ${n.read ? "text-gray-700" : "font-medium text-gray-900"}`}>
+                <p className={`text-sm ${n.read ? "text-metro-text-secondary" : "font-medium text-metro-text"}`}>
                   {n.title}
                 </p>
                 {n.body && (
-                  <p className="mt-0.5 text-sm text-gray-500">{n.body}</p>
+                  <p className="mt-0.5 text-sm text-metro-text-secondary">{n.body}</p>
                 )}
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-metro-text-secondary">
                   {new Date(n.createdAt).toLocaleString()}
                 </p>
               </div>
               {!n.read && (
-                <span className="mt-1 h-2 w-2 rounded-full bg-blue-500" />
+                <span className="mt-1 h-2 w-2 bg-metro-blue" />
               )}
             </div>
           </button>

@@ -34,60 +34,60 @@ export default function SessionList({
 
   if (sessions.length === 0) {
     return (
-      <div className="bg-white rounded-lg border p-8 text-center">
-        <p className="text-gray-500">No sessions scheduled yet.</p>
+      <div className="metro-card p-8 text-center">
+        <p className="text-metro-text-secondary">No sessions scheduled yet.</p>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-4 bg-metro-bg p-1 w-fit">
         {(["upcoming", "past", "all"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
               filter === f
-                ? "bg-white text-gray-900 shadow"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-metro-blue text-white"
+                : "text-metro-text-secondary hover:text-metro-text"
             }`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f}
           </button>
         ))}
       </div>
 
       <div className="space-y-3">
         {filtered.length === 0 && (
-          <div className="bg-white rounded-lg border p-6 text-center text-sm text-gray-500">
+          <div className="metro-card p-6 text-center text-sm text-metro-text-secondary">
             No {filter} sessions.
           </div>
         )}
         {filtered.map((s) => (
           <div
             key={s.id}
-            className={`bg-white rounded-lg border p-4 ${
+            className={`metro-card ${
               s.date === today && s.status !== "CANCELLED"
-                ? "ring-2 ring-blue-500"
+                ? "metro-card-accent"
                 : ""
             }`}
           >
             <div className="flex items-center gap-3 mb-1 flex-wrap">
-              <span className="font-semibold text-gray-900">{s.title}</span>
+              <span className="font-semibold text-metro-text">{s.title}</span>
               <span
-                className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[s.status] || ""}`}
+                className={`metro-badge ${STATUS_COLORS[s.status] || ""}`}
               >
                 {s.status}
               </span>
               {s.date === today && s.status !== "CANCELLED" && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                <span className="metro-badge bg-metro-blue text-white">
                   Today
                 </span>
               )}
             </div>
 
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-metro-text-secondary">
               <span>{formatDateStr(s.date)}</span>
               <span className="mx-2">·</span>
               <span>
@@ -101,7 +101,7 @@ export default function SessionList({
                       href={s.location}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-metro-blue hover:underline"
                     >
                       Join link
                     </a>
@@ -113,10 +113,10 @@ export default function SessionList({
             </div>
 
             {showCourse && (
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="text-sm text-metro-text-secondary mt-1">
                 <Link
                   href={`/courses/${s.course.id}`}
-                  className="hover:text-blue-600 hover:underline"
+                  className="hover:text-metro-blue hover:underline"
                 >
                   {s.course.title}
                 </Link>
@@ -130,16 +130,16 @@ export default function SessionList({
               <div className="text-sm mt-1">
                 <Link
                   href={`/courses/${s.course.id}/lessons/${s.lesson.id}`}
-                  className="text-blue-600 hover:underline"
+                  className="text-metro-blue hover:underline"
                 >
-                  📖 {s.lesson.title}
+                  {s.lesson.title}
                 </Link>
               </div>
             )}
 
             {showAttendees && s.attendeeNames.length > 0 && (
-              <div className="text-sm text-gray-500 mt-1">
-                👥 {s.attendeeNames.join(", ")}
+              <div className="text-sm text-metro-text-secondary mt-1">
+                {s.attendeeNames.join(", ")}
               </div>
             )}
 
@@ -153,7 +153,7 @@ export default function SessionList({
             )}
 
             {s.status === "CANCELLED" && s.cancelReason && (
-              <div className="text-sm text-gray-400 mt-1">
+              <div className="text-sm text-metro-text-secondary mt-1">
                 Reason: {s.cancelReason}
               </div>
             )}

@@ -32,7 +32,7 @@ export default function UnenrollButton({
     <button
       onClick={handleUnenroll}
       disabled={loading}
-      className="text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
+      className="text-sm text-metro-error hover:underline disabled:opacity-50"
     >
       Leave course
     </button>

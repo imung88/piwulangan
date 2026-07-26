@@ -186,8 +186,8 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     <div className="space-y-6">
       {message && (
         <div
-          className={`rounded-lg p-4 ${
-            message.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+          className={`p-4 ${
+            message.type === "success" ? "bg-metro-green-light text-metro-green" : "bg-metro-error text-white"
           }`}
         >
           {message.text}
@@ -207,12 +207,12 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
           placeholder="Search by name or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="flex-1 border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
         />
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
         >
           <option value="ALL">All Roles</option>
           <option value="ADMIN">Admin</option>
@@ -222,53 +222,53 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
         </select>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
         >
           + Create User
         </button>
       </div>
 
       {/* Users Table */}
-      <div className="rounded-lg border bg-white overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="border border-metro-border bg-metro-surface overflow-x-auto">
+        <table className="min-w-full divide-y divide-metro-border">
+          <thead className="bg-metro-bg">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-metro-surface divide-y divide-metro-border">
             {filteredUsers.map((user) => (
-              <tr key={user.id} className={!user.active ? "bg-gray-50" : ""}>
+              <tr key={user.id} className={!user.active ? "bg-metro-bg" : ""}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                  <div className="text-sm font-medium text-metro-text">{user.name}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{user.email}</div>
+                  <div className="text-sm text-metro-text-secondary">{user.email}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    className={`metro-badge ${
                       user.role === "ADMIN"
-                        ? "bg-purple-100 text-purple-800"
+                        ? "bg-metro-chrome-dark text-white"
                         : user.role === "INSTRUCTOR"
-                        ? "bg-blue-100 text-blue-800"
+                        ? "bg-metro-blue text-white"
                         : user.role === "STUDENT"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
+                        ? "bg-metro-green-light text-metro-green"
+                        : "bg-metro-blue-light text-metro-blue"
                     }`}
                   >
                     {user.role}
@@ -276,10 +276,10 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    className={`metro-badge ${
                       user.active
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
+                        ? "bg-metro-green-light text-metro-green"
+                        : "bg-metro-error text-white"
                     }`}
                   >
                     {user.active ? "Active" : "Inactive"}
@@ -289,20 +289,20 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingUser(user)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-metro-blue hover:text-metro-chrome-dark"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => setResetPasswordUser(user)}
-                      className="text-yellow-600 hover:text-yellow-800"
+                      className="text-metro-orange hover:text-metro-orange-hover"
                     >
                       Reset Password
                     </button>
                     {(user.role === "GUARDIAN" || user.role === "STUDENT") && (
                       <button
                         onClick={() => setLinkingUser(user)}
-                        className="text-purple-600 hover:text-purple-800"
+                        className="text-metro-chrome-dark hover:text-metro-blue"
                       >
                         Link
                       </button>
@@ -310,14 +310,14 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                     {user.active ? (
                       <button
                         onClick={() => handleDeactivate(user.id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="text-metro-error hover:text-metro-orange-hover"
                       >
                         Deactivate
                       </button>
                     ) : (
                       <button
                         onClick={() => handleActivate(user.id)}
-                        className="text-green-600 hover:text-green-800"
+                        className="text-metro-green hover:text-metro-green-hover"
                       >
                         Activate
                       </button>
@@ -329,49 +329,49 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
           </tbody>
         </table>
         {filteredUsers.length === 0 && (
-          <div className="p-6 text-center text-gray-500">No users found</div>
+          <div className="p-6 text-center text-metro-text-secondary">No users found</div>
         )}
       </div>
 
       {/* Create User Modal */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">Create User</h2>
+          <div className="bg-metro-surface p-6 w-full max-w-md">
+            <h2 className="metro-section-title mb-4">Create User</h2>
             <form action={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <label className="block text-sm font-medium text-metro-text">Name</label>
                 <input
                   name="name"
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-metro-text">Email</label>
                 <input
                   name="email"
                   type="email"
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Password</label>
+                <label className="block text-sm font-medium text-metro-text">Password</label>
                 <input
                   name="password"
                   type="password"
                   required
                   minLength={6}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Role</label>
+                <label className="block text-sm font-medium text-metro-text">Role</label>
                 <select
                   name="role"
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 >
                   <option value="STUDENT">Student</option>
                   <option value="INSTRUCTOR">Instructor</option>
@@ -383,13 +383,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 <button
                   type="button"
                   onClick={() => setShowCreateForm(false)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="border-2 border-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-bg"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
                 >
                   Create
                 </button>
@@ -402,38 +402,38 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
       {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">Edit User</h2>
+          <div className="bg-metro-surface p-6 w-full max-w-md">
+            <h2 className="metro-section-title mb-4">Edit User</h2>
             <form
               action={(formData) => handleUpdateUser(editingUser.id, formData)}
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <label className="block text-sm font-medium text-metro-text">Name</label>
                 <input
                   name="name"
                   defaultValue={editingUser.name}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-metro-text">Email</label>
                 <input
                   name="email"
                   type="email"
                   defaultValue={editingUser.email}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Role</label>
+                <label className="block text-sm font-medium text-metro-text">Role</label>
                 <select
                   name="role"
                   defaultValue={editingUser.role}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 >
                   <option value="STUDENT">Student</option>
                   <option value="INSTRUCTOR">Instructor</option>
@@ -445,13 +445,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="border-2 border-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-bg"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
                 >
                   Save Changes
                 </button>
@@ -464,8 +464,8 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
       {/* Reset Password Modal */}
       {resetPasswordUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">
+          <div className="bg-metro-surface p-6 w-full max-w-md">
+            <h2 className="metro-section-title mb-4">
               Reset Password for {resetPasswordUser.name}
             </h2>
             <form
@@ -478,7 +478,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-metro-text">
                   New Password
                 </label>
                 <input
@@ -486,20 +486,20 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   type="password"
                   required
                   minLength={6}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 />
               </div>
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => setResetPasswordUser(null)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="border-2 border-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-bg"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700"
+                  className="bg-metro-orange px-4 py-2 text-sm font-medium text-white hover:bg-metro-orange-hover"
                 >
                   Reset Password
                 </button>
@@ -512,8 +512,8 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
       {/* Guardian Linking Modal */}
       {linkingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">
+          <div className="bg-metro-surface p-6 w-full max-w-md">
+            <h2 className="metro-section-title mb-4">
               {linkingUser.role === "GUARDIAN"
                 ? `Link Students to ${linkingUser.name}`
                 : `Link Guardians to ${linkingUser.name}`}
@@ -521,19 +521,19 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
 
             {/* Current Links */}
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Current Links</h3>
+              <h3 className="text-sm font-medium text-metro-text mb-2">Current Links</h3>
               {linkedUsers.length === 0 ? (
-                <p className="text-sm text-gray-500">No links yet</p>
+                <p className="text-sm text-metro-text-secondary">No links yet</p>
               ) : (
                 <div className="space-y-2">
                   {linkedUsers.map((linked) => (
                     <div
                       key={linked.id}
-                      className="flex items-center justify-between bg-gray-50 rounded-lg p-2"
+                      className="flex items-center justify-between bg-metro-bg p-2"
                     >
                       <div>
-                        <p className="text-sm font-medium">{linked.name}</p>
-                        <p className="text-xs text-gray-500">{linked.email}</p>
+                        <p className="text-sm font-medium text-metro-text">{linked.name}</p>
+                        <p className="text-xs text-metro-text-secondary">{linked.email}</p>
                       </div>
                       <button
                         onClick={() =>
@@ -541,7 +541,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                             ? handleUnlinkGuardian(linked.id)
                             : handleUnlinkStudent(linked.id)
                         }
-                        className="text-red-600 hover:text-red-800 text-sm"
+                        className="text-metro-error hover:text-metro-orange-hover text-sm"
                       >
                         Remove
                       </button>
@@ -553,13 +553,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
 
             {/* Add New Link */}
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Add New Link</h3>
+              <h3 className="text-sm font-medium text-metro-text mb-2">Add New Link</h3>
               {linkingUser.role === "GUARDIAN" ? (
                 <div className="flex gap-2">
                   <select
                     value={selectedStudentId}
                     onChange={(e) => setSelectedStudentId(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="flex-1 border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                   >
                     <option value="">Select a student</option>
                     {allStudents
@@ -573,7 +573,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   <button
                     onClick={handleLinkGuardian}
                     disabled={!selectedStudentId}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover disabled:opacity-50"
                   >
                     Link
                   </button>
@@ -583,7 +583,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   <select
                     value={selectedGuardianId}
                     onChange={(e) => setSelectedGuardianId(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="flex-1 border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                   >
                     <option value="">Select a guardian</option>
                     {allGuardians
@@ -597,7 +597,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   <button
                     onClick={handleLinkStudent}
                     disabled={!selectedGuardianId}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover disabled:opacity-50"
                   >
                     Link
                   </button>
@@ -614,7 +614,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   setSelectedStudentId("");
                   setSelectedGuardianId("");
                 }}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="border-2 border-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-bg"
               >
                 Close
               </button>

@@ -27,8 +27,8 @@ export default async function NotificationsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Notifications</h1>
-      <p className="text-gray-600 mb-6">Updates about your sessions, courses, and announcements.</p>
+      <h1 className="metro-page-title mb-1">Notifications</h1>
+      <p className="text-metro-text-secondary mb-6">Updates about your sessions, courses, and announcements.</p>
       <NotificationsClient notifications={items} />
     </div>
   );

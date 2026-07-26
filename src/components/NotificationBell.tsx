@@ -1,22 +1,22 @@
-"use client";
+"use client"
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  getMyNotifications,
-  markRead,
-  markAllRead,
-} from "@/actions/notifications";
+import { useCallback, useEffect, useRef, useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { 
+  getMyNotifications, 
+  markRead, 
+  markAllRead, 
+} from "@/actions/notifications"
 
 interface NotificationItem {
-  id: string;
-  type: string;
-  title: string;
-  body: string | null;
-  link: string | null;
-  read: boolean;
-  createdAt: string;
+  id: string
+  type: string
+  title: string
+  body: string | null
+  link: string | null
+  read: boolean
+  createdAt: string
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -24,88 +24,88 @@ const TYPE_ICONS: Record<string, string> = {
   ANNOUNCEMENT: "📢",
   ENROLLMENT: "📚",
   ATTENDANCE: "📋",
-};
+}
 
 export default function NotificationBell() {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async () => {
     try {
-      const data = await getMyNotifications();
-      setUnreadCount(data.unreadCount);
-      setNotifications(data.notifications);
+      const data = await getMyNotifications()
+      setUnreadCount(data.unreadCount)
+      setNotifications(data.notifications)
     } catch {
       // not logged in or transient error — ignore
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    load();
-    const interval = setInterval(load, 60000);
-    return () => clearInterval(interval);
-  }, [load]);
+    load()
+    const interval = setInterval(load, 60000)
+    return () => clearInterval(interval)
+  }, [load])
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        setOpen(false)
       }
     }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
+    document.addEventListener("mousedown", onClickOutside)
+    return () => document.removeEventListener("mousedown", onClickOutside)
+  }, [])
 
   async function handleClick(n: NotificationItem) {
-    setOpen(false);
+    setOpen(false)
     if (!n.read) {
-      await markRead(n.id);
-      load();
+      await markRead(n.id)
+      load()
     }
-    if (n.link) router.push(n.link);
+    if (n.link) router.push(n.link)
   }
 
   async function handleMarkAll() {
-    await markAllRead();
-    load();
+    await markAllRead()
+    load()
   }
 
   return (
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+        className="flex w-full items-center gap-3 px-6 py-2.5 text-sm font-medium text-white/80 hover:bg-metro-blue-hover hover:text-white transition-colors"
       >
         <span>🔔</span>
         Notifications
         {unreadCount > 0 && (
-          <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">
+          <span className="ml-auto bg-metro-error px-2 py-0.5 text-xs font-semibold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute left-full top-0 z-50 ml-2 w-80 rounded-lg border bg-white shadow-lg">
-          <div className="flex items-center justify-between border-b px-4 py-2">
-            <span className="text-sm font-semibold text-gray-900">
+        <div className="absolute left-full top-0 z-50 ml-2 w-80 border border-metro-border bg-metro-surface shadow-lg">
+          <div className="flex items-center justify-between border-b border-metro-border px-4 py-2">
+            <span className="text-sm font-semibold text-metro-text">
               Notifications
             </span>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAll}
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-metro-blue hover:underline"
               >
                 Mark all read
               </button>
             )}
           </div>
-          <div className="max-h-96 overflow-y-auto divide-y">
+          <div className="max-h-96 overflow-y-auto divide-y divide-metro-border">
             {notifications.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-gray-400">
+              <p className="px-4 py-6 text-center text-sm text-metro-text-secondary">
                 No notifications
               </p>
             )}
@@ -113,29 +113,29 @@ export default function NotificationBell() {
               <button
                 key={n.id}
                 onClick={() => handleClick(n)}
-                className={`block w-full px-4 py-3 text-left hover:bg-gray-50 ${
-                  n.read ? "" : "bg-blue-50"
+                className={`block w-full px-4 py-3 text-left hover:bg-metro-blue-light ${
+                  n.read ? "" : "bg-metro-blue-light"
                 }`}
               >
-                <p className="text-sm text-gray-900">
+                <p className="text-sm text-metro-text">
                   {TYPE_ICONS[n.type] || "🔔"} {n.title}
                 </p>
                 {n.body && (
-                  <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">
+                  <p className="mt-0.5 text-xs text-metro-text-secondary line-clamp-2">
                     {n.body}
                   </p>
                 )}
-                <p className="mt-0.5 text-xs text-gray-400">
+                <p className="mt-0.5 text-xs text-metro-text-secondary">
                   {new Date(n.createdAt).toLocaleString()}
                 </p>
               </button>
             ))}
           </div>
-          <div className="border-t px-4 py-2 text-center">
+          <div className="border-t border-metro-border px-4 py-2 text-center">
             <Link
               href="/notifications"
               onClick={() => setOpen(false)}
-              className="text-xs font-medium text-blue-600 hover:underline"
+              className="text-xs font-medium text-metro-blue hover:underline"
             >
               View all →
             </Link>
@@ -143,5 +143,5 @@ export default function NotificationBell() {
         </div>
       )}
     </div>
-  );
+  )
 }

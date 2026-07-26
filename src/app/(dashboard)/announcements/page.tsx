@@ -75,8 +75,8 @@ export default async function AnnouncementsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">📢 Announcements</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <h1 className="metro-page-title">Announcements</h1>
+      <p className="mt-1 text-sm text-metro-text-secondary">
         {role === "ADMIN" && "All announcements across all courses."}
         {role === "INSTRUCTOR" && "Announcements from your courses."}
         {role === "STUDENT" && "Announcements from your enrolled courses."}
@@ -85,31 +85,33 @@ export default async function AnnouncementsPage() {
 
       <div className="mt-6">
         {announcements.length === 0 ? (
-          <p className="text-sm text-gray-500">No announcements yet.</p>
+          <p className="text-sm text-metro-text-secondary">No announcements yet.</p>
         ) : (
           <div className="space-y-3">
             {announcements.map((a) => (
               <div
                 key={a.id}
-                className={`rounded-lg border bg-white p-4 ${
-                  a.pinned ? "border-blue-200 bg-blue-50" : ""
+                className={`metro-card ${
+                  a.pinned ? "metro-card-accent bg-metro-blue-light" : ""
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       {a.pinned && (
-                        <span className="text-xs text-blue-600">📌</span>
+                        <span className="metro-badge bg-metro-blue text-white">
+                          Pinned
+                        </span>
                       )}
-                      <h3 className="font-medium">{a.title}</h3>
+                      <h3 className="font-medium text-metro-text">{a.title}</h3>
                     </div>
-                    <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                    <p className="mt-1 text-sm text-metro-text-secondary line-clamp-2">
                       {a.body}
                     </p>
-                    <p className="mt-2 text-xs text-gray-400">
+                    <p className="mt-2 text-xs text-metro-text-secondary">
                       <Link
                         href={`/courses/${a.courseId}`}
-                        className="hover:text-blue-600"
+                        className="hover:text-metro-blue"
                       >
                         {a.course.title}
                       </Link>
@@ -121,7 +123,7 @@ export default async function AnnouncementsPage() {
                   {isOwner && (
                     <Link
                       href={`/courses/${a.courseId}/manage/announcements`}
-                      className="text-xs text-gray-400 hover:text-blue-600 ml-4 whitespace-nowrap"
+                      className="text-xs text-metro-text-secondary hover:text-metro-blue ml-4 whitespace-nowrap"
                     >
                       Manage →
                     </Link>

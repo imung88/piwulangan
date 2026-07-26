@@ -57,8 +57,8 @@ export default function CoursesClient({
     <div>
       {message && (
         <div
-          className={`rounded-lg p-4 mb-4 ${
-            message.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+          className={`p-4 mb-4 ${
+            message.type === "success" ? "bg-metro-green-light text-metro-green" : "bg-metro-error text-white"
           }`}
         >
           {message.text}
@@ -75,7 +75,7 @@ export default function CoursesClient({
         <div className="mb-4">
           <button
             onClick={() => setShowArchived(!showArchived)}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="text-sm text-metro-blue hover:text-metro-blue-hover font-medium"
           >
             {showArchived
               ? `Show Active Courses (${activeCourses.length})`
@@ -88,51 +88,51 @@ export default function CoursesClient({
         {displayCourses.map((course: Course) => (
           <div
             key={course.id}
-            className="rounded-lg border bg-white p-4 hover:shadow-md transition-shadow"
+            className="metro-card hover:bg-metro-blue-light transition-colors"
           >
             <Link href={`/courses/${course.id}`}>
               <div className="flex items-start justify-between">
-                <h2 className="font-semibold text-gray-900">{course.title}</h2>
+                <h2 className="font-semibold text-metro-text">{course.title}</h2>
                 {course.visibility === "DRAFT" && (
-                  <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">
+                  <span className="metro-badge bg-metro-border text-metro-text-secondary">
                     Draft
                   </span>
                 )}
                 {course.visibility === "ARCHIVED" && (
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-800">
+                  <span className="metro-badge bg-metro-border text-metro-text-secondary">
                     Archived
                   </span>
                 )}
               </div>
               {course.description && (
-                <p className="mt-1 text-sm text-gray-500 line-clamp-2">
+                <p className="mt-1 text-sm text-metro-text-secondary line-clamp-2">
                   {course.description}
                 </p>
               )}
-              <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
+              <div className="mt-3 flex items-center gap-4 text-xs text-metro-text-secondary">
                 {course.instructor && <span>👤 {course.instructor.name}</span>}
                 {course._count && <span>📚 {course._count.modules} modules</span>}
                 {course._count && <span>👥 {course._count.enrollments} students</span>}
               </div>
               {course._studentNames && course._studentNames.length > 0 && (
-                <p className="mt-2 text-xs text-purple-600">
+                <p className="mt-2 text-xs text-metro-blue">
                   🎓 {course._studentNames.join(", ")}
                 </p>
               )}
             </Link>
             {role === "ADMIN" && (
-              <div className="mt-3 pt-3 border-t">
+              <div className="mt-3 pt-3 border-t border-metro-border">
                 {course.visibility === "ARCHIVED" ? (
                   <button
                     onClick={() => handleUnarchive(course.id)}
-                    className="text-sm text-green-600 hover:text-green-800 font-medium"
+                    className="text-sm text-metro-green hover:text-metro-green-hover font-medium"
                   >
                     Unarchive
                   </button>
                 ) : (
                   <button
                     onClick={() => handleArchive(course.id)}
-                    className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                    className="text-sm text-metro-text-secondary hover:text-metro-text font-medium"
                   >
                     Archive
                   </button>
@@ -142,16 +142,16 @@ export default function CoursesClient({
             {role === "STUDENT" && course._totalLessons && course._totalLessons > 0 && (
               <div className="mt-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">
+                  <span className="text-metro-text-secondary">
                     {course._progress}/{course._totalLessons} lessons
                   </span>
                   <span className="font-medium">
                     {Math.round(((course._progress || 0) / course._totalLessons) * 100)}%
                   </span>
                 </div>
-                <div className="mt-1 h-1.5 rounded-full bg-gray-200">
+                <div className="mt-1 h-1.5 bg-metro-border">
                   <div
-                    className="h-1.5 rounded-full bg-blue-600"
+                    className="h-1.5 bg-metro-green"
                     style={{
                       width: `${Math.round(((course._progress || 0) / course._totalLessons) * 100)}%`,
                     }}
@@ -164,7 +164,7 @@ export default function CoursesClient({
       </div>
 
       {displayCourses.length === 0 && (
-        <p className="mt-8 text-center text-gray-500">
+        <p className="mt-8 text-center text-metro-text-secondary">
           {role === "STUDENT"
             ? "You're not enrolled in any courses yet. Enter an invite code above to join one."
             : role === "GUARDIAN"

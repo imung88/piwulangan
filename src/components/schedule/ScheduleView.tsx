@@ -22,18 +22,18 @@ export default function ScheduleView({
 
   return (
     <div>
-      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-4 bg-metro-bg p-1 w-fit">
         {(["list", "calendar"] as const).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
               view === v
-                ? "bg-white text-gray-900 shadow"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-metro-blue text-white"
+                : "text-metro-text-secondary hover:text-metro-text"
             }`}
           >
-            {v === "list" ? "☰ List" : "📅 Calendar"}
+            {v === "list" ? "list" : "calendar"}
           </button>
         ))}
       </div>

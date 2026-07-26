@@ -39,7 +39,7 @@ export default async function AnnouncementsPage({
     if (course.visibility !== "PUBLISHED") {
       return (
         <div className="text-center py-12">
-          <p className="text-gray-500">This course is not available.</p>
+          <p className="text-metro-text-secondary">This course is not available.</p>
         </div>
       );
     }
@@ -55,18 +55,18 @@ export default async function AnnouncementsPage({
     <div>
       <Link
         href={`/courses/${params.courseId}`}
-        className="text-sm text-gray-500 hover:text-gray-700"
+        className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
         ← Back to course
       </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mt-2">
-        📢 Announcements: {course.title}
+      <h1 className="metro-page-title mt-2">
+        Announcements: {course.title}
       </h1>
 
       {isOwner && (
         <Link
           href={`/courses/${params.courseId}/manage/announcements`}
-          className="mt-3 inline-block text-sm text-blue-600 hover:underline"
+          className="mt-3 inline-block text-sm text-metro-blue hover:underline"
         >
           Manage announcements →
         </Link>
@@ -74,26 +74,26 @@ export default async function AnnouncementsPage({
 
       <div className="mt-6">
         {announcements.length === 0 ? (
-          <p className="text-sm text-gray-500">No announcements yet.</p>
+          <p className="text-sm text-metro-text-secondary">No announcements yet.</p>
         ) : (
           <div className="space-y-3">
             {announcements.map((a) => (
               <div
                 key={a.id}
-                className={`rounded-lg border bg-white p-4 ${
-                  a.pinned ? "border-blue-200 bg-blue-50" : ""
+                className={`metro-card ${
+                  a.pinned ? "metro-card-accent" : ""
                 }`}
               >
                 <div className="flex items-center gap-2">
                   {a.pinned && (
-                    <span className="text-xs text-blue-600">📌</span>
+                    <span className="text-xs text-metro-blue">📌</span>
                   )}
                   <h3 className="font-medium">{a.title}</h3>
                 </div>
-                <p className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">
+                <p className="mt-2 text-sm text-metro-text-secondary whitespace-pre-wrap">
                   {a.body}
                 </p>
-                <p className="mt-2 text-xs text-gray-400">
+                <p className="mt-2 text-xs text-metro-text-secondary">
                   {a.author.name} ·{" "}
                   {new Date(a.createdAt).toLocaleDateString()}
                 </p>

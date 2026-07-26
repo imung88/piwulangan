@@ -57,16 +57,16 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">{error}</div>
+        <div className="bg-metro-error text-white p-3 text-sm">{error}</div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Day</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">Day</label>
           <select
             value={dayOfWeek}
             onChange={(e) => setDayOfWeek(Number(e.target.value))}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
           >
             {DAYS.map((day) => (
               <option key={day.value} value={day.value}>
@@ -77,35 +77,35 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">Start Time</label>
           <input
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">End Time</label>
           <input
             type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-metro-text mb-1">
             Course (optional)
           </label>
           <select
             value={courseId}
             onChange={(e) => setCourseId(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
           >
             <option value="">All courses</option>
             {courses.map((course) => (
@@ -120,7 +120,7 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
       <button
         type="submit"
         disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        className="bg-metro-blue text-white px-4 py-2 text-sm font-medium hover:bg-metro-blue-hover disabled:opacity-50"
       >
         {loading ? "Adding..." : "Add Availability"}
       </button>

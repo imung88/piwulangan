@@ -49,14 +49,14 @@ export default async function ManageSchedulePage({
       <div className="mb-6">
         <Link
           href={`/courses/${course.id}/schedule`}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm text-metro-text-secondary hover:text-metro-text"
         >
           ← Course schedule
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 mt-1">
+        <h1 className="metro-page-title mt-1">
           Manage Sessions — {course.title}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-metro-text-secondary">
           Create sessions, assign students, and record attendance.
         </p>
       </div>

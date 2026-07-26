@@ -51,29 +51,29 @@ export default async function MembersPage({
     <div>
       <Link
         href={`/courses/${params.courseId}`}
-        className="text-sm text-gray-500 hover:text-gray-700"
+        className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
         ← Back to course
       </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mt-2">
+      <h1 className="metro-page-title mt-2">
         Members: {course.title}
       </h1>
 
       {/* Instructor */}
       <div className="mt-6">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-          Instructor
+        <h2 className="metro-section-title">
+          instructor
         </h2>
-        <div className="mt-2 rounded-lg border bg-white p-4">
+        <div className="mt-2 metro-card">
           <p className="font-medium">👤 {course.instructor.name}</p>
-          <p className="text-sm text-gray-500">{course.instructor.email}</p>
+          <p className="text-sm text-metro-text-secondary">{course.instructor.email}</p>
         </div>
       </div>
 
       {/* Students */}
       <div className="mt-6">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-          Students ({course.enrollments.length})
+        <h2 className="metro-section-title">
+          students ({course.enrollments.length})
         </h2>
         <div className="mt-2 space-y-2">
           {course.enrollments.map((enrollment) => {
@@ -91,15 +91,15 @@ export default async function MembersPage({
             return (
               <div
                 key={enrollment.id}
-                className="rounded-lg border bg-white p-4 flex items-center justify-between"
+                className="metro-card flex items-center justify-between"
               >
                 <div>
                   <p className="font-medium">{student.name}</p>
-                  <p className="text-sm text-gray-500">{student.email}</p>
+                  <p className="text-sm text-metro-text-secondary">{student.email}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium">{percentage}%</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-metro-text-secondary">
                     {completedCount}/{totalLessons} lessons
                   </p>
                 </div>
@@ -107,7 +107,7 @@ export default async function MembersPage({
             );
           })}
           {course.enrollments.length === 0 && (
-            <p className="text-sm text-gray-500 py-4">No students enrolled yet.</p>
+            <p className="text-sm text-metro-text-secondary py-4">No students enrolled yet.</p>
           )}
         </div>
       </div>

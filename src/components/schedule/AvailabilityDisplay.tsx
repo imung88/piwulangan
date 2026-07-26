@@ -16,7 +16,7 @@ export default function AvailabilityDisplay({
 }) {
   if (windows.length === 0) {
     return (
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-metro-text-secondary">
         {instructorName} has not published availability yet.
       </p>
     );
@@ -29,8 +29,8 @@ export default function AvailabilityDisplay({
   }
 
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <p className="text-sm text-gray-600 mb-3">
+    <div className="metro-card">
+      <p className="text-sm text-metro-text-secondary mb-3">
         No sessions have been assigned to you yet. {instructorName} is
         generally available at these times — sessions are scheduled by the
         instructor:
@@ -41,12 +41,12 @@ export default function AvailabilityDisplay({
           .map(([day, wins]) => (
             <div
               key={day}
-              className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm"
+              className="flex items-center justify-between bg-metro-bg px-3 py-2 text-sm"
             >
-              <span className="font-medium text-gray-700">
+              <span className="font-medium text-metro-text">
                 {DAY_NAMES[day]}
               </span>
-              <span className="text-gray-600">
+              <span className="text-metro-text-secondary">
                 {wins.map((w) => `${w.startTime}–${w.endTime}`).join(", ")}
               </span>
             </div>

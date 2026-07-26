@@ -40,19 +40,19 @@ export default async function ManageAnnouncementsPage({
         <div>
           <Link
             href={`/courses/${params.courseId}`}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-metro-text-secondary hover:text-metro-text"
           >
             ← Back to course
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-2">
+          <h1 className="metro-page-title mt-2">
             Manage Announcements: {course.title}
           </h1>
         </div>
       </div>
 
       {/* Create form */}
-      <div className="mt-6 rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold mb-4">New Announcement</h2>
+      <div className="mt-6 metro-card p-6">
+        <h2 className="metro-section-title mb-4">new announcement</h2>
         <form
           action={async (formData: FormData) => {
             "use server";
@@ -61,25 +61,25 @@ export default async function ManageAnnouncementsPage({
           className="space-y-4"
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-metro-text">
               Title
             </label>
             <input
               name="title"
               required
               maxLength={200}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-metro-text">
               Body
             </label>
             <textarea
               name="body"
               required
               rows={4}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -87,15 +87,15 @@ export default async function ManageAnnouncementsPage({
               type="checkbox"
               name="pinned"
               id="pinned"
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="border-metro-border text-metro-blue"
             />
-            <label htmlFor="pinned" className="text-sm text-gray-700">
+            <label htmlFor="pinned" className="text-sm text-metro-text">
               Pin this announcement
             </label>
           </div>
           <button
             type="submit"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
           >
             Create Announcement
           </button>
@@ -104,32 +104,32 @@ export default async function ManageAnnouncementsPage({
 
       {/* Announcements list */}
       <div className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          All Announcements ({announcements.length})
+        <h2 className="metro-section-title mb-4">
+          all announcements ({announcements.length})
         </h2>
         {announcements.length === 0 ? (
-          <p className="text-sm text-gray-500">No announcements yet.</p>
+          <p className="text-sm text-metro-text-secondary">No announcements yet.</p>
         ) : (
           <div className="space-y-3">
             {announcements.map((a) => (
               <div
                 key={a.id}
-                className={`rounded-lg border bg-white p-4 ${
-                  a.pinned ? "border-blue-200 bg-blue-50" : ""
+                className={`metro-card ${
+                  a.pinned ? "metro-card-accent" : ""
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       {a.pinned && (
-                        <span className="text-xs text-blue-600">📌</span>
+                        <span className="text-xs text-metro-blue">📌</span>
                       )}
                       <h3 className="font-medium">{a.title}</h3>
                     </div>
-                    <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">
+                    <p className="mt-1 text-sm text-metro-text-secondary whitespace-pre-wrap">
                       {a.body}
                     </p>
-                    <p className="mt-2 text-xs text-gray-400">
+                    <p className="mt-2 text-xs text-metro-text-secondary">
                       {a.author.name} ·{" "}
                       {new Date(a.createdAt).toLocaleDateString()}
                     </p>
@@ -143,7 +143,7 @@ export default async function ManageAnnouncementsPage({
                     >
                       <button
                         type="submit"
-                        className="text-sm text-gray-500 hover:text-blue-600"
+                        className="text-sm text-metro-text-secondary hover:text-metro-blue"
                         title={a.pinned ? "Unpin" : "Pin"}
                       >
                         {a.pinned ? "📌" : "📍"}
@@ -157,7 +157,7 @@ export default async function ManageAnnouncementsPage({
                     >
                       <button
                         type="submit"
-                        className="text-sm text-gray-500 hover:text-red-600"
+                        className="text-sm text-metro-text-secondary hover:text-metro-error"
                         title="Delete"
                       >
                         🗑️

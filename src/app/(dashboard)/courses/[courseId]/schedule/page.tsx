@@ -59,21 +59,21 @@ export default async function CourseSchedulePage({
         <div>
           <Link
             href={`/courses/${course.id}`}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-metro-text-secondary hover:text-metro-text"
           >
             ← {course.title}
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">
+          <h1 className="metro-page-title mt-1">
             Course Schedule
           </h1>
-          <p className="text-gray-600">
+          <p className="text-metro-text-secondary">
             Instructor: {course.instructor.name}
           </p>
         </div>
         {isOwner && (
           <Link
             href={`/courses/${course.id}/manage/schedule`}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+            className="bg-metro-blue text-white px-4 py-2 text-sm font-medium hover:bg-metro-blue-hover"
           >
             Manage Sessions
           </Link>
@@ -116,7 +116,7 @@ async function GuardianView({
   const sessions = await getSessionsForStudents(studentIds, { courseId });
   if (sessions.length === 0) {
     return (
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-metro-text-secondary">
         No sessions scheduled for your students in this course yet.
       </p>
     );
@@ -154,8 +154,8 @@ async function StudentView({
           />
         )}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">
-            Instructor Availability
+          <h2 className="metro-section-title mb-3">
+            instructor availability
           </h2>
           <AvailabilityDisplay
             windows={availability}

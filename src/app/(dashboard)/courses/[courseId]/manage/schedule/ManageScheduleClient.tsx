@@ -201,7 +201,7 @@ export default function ManageScheduleClient({
       {!showForm && (
         <button
           onClick={openCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+          className="bg-metro-blue text-white px-4 py-2 text-sm font-medium hover:bg-metro-blue-hover"
         >
           + New Session
         </button>
@@ -210,21 +210,21 @@ export default function ManageScheduleClient({
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="rounded-lg border bg-white p-4 space-y-4"
+          className="metro-card space-y-4"
         >
-          <h2 className="font-semibold text-gray-900">
-            {editingId ? "Edit Session" : "New Session"}
+          <h2 className="metro-section-title">
+            {editingId ? "edit session" : "new session"}
           </h2>
 
           {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+            <div className="bg-metro-error px-3 py-2 text-sm text-white">
               {error}
             </div>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-metro-text mb-1">
                 Topic *
               </label>
               <input
@@ -233,12 +233,12 @@ export default function ManageScheduleClient({
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. Week 3: Past Tense"
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="metro-input w-full px-3 py-2 text-sm"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-metro-text mb-1">
                 Description
               </label>
               <textarea
@@ -247,18 +247,18 @@ export default function ManageScheduleClient({
                   setForm({ ...form, description: e.target.value })
                 }
                 rows={2}
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="metro-input w-full px-3 py-2 text-sm"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-metro-text mb-1">
                 Linked Lesson
               </label>
               <select
                 value={form.lessonId}
                 onChange={(e) => setForm({ ...form, lessonId: e.target.value })}
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="metro-input w-full px-3 py-2 text-sm"
               >
                 <option value="">— None —</option>
                 {lessons.map((l) => (
@@ -270,7 +270,7 @@ export default function ManageScheduleClient({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-metro-text mb-1">
                 Date *
               </label>
               <input
@@ -279,13 +279,13 @@ export default function ManageScheduleClient({
                 min={today}
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="metro-input w-full px-3 py-2 text-sm"
               />
             </div>
 
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-metro-text mb-1">
                   Start *
                 </label>
                 <input
@@ -295,11 +295,11 @@ export default function ManageScheduleClient({
                   onChange={(e) =>
                     setForm({ ...form, startTime: e.target.value })
                   }
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="metro-input w-full px-3 py-2 text-sm"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-metro-text mb-1">
                   End *
                 </label>
                 <input
@@ -309,13 +309,13 @@ export default function ManageScheduleClient({
                   onChange={(e) =>
                     setForm({ ...form, endTime: e.target.value })
                   }
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="metro-input w-full px-3 py-2 text-sm"
                 />
               </div>
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-metro-text mb-1">
                 Location / Meeting link
               </label>
               <input
@@ -323,14 +323,14 @@ export default function ManageScheduleClient({
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
                 placeholder="Room 101 or https://meet..."
-                className="w-full rounded-md border px-3 py-2 text-sm"
+                className="metro-input w-full px-3 py-2 text-sm"
               />
             </div>
 
             {!editingId && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-metro-text mb-1">
                     Repeat weekly
                   </label>
                   <select
@@ -338,7 +338,7 @@ export default function ManageScheduleClient({
                     onChange={(e) =>
                       setForm({ ...form, repeatWeeks: Number(e.target.value) })
                     }
-                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    className="metro-input w-full px-3 py-2 text-sm"
                   >
                     <option value={1}>No repeat</option>
                     {[2, 3, 4, 6, 8, 10, 12].map((n) => (
@@ -350,7 +350,7 @@ export default function ManageScheduleClient({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-metro-text mb-2">
                     Students
                   </label>
                   <label className="flex items-center gap-2 text-sm mb-2">
@@ -362,7 +362,7 @@ export default function ManageScheduleClient({
                     All enrolled students ({students.length})
                   </label>
                   {!allEnrolled && (
-                    <div className="grid gap-1 sm:grid-cols-2 max-h-48 overflow-y-auto border rounded-md p-2">
+                    <div className="grid gap-1 sm:grid-cols-2 max-h-48 overflow-y-auto border border-metro-border p-2">
                       {students.map((s) => (
                         <label
                           key={s.id}
@@ -380,11 +380,11 @@ export default function ManageScheduleClient({
                             }
                           />
                           {s.name}{" "}
-                          <span className="text-gray-400">({s.email})</span>
+                          <span className="text-metro-text-secondary">({s.email})</span>
                         </label>
                       ))}
                       {students.length === 0 && (
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-metro-text-secondary">
                           No enrolled students.
                         </p>
                       )}
@@ -399,14 +399,14 @@ export default function ManageScheduleClient({
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              className="bg-metro-blue text-white px-4 py-2 text-sm font-medium hover:bg-metro-blue-hover disabled:opacity-50"
             >
               {editingId ? "Save Changes" : "Create Session"}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="border px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+              className="border border-metro-border px-4 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
             >
               Cancel
             </button>
@@ -484,39 +484,39 @@ function SessionSection({
   if (sessions.length === 0) {
     return (
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">{title}</h2>
-        <p className="text-sm text-gray-500">No {title.toLowerCase()} sessions.</p>
+        <h2 className="metro-section-title mb-3">{title.toLowerCase()}</h2>
+        <p className="text-sm text-metro-text-secondary">No {title.toLowerCase()} sessions.</p>
       </section>
     );
   }
 
   return (
     <section>
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">{title}</h2>
+      <h2 className="metro-section-title mb-3">{title.toLowerCase()}</h2>
       <div className="space-y-3">
         {sessions.map((s) => (
-          <div key={s.id} className="rounded-lg border bg-white p-4">
+          <div key={s.id} className="metro-card">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-gray-900">{s.title}</span>
+                  <span className="font-semibold text-metro-text">{s.title}</span>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[s.status] || ""}`}
+                    className={`metro-badge ${STATUS_COLORS[s.status] || ""}`}
                   >
                     {s.status}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-metro-text-secondary mt-1">
                   {formatDateStr(s.date)} · {s.startTime}–{s.endTime}
                   {s.location && <> · {s.location}</>}
                 </div>
                 {s.lessonTitle && (
-                  <div className="text-sm text-blue-600 mt-0.5">
+                  <div className="text-sm text-metro-blue mt-0.5">
                     📖 {s.lessonTitle}
                   </div>
                 )}
                 {s.status === "CANCELLED" && s.cancelReason && (
-                  <div className="text-sm text-gray-400 mt-0.5">
+                  <div className="text-sm text-metro-text-secondary mt-0.5">
                     Reason: {s.cancelReason}
                   </div>
                 )}
@@ -528,13 +528,13 @@ function SessionSection({
                     <>
                       <button
                         onClick={() => onEdit(s)}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-metro-blue hover:text-metro-blue-hover"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => onOpenAttendees(s)}
-                        className="text-gray-600 hover:text-gray-800"
+                        className="text-metro-text-secondary hover:text-metro-text"
                       >
                         Students
                       </button>
@@ -543,7 +543,7 @@ function SessionSection({
                   <button
                     onClick={() => onCancel(s.id)}
                     disabled={loading}
-                    className="text-red-600 hover:text-red-700 disabled:opacity-50"
+                    className="text-metro-error hover:underline disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -553,8 +553,8 @@ function SessionSection({
 
             {/* Attendee editor */}
             {attendeeEditId === s.id ? (
-              <div className="mt-3 border-t pt-3">
-                <p className="text-sm font-medium text-gray-700 mb-2">
+              <div className="mt-3 border-t border-metro-border pt-3">
+                <p className="text-sm font-medium text-metro-text mb-2">
                   Assigned students
                 </p>
                 <div className="grid gap-1 sm:grid-cols-2">
@@ -576,13 +576,13 @@ function SessionSection({
                   <button
                     onClick={() => onSaveAttendees(s.id)}
                     disabled={loading}
-                    className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+                    className="bg-metro-blue text-white px-3 py-1.5 text-sm hover:bg-metro-blue-hover disabled:opacity-50"
                   >
                     Save
                   </button>
                   <button
                     onClick={onCloseAttendees}
-                    className="border px-3 py-1.5 rounded-md text-sm text-gray-600"
+                    className="border border-metro-border px-3 py-1.5 text-sm text-metro-text-secondary"
                   >
                     Close
                   </button>
@@ -590,13 +590,13 @@ function SessionSection({
               </div>
             ) : (
               s.attendees.length > 0 && (
-                <div className="mt-3 border-t pt-3 space-y-1">
+                <div className="mt-3 border-t border-metro-border pt-3 space-y-1">
                   {s.attendees.map((a) => (
                     <div
                       key={a.studentId}
                       className="flex items-center justify-between text-sm"
                     >
-                      <span className="text-gray-700">
+                      <span className="text-metro-text">
                         {a.name}
                         {a.attendance && (
                           <span
@@ -607,7 +607,7 @@ function SessionSection({
                           </span>
                         )}
                         {a.notes && (
-                          <span className="ml-2 text-gray-400">({a.notes})</span>
+                          <span className="ml-2 text-metro-text-secondary">({a.notes})</span>
                         )}
                       </span>
                       {s.status !== "CANCELLED" &&
@@ -619,10 +619,10 @@ function SessionSection({
                                 onClick={() =>
                                   onAttendance(s.id, a.studentId, st)
                                 }
-                                className={`text-xs px-2 py-0.5 rounded border ${
+                                className={`text-xs px-2 py-0.5 border ${
                                   a.attendance === st
-                                    ? "bg-gray-800 text-white border-gray-800"
-                                    : "text-gray-600 hover:bg-gray-50"
+                                    ? "bg-metro-chrome-dark text-white border-metro-chrome-dark"
+                                    : "border-metro-border text-metro-text-secondary hover:bg-metro-blue-light"
                                 }`}
                               >
                                 {st.charAt(0) + st.slice(1).toLowerCase()}

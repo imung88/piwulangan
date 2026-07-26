@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { createModule, createLesson, deleteModule, deleteLesson } from "@/actions/lessons";
+import { createModule, createLesson, deleteModule } from "@/actions/lessons";
+import { LessonEditForm } from "./LessonEditForm";
 
 export default async function ManageContentPage({
   params,
@@ -42,11 +43,11 @@ export default async function ManageContentPage({
         <div>
           <Link
             href={`/courses/${params.courseId}`}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-metro-text-secondary hover:text-metro-text"
           >
             ← Back to course
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-2">
+          <h1 className="metro-page-title mt-2">
             Edit Content: {course.title}
           </h1>
         </div>
@@ -66,11 +67,11 @@ export default async function ManageContentPage({
             name="moduleTitle"
             placeholder="New module title"
             required
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="metro-input flex-1 px-3 py-2 text-sm"
           />
           <button
             type="submit"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
           >
             Add Module
           </button>
@@ -80,9 +81,9 @@ export default async function ManageContentPage({
       {/* Modules */}
       <div className="mt-6 space-y-6">
         {course.modules.map((mod) => (
-          <div key={mod.id} className="rounded-lg border bg-white">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <h2 className="font-semibold text-gray-900">
+          <div key={mod.id} className="border border-metro-border bg-metro-surface">
+            <div className="flex items-center justify-between border-b border-metro-border px-4 py-3">
+              <h2 className="font-semibold text-metro-text">
                 Module {mod.order}: {mod.title}
               </h2>
               <form
@@ -93,7 +94,7 @@ export default async function ManageContentPage({
               >
                 <button
                   type="submit"
-                  className="text-xs text-red-500 hover:text-red-700"
+                  className="text-xs text-metro-error hover:underline"
                 >
                   Delete
                 </button>
@@ -103,57 +104,21 @@ export default async function ManageContentPage({
             {/* Lessons */}
             <div className="divide-y">
               {mod.lessons.map((lesson) => (
-                <div
+                <LessonEditForm
                   key={lesson.id}
-                  className="flex items-center justify-between px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {lesson.order}. {lesson.title}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1">
-                      {lesson.duration && (
-                        <span className="text-xs text-gray-400">
-                          ~{lesson.duration} min
-                        </span>
-                      )}
-                      {lesson.resources.length > 0 && (
-                        <span className="text-xs text-gray-400">
-                          📎 {lesson.resources.length} resources
-                        </span>
-                      )}
-                      <span className="text-xs text-gray-400">
-                        {lesson.content ? `${lesson.content.length} chars` : "No content"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/courses/${params.courseId}/lessons/${lesson.id}`}
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      View
-                    </Link>
-                    <form
-                      action={async () => {
-                        "use server";
-                        await deleteLesson(lesson.id);
-                      }}
-                    >
-                      <button
-                        type="submit"
-                        className="text-xs text-red-500 hover:text-red-700"
-                      >
-                        Delete
-                      </button>
-                    </form>
-                  </div>
-                </div>
+                  lessonId={lesson.id}
+                  courseId={params.courseId}
+                  initialTitle={lesson.title}
+                  initialDuration={lesson.duration}
+                  initialContent={lesson.content}
+                  order={lesson.order}
+                  initialResources={lesson.resources}
+                />
               ))}
             </div>
 
             {/* Add Lesson */}
-            <div className="border-t px-4 py-3">
+            <div className="border-t border-metro-border px-4 py-3">
               <AddLessonForm moduleId={mod.id} courseId={params.courseId} />
             </div>
           </div>
@@ -161,7 +126,7 @@ export default async function ManageContentPage({
       </div>
 
       {course.modules.length === 0 && (
-        <p className="mt-8 text-center text-gray-500">
+        <p className="mt-8 text-center text-metro-text-secondary">
           No modules yet. Add your first module above.
         </p>
       )}
@@ -185,17 +150,17 @@ function AddLessonForm({ moduleId }: { moduleId: string; courseId: string }) {
         name="title"
         placeholder="New lesson title"
         required
-        className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="metro-input flex-1 px-3 py-1.5 text-sm"
       />
       <input
         name="duration"
         type="number"
         placeholder="Min"
-        className="w-20 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="metro-input w-20 px-3 py-1.5 text-sm"
       />
       <button
         type="submit"
-        className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
+        className="bg-metro-border px-3 py-1.5 text-sm font-medium text-metro-text hover:bg-metro-blue-light"
       >
         + Lesson
       </button>

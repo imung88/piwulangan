@@ -29,17 +29,17 @@ export default async function CourseSettingsPage({
     <div>
       <Link
         href={`/courses/${params.courseId}`}
-        className="text-sm text-gray-500 hover:text-gray-700"
+        className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
         ← Back to course
       </Link>
-      <h1 className="text-2xl font-bold text-gray-900 mt-2">
+      <h1 className="metro-page-title mt-2">
         Course Settings
       </h1>
 
       {/* Edit form */}
-      <div className="mt-6 rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold mb-4">Course Details</h2>
+      <div className="mt-6 metro-card p-6">
+        <h2 className="metro-section-title mb-4">course details</h2>
         <form
           action={async (formData: FormData) => {
             "use server";
@@ -48,17 +48,17 @@ export default async function CourseSettingsPage({
           className="space-y-4"
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700">Title</label>
+            <label className="block text-sm font-medium text-metro-text">Title</label>
             <input
               name="title"
               defaultValue={course.title}
               required
               maxLength={120}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-metro-text">
               Description
             </label>
             <textarea
@@ -66,11 +66,11 @@ export default async function CourseSettingsPage({
               defaultValue={course.description || ""}
               rows={3}
               maxLength={2000}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-metro-text">
               Cover Image URL
             </label>
             <input
@@ -78,17 +78,17 @@ export default async function CourseSettingsPage({
               defaultValue={course.coverImageUrl || ""}
               type="url"
               placeholder="https://..."
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-metro-text">
               Enrollment Mode
             </label>
             <select
               name="enrollmentMode"
               defaultValue={course.enrollmentMode}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
             >
               <option value="OPEN">Open — anyone with the link</option>
               <option value="INVITE_CODE">Invite Code — students enter a code</option>
@@ -97,7 +97,7 @@ export default async function CourseSettingsPage({
           </div>
           <button
             type="submit"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
           >
             Save Changes
           </button>
@@ -105,9 +105,9 @@ export default async function CourseSettingsPage({
       </div>
 
       {/* Publish/Unpublish */}
-      <div className="mt-6 rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold mb-2">Visibility</h2>
-        <p className="text-sm text-gray-500 mb-4">
+      <div className="mt-6 metro-card p-6">
+        <h2 className="metro-section-title mb-2">visibility</h2>
+        <p className="text-sm text-metro-text-secondary mb-4">
           {course.visibility === "PUBLISHED"
             ? "This course is published and visible to enrolled students."
             : course.visibility === "ARCHIVED"
@@ -123,7 +123,7 @@ export default async function CourseSettingsPage({
           >
             <button
               type="submit"
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
             >
               Publish Course
             </button>
@@ -139,7 +139,7 @@ export default async function CourseSettingsPage({
             >
               <button
                 type="submit"
-                className="rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700"
+                className="bg-metro-orange px-4 py-2 text-sm font-medium text-white hover:opacity-90"
               >
                 Unpublish (Back to Draft)
               </button>
@@ -153,7 +153,7 @@ export default async function CourseSettingsPage({
               >
                 <button
                   type="submit"
-                  className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                  className="bg-metro-chrome-dark px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                 >
                   Archive Course
                 </button>
@@ -170,7 +170,7 @@ export default async function CourseSettingsPage({
           >
             <button
               type="submit"
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
             >
               Unarchive Course
             </button>
@@ -180,21 +180,21 @@ export default async function CourseSettingsPage({
 
       {/* Invite Code */}
       {course.inviteCode && (
-        <div className="mt-6 rounded-lg border bg-white p-6">
-          <h2 className="text-lg font-semibold mb-2">Invite Code</h2>
-          <p className="text-sm text-gray-500 mb-2">
+        <div className="mt-6 metro-card p-6">
+          <h2 className="metro-section-title mb-2">invite code</h2>
+          <p className="text-sm text-metro-text-secondary mb-2">
             Share this code with students so they can enroll.
           </p>
-          <code className="text-2xl font-mono font-bold tracking-wider text-blue-600">
+          <code className="text-2xl font-mono font-bold tracking-wider text-metro-blue">
             {course.inviteCode}
           </code>
         </div>
       )}
 
       {/* Danger Zone */}
-      <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-6">
-        <h2 className="text-lg font-semibold text-red-800 mb-2">Danger Zone</h2>
-        <p className="text-sm text-red-600 mb-4">
+      <div className="mt-6 metro-card p-6" style={{ borderLeftColor: "var(--metro-error)" }}>
+        <h2 className="metro-section-title mb-2 text-metro-error">danger zone</h2>
+        <p className="text-sm text-metro-error mb-4">
           Deleting a course is permanent. All lessons, progress, and enrollments will be
           lost.
         </p>
@@ -206,7 +206,7 @@ export default async function CourseSettingsPage({
         >
           <button
             type="submit"
-            className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+            className="bg-metro-error px-4 py-2 text-sm font-medium text-white hover:opacity-90"
           >
             Delete Course
           </button>

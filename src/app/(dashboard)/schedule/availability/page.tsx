@@ -34,17 +34,17 @@ export default async function AvailabilityPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Availability Settings</h1>
-      <p className="text-gray-600 mb-8">
+      <h1 className="metro-page-title mb-6">Availability Settings</h1>
+      <p className="text-metro-text-secondary mb-8">
         Set your weekly availability hours. Students can book sessions during these times.
       </p>
 
       {/* Current Availability */}
-      <div className="bg-white rounded-lg border p-6 mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Weekly Schedule</h2>
+      <div className="metro-card p-6 mb-8">
+        <h2 className="metro-section-title mb-4">weekly schedule</h2>
 
         {availability.length === 0 ? (
-          <p className="text-gray-500">No availability set yet. Use the form below to add your hours.</p>
+          <p className="text-metro-text-secondary">No availability set yet. Use the form below to add your hours.</p>
         ) : (
           <div className="space-y-3">
             {DAYS.map((day, index) => {
@@ -53,16 +53,16 @@ export default async function AvailabilityPage() {
 
               return (
                 <div key={day} className="flex items-start gap-4">
-                  <span className="w-28 font-medium text-gray-700">{day}</span>
+                  <span className="w-28 font-medium text-metro-text">{day}</span>
                   <div className="flex flex-wrap gap-2">
                     {daySlots.map((slot) => (
                       <span
                         key={slot.id}
-                        className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm"
+                        className="inline-flex items-center gap-2 bg-metro-blue-light text-metro-blue px-3 py-1 text-sm"
                       >
                         {slot.startTime} - {slot.endTime}
                         {slot.courseId && (
-                          <span className="text-blue-500 text-xs">
+                          <span className="text-metro-chrome-dark text-xs">
                             ({courses.find((c) => c.id === slot.courseId)?.title || "Course"})
                           </span>
                         )}
@@ -77,8 +77,8 @@ export default async function AvailabilityPage() {
       </div>
 
       {/* Add Availability Form */}
-      <div className="bg-white rounded-lg border p-6 mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Availability</h2>
+      <div className="metro-card p-6 mb-8">
+        <h2 className="metro-section-title mb-4">add availability</h2>
         <AvailabilityForm courses={courses} />
       </div>
 

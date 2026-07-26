@@ -130,11 +130,11 @@ export default async function CoursesPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Courses</h1>
+        <h1 className="metro-page-title">Courses</h1>
         {(role === "ADMIN" || role === "INSTRUCTOR") && (
           <Link
             href="/courses/new"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
           >
             + New Course
           </Link>
@@ -142,10 +142,10 @@ export default async function CoursesPage() {
       </div>
 
       {role === "STUDENT" && (
-        <h2 className="mt-6 text-lg font-semibold text-gray-900">📚 My Courses</h2>
+        <h2 className="metro-section-title mt-6">my courses</h2>
       )}
       {role === "GUARDIAN" && (
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-metro-text-secondary">
           Courses your linked students are enrolled in. View only.
         </p>
       )}

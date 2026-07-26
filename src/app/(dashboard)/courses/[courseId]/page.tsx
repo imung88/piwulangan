@@ -92,7 +92,7 @@ export default async function CoursePage({
     if (course.visibility !== "PUBLISHED") {
       return (
         <div className="text-center py-12">
-          <p className="text-gray-500">This course is not available.</p>
+          <p className="text-metro-text-secondary">This course is not available.</p>
         </div>
       );
     }
@@ -100,19 +100,19 @@ export default async function CoursePage({
     // Published but not enrolled: preview only (no content list)
     return (
       <div className="max-w-2xl mx-auto py-8">
-        <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
-        <p className="mt-1 text-sm text-gray-500">👤 {course.instructor.name}</p>
+        <h1 className="metro-page-title">{course.title}</h1>
+        <p className="mt-1 text-sm text-metro-text-secondary">👤 {course.instructor.name}</p>
         {course.description && (
-          <p className="mt-4 text-gray-600">{course.description}</p>
+          <p className="mt-4 text-metro-text-secondary">{course.description}</p>
         )}
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-metro-text-secondary">
           {course.modules.length} module{course.modules.length !== 1 ? "s" : ""} ·{" "}
           {course.modules.reduce((sum, m) => sum + m.lessons.length, 0)} lessons
         </p>
 
-        <div className="mt-8 rounded-lg border bg-white p-6 text-center">
+        <div className="mt-8 metro-card p-6 text-center">
           {role !== "STUDENT" ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-metro-text-secondary">
               Enroll in this course to see its content.
             </p>
           ) : course.enrollmentMode === "OPEN" ? (
@@ -123,12 +123,12 @@ export default async function CoursePage({
                 await enrollOpen(course.id);
               }}
             >
-              <p className="mb-3 text-sm text-gray-600">
+              <p className="mb-3 text-sm text-metro-text-secondary">
                 This course is open for enrollment.
               </p>
               <button
                 type="submit"
-                className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="bg-metro-green px-6 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
               >
                 Enroll Now
               </button>
@@ -147,17 +147,17 @@ export default async function CoursePage({
               <input
                 name="code"
                 placeholder="Enter invite code"
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="metro-input px-3 py-2 text-sm"
               />
               <button
                 type="submit"
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
               >
                 Join
               </button>
             </form>
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-metro-text-secondary">
               Enrollment for this course is managed by the instructor.
             </p>
           )}
@@ -206,14 +206,14 @@ export default async function CoursePage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
+            <h1 className="metro-page-title">{course.title}</h1>
             {course.visibility === "DRAFT" && (
-              <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">
+              <span className="metro-badge bg-metro-border text-metro-text-secondary">
                 Draft
               </span>
             )}
           </div>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-metro-text-secondary">
             👤 {course.instructor.name}
             {isOwner && course.inviteCode && (
               <span className="ml-3">🔑 Code: {course.inviteCode}</span>
@@ -223,14 +223,14 @@ export default async function CoursePage({
         <div className="flex items-center gap-2">
           <Link
             href={`/courses/${course.id}/schedule`}
-            className="rounded-md border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
           >
             📅 Schedule
           </Link>
           {isOwner && (
             <Link
               href={`/courses/${course.id}/manage/settings`}
-              className="rounded-md border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+              className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
             >
               ⚙️ Settings
             </Link>
@@ -239,19 +239,19 @@ export default async function CoursePage({
       </div>
 
       {course.description && (
-        <p className="mt-4 text-gray-600">{course.description}</p>
+        <p className="mt-4 text-metro-text-secondary">{course.description}</p>
       )}
 
       {/* Next session */}
       {nextSession && (
-        <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <div className="mt-6 border border-metro-blue bg-metro-blue-light p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
+              <p className="text-xs font-medium uppercase tracking-wide text-metro-blue">
                 Next Session
               </p>
-              <p className="mt-1 font-medium text-gray-900">{nextSession.title}</p>
-              <p className="mt-0.5 text-sm text-gray-600">
+              <p className="mt-1 font-medium text-metro-text">{nextSession.title}</p>
+              <p className="mt-0.5 text-sm text-metro-text-secondary">
                 {new Date(nextSession.date).toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "short",
@@ -263,7 +263,7 @@ export default async function CoursePage({
               {nextSession.lesson && (
                 <Link
                   href={`/courses/${course.id}/lessons/${nextSession.lesson.id}`}
-                  className="mt-1 inline-block text-sm text-blue-600 hover:underline"
+                  className="mt-1 inline-block text-sm text-metro-blue hover:underline"
                 >
                   Lesson: {nextSession.lesson.title} →
                 </Link>
@@ -271,7 +271,7 @@ export default async function CoursePage({
             </div>
             <Link
               href={`/courses/${course.id}/schedule`}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="text-sm font-medium text-metro-blue hover:text-metro-blue-hover"
             >
               View schedule →
             </Link>
@@ -281,21 +281,21 @@ export default async function CoursePage({
 
       {/* Progress per linked student (guardians) */}
       {isGuardianViewer && totalLessons > 0 && (
-        <div className="mt-6 rounded-lg border bg-white p-4 space-y-4">
+        <div className="mt-6 metro-card space-y-4">
           {guardianStudents.map((s) => {
             const done = completedByStudent.get(s.id)?.size ?? 0;
             const pct = Math.round((done / totalLessons) * 100);
             return (
               <div key={s.id}>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">
+                  <span className="text-metro-text-secondary">
                     🎓 {s.name}: {done} of {totalLessons} lessons completed
                   </span>
                   <span className="font-semibold">{pct}%</span>
                 </div>
-                <div className="mt-2 h-3 rounded-full bg-gray-200">
+                <div className="mt-2 h-3 bg-metro-border">
                   <div
-                    className="h-3 rounded-full bg-purple-600 transition-all"
+                    className="h-3 bg-metro-blue transition-all"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -307,23 +307,23 @@ export default async function CoursePage({
 
       {/* Progress bar (students) */}
       {(isEnrolled || isOwner) && totalLessons > 0 && (
-        <div className="mt-6 rounded-lg border bg-white p-4">
+        <div className="mt-6 metro-card">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">
+            <span className="text-metro-text-secondary">
               {completedLessons.length} of {totalLessons} lessons completed
             </span>
             <span className="font-semibold">{percentage}%</span>
           </div>
-          <div className="mt-2 h-3 rounded-full bg-gray-200">
+          <div className="mt-2 h-3 bg-metro-border">
             <div
-              className="h-3 rounded-full bg-blue-600 transition-all"
+              className="h-3 bg-metro-green transition-all"
               style={{ width: `${percentage}%` }}
             />
           </div>
           {nextLesson && isEnrolled && (
             <Link
               href={`/courses/${course.id}/lessons/${nextLesson.id}`}
-              className="mt-3 inline-block text-sm font-medium text-blue-600 hover:underline"
+              className="mt-3 inline-block text-sm font-medium text-metro-blue hover:underline"
             >
               Continue: {nextLesson.title} →
             </Link>
@@ -335,19 +335,19 @@ export default async function CoursePage({
       {course.announcements.length > 0 && (
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900">📢 Announcements</h2>
+            <h2 className="metro-section-title">announcements</h2>
             <div className="flex items-center gap-3">
               {isOwner && (
                 <Link
                   href={`/courses/${course.id}/manage/announcements`}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="text-sm text-metro-text-secondary hover:text-metro-text"
                 >
                   Manage
                 </Link>
               )}
               <Link
                 href={`/courses/${course.id}/announcements`}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm text-metro-blue hover:text-metro-blue-hover font-medium"
               >
                 View All →
               </Link>
@@ -357,16 +357,16 @@ export default async function CoursePage({
             {course.announcements.map((a) => (
               <div
                 key={a.id}
-                className={`rounded-lg border bg-white p-3 ${
-                  a.pinned ? "border-blue-200 bg-blue-50" : ""
+                className={`metro-card p-3 ${
+                  a.pinned ? "metro-card-accent" : ""
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  {a.pinned && <span className="text-xs text-blue-600">📌</span>}
+                  {a.pinned && <span className="text-xs text-metro-blue">📌</span>}
                   <h3 className="text-sm font-medium">{a.title}</h3>
                 </div>
-                <p className="mt-1 text-sm text-gray-600 line-clamp-2">{a.body}</p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-sm text-metro-text-secondary line-clamp-2">{a.body}</p>
+                <p className="mt-1 text-xs text-metro-text-secondary">
                   {a.author.name} · {new Date(a.createdAt).toLocaleDateString()}
                 </p>
               </div>
@@ -378,11 +378,11 @@ export default async function CoursePage({
       {/* Modules & Lessons */}
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">📚 Course Content</h2>
+          <h2 className="metro-section-title">course content</h2>
           {isOwner && (
             <Link
               href={`/courses/${course.id}/manage/content`}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-metro-blue hover:underline"
             >
               Edit content →
             </Link>
@@ -391,9 +391,9 @@ export default async function CoursePage({
 
         <div className="space-y-4">
           {course.modules.map((mod) => (
-            <div key={mod.id} className="rounded-lg border bg-white">
-              <div className="border-b px-4 py-3">
-                <h3 className="font-medium text-gray-900">
+            <div key={mod.id} className="border border-metro-border bg-metro-surface">
+              <div className="border-b border-metro-border px-4 py-3">
+                <h3 className="font-medium text-metro-text">
                   Module {mod.order}: {mod.title}
                 </h3>
               </div>
@@ -408,25 +408,25 @@ export default async function CoursePage({
                     <Link
                       key={lesson.id}
                       href={`/courses/${course.id}/lessons/${lesson.id}`}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between px-4 py-3 hover:bg-metro-blue-light transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-lg">
                           {isCompleted ? "✅" : "⬜"}
                         </span>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-metro-text">
                             {lesson.title}
                           </p>
                           {lesson.duration && (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-metro-text-secondary">
                               ~{lesson.duration} min
                             </p>
                           )}
                         </div>
                       </div>
                       {lesson.resources.length > 0 && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-metro-text-secondary">
                           📎 {lesson.resources.length}
                         </span>
                       )}
@@ -434,7 +434,7 @@ export default async function CoursePage({
                   );
                 })}
                 {mod.lessons.length === 0 && (
-                  <p className="px-4 py-3 text-sm text-gray-400">
+                  <p className="px-4 py-3 text-sm text-metro-text-secondary">
                     No lessons yet
                   </p>
                 )}
@@ -442,12 +442,12 @@ export default async function CoursePage({
             </div>
           ))}
           {course.modules.length === 0 && (
-            <p className="text-center text-gray-500 py-8">
+            <p className="text-center text-metro-text-secondary py-8">
               No content yet.
               {isOwner && (
                 <Link
                   href={`/courses/${course.id}/manage/content`}
-                  className="ml-1 text-blue-600 hover:underline"
+                  className="ml-1 text-metro-blue hover:underline"
                 >
                   Add modules and lessons →
                 </Link>
@@ -462,7 +462,7 @@ export default async function CoursePage({
         <div className="mt-8 flex items-center justify-between">
           <Link
             href={`/courses/${course.id}/members`}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-metro-text-secondary hover:text-metro-text"
           >
             👥 View members
           </Link>

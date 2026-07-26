@@ -60,23 +60,23 @@ export default function WeekCalendar({ sessions }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-gray-700">{rangeLabel}</span>
+        <span className="text-sm font-medium text-metro-text">{rangeLabel}</span>
         <div className="flex gap-1">
           <button
             onClick={() => shiftWeek(-1)}
-            className="rounded-md border px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50"
+            className="border border-metro-border px-2.5 py-1 text-sm text-metro-text-secondary hover:bg-metro-bg"
           >
             ←
           </button>
           <button
             onClick={() => setWeekStart(mondayOf(new Date()))}
-            className="rounded-md border px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50"
+            className="border border-metro-border px-2.5 py-1 text-sm text-metro-text-secondary hover:bg-metro-bg"
           >
             Today
           </button>
           <button
             onClick={() => shiftWeek(1)}
-            className="rounded-md border px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50"
+            className="border border-metro-border px-2.5 py-1 text-sm text-metro-text-secondary hover:bg-metro-bg"
           >
             →
           </button>
@@ -92,13 +92,13 @@ export default function WeekCalendar({ sessions }: Props) {
           return (
             <div
               key={key}
-              className={`rounded-lg border bg-white min-h-[140px] ${
-                isToday ? "ring-2 ring-blue-500" : ""
+              className={`border bg-metro-surface min-h-[140px] ${
+                isToday ? "border-2 border-metro-blue" : "border-metro-border"
               }`}
             >
               <div
-                className={`px-2 py-1.5 border-b text-xs font-medium ${
-                  isToday ? "text-blue-700" : "text-gray-500"
+                className={`px-2 py-1.5 border-b border-metro-border text-xs font-medium ${
+                  isToday ? "text-metro-blue" : "text-metro-text-secondary"
                 }`}
               >
                 {d.toLocaleDateString("en-US", { weekday: "short" })}{" "}
@@ -109,7 +109,7 @@ export default function WeekCalendar({ sessions }: Props) {
                   <Link
                     key={s.id}
                     href={`/courses/${s.course.id}/schedule`}
-                    className={`block rounded border px-1.5 py-1 text-xs ${courseColor(s.course.id)} ${
+                    className={`block border px-1.5 py-1 text-xs ${courseColor(s.course.id)} ${
                       s.status === "CANCELLED" ? "opacity-50 line-through" : ""
                     }`}
                   >
@@ -130,16 +130,16 @@ export default function WeekCalendar({ sessions }: Props) {
           const daySessions = byDay.get(key) || [];
           if (daySessions.length === 0) return null;
           return (
-            <div key={key} className="rounded-lg border bg-white">
-              <div className="px-3 py-2 border-b text-sm font-medium text-gray-700">
+            <div key={key} className="border border-metro-border bg-metro-surface">
+              <div className="px-3 py-2 border-b border-metro-border text-sm font-medium text-metro-text">
                 {formatDateStr(key)}
                 {key === today && (
-                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                  <span className="ml-2 metro-badge bg-metro-blue text-white">
                     Today
                   </span>
                 )}
               </div>
-              <div className="divide-y">
+              <div className="divide-y divide-metro-border">
                 {daySessions.map((s) => (
                   <Link
                     key={s.id}
@@ -147,15 +147,15 @@ export default function WeekCalendar({ sessions }: Props) {
                     className="flex items-center justify-between px-3 py-2"
                   >
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-metro-text">
                         {s.title}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-metro-text-secondary">
                         {s.startTime}–{s.endTime} · {s.course.title}
                       </div>
                     </div>
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[s.status] || ""}`}
+                      className={`metro-badge ${STATUS_COLORS[s.status] || ""}`}
                     >
                       {s.status}
                     </span>
@@ -166,7 +166,7 @@ export default function WeekCalendar({ sessions }: Props) {
           );
         })}
         {days.every((d) => !(byDay.get(dateKey(d)) || []).length) && (
-          <p className="text-sm text-gray-500 text-center py-6">
+          <p className="text-sm text-metro-text-secondary text-center py-6">
             No sessions this week.
           </p>
         )}

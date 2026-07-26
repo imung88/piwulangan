@@ -24,7 +24,7 @@ export function AddStudentForm({
 
   if (candidates.length === 0) {
     return (
-      <p className="text-sm text-gray-400">All students are already enrolled.</p>
+      <p className="text-sm text-metro-text-secondary">All students are already enrolled.</p>
     );
   }
 
@@ -47,7 +47,7 @@ export function AddStudentForm({
       <select
         value={selected}
         onChange={(e) => setSelected(e.target.value)}
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        className="metro-input px-3 py-2 text-sm"
       >
         <option value="">Select a student…</option>
         {candidates.map((s) => (
@@ -59,11 +59,11 @@ export function AddStudentForm({
       <button
         onClick={handleAdd}
         disabled={!selected || loading}
-        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover disabled:opacity-50"
       >
         Add Student
       </button>
-      {error && <span className="text-sm text-red-600">{error}</span>}
+      {error && <span className="text-sm text-metro-error">{error}</span>}
     </div>
   );
 }
@@ -92,7 +92,7 @@ export function RemoveStudentButton({
     <button
       onClick={handleRemove}
       disabled={loading}
-      className="text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+      className="text-sm font-medium text-metro-error hover:underline disabled:opacity-50"
     >
       Remove
     </button>

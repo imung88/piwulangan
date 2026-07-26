@@ -32,40 +32,40 @@ export default async function AdminSchedulePage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="metro-page-title">
           Schedule Management
         </h1>
-        <p className="text-gray-600">
+        <p className="text-metro-text-secondary">
           Sessions are managed per course. Open a course to create, edit, or
           cancel sessions.
         </p>
       </div>
 
       <section className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Courses</h2>
+        <h2 className="metro-section-title mb-3">courses</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((c) => (
             <Link
               key={c.id}
               href={`/courses/${c.id}/manage/schedule`}
-              className="rounded-lg border bg-white p-4 hover:shadow-md transition-shadow"
+              className="metro-card"
             >
-              <h3 className="font-medium text-gray-900">{c.title}</h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <h3 className="font-medium text-metro-text">{c.title}</h3>
+              <p className="text-sm text-metro-text-secondary mt-1">
                 {c.instructor.name} · {c._count.enrollments} students ·{" "}
                 {c._count.sessions} sessions
               </p>
             </Link>
           ))}
           {courses.length === 0 && (
-            <p className="text-sm text-gray-500">No courses.</p>
+            <p className="text-sm text-metro-text-secondary">No courses.</p>
           )}
         </div>
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          All Sessions (last 60 days onward)
+        <h2 className="metro-section-title mb-3">
+          all sessions (last 60 days onward)
         </h2>
         <ScheduleView
           sessions={sessions.map((s) => toSessionItem(s))}

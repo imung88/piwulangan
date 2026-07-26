@@ -27,14 +27,14 @@ export default async function SchedulePage() {
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-            <p className="text-gray-600">
+            <h1 className="metro-page-title">Schedule</h1>
+            <p className="text-metro-text-secondary">
               All sessions across all courses (last 60 days onward).
             </p>
           </div>
           <a
             href="/admin/schedule"
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-metro-blue hover:text-metro-chrome-dark font-medium"
           >
             Manage Sessions
           </a>
@@ -65,21 +65,21 @@ export default async function SchedulePage() {
 
     return (
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Schedule</h1>
-        <p className="text-gray-600 mb-6">
+        <h1 className="metro-page-title mb-2">Schedule</h1>
+        <p className="text-metro-text-secondary mb-6">
           View your linked students&apos; sessions.
         </p>
 
         {students.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
-              Linked Students
+            <h2 className="metro-section-title mb-2">
+              linked students
             </h2>
             <div className="flex gap-2">
               {students.map((s) => (
                 <span
                   key={s.id}
-                  className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm"
+                  className="bg-metro-blue-light text-metro-blue px-3 py-1 text-sm"
                 >
                   {s.name}
                 </span>
@@ -105,12 +105,12 @@ export default async function SchedulePage() {
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-            <p className="text-gray-600">Sessions you teach.</p>
+            <h1 className="metro-page-title">Schedule</h1>
+            <p className="text-metro-text-secondary">Sessions you teach.</p>
           </div>
           <a
             href="/schedule/availability"
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-metro-blue hover:text-metro-chrome-dark font-medium"
           >
             Set Availability
           </a>
@@ -129,8 +129,8 @@ export default async function SchedulePage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-        <p className="text-gray-600">
+        <h1 className="metro-page-title">Schedule</h1>
+        <p className="text-metro-text-secondary">
           Your sessions across all courses. Sessions are scheduled by your
           instructors — check each course&apos;s Schedule tab for details.
         </p>

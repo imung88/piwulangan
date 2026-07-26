@@ -203,7 +203,12 @@ export async function deleteLesson(lessonId: string) {
 
 // ─── Resources ───
 
-export async function addResource(lessonId: string, title: string, url: string) {
+export async function addResource(
+  lessonId: string,
+  title: string,
+  url: string,
+  type?: "LINK" | "VIDEO" | "DOCUMENT"
+) {
   const session = await auth();
   if (!session?.user) throw new Error("Not authenticated");
 
@@ -219,8 +224,13 @@ export async function addResource(lessonId: string, title: string, url: string) 
     throw new Error("Not authorized");
   }
 
+  const count = await db.resource.count({ where: { lessonId } });
+  if (count >= 5) {
+    return { error: "Maximum 5 resources per lesson" };
+  }
+
   await db.resource.create({
-    data: { title, url, lessonId },
+    data: { title, url, type: type || "LINK", lessonId },
   });
 
   const courseId = lesson.module.courseId;
@@ -248,6 +258,40 @@ export async function deleteResource(resourceId: string) {
   const courseId = resource.lesson.module.courseId;
   await db.resource.delete({ where: { id: resourceId } });
 
+  revalidatePath(`/courses/${courseId}/manage/content`);
+  revalidatePath(`/courses/${courseId}/lessons/${resource.lessonId}`);
+  return { success: true };
+}
+
+export async function updateResource(
+  resourceId: string,
+  data: { title: string; url: string; type?: "LINK" | "VIDEO" | "DOCUMENT" }
+) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const resource = await db.resource.findUnique({
+    where: { id: resourceId },
+    include: { lesson: { include: { module: { include: { course: true } } } } },
+  });
+  if (!resource) throw new Error("Resource not found");
+
+  const userId = (session.user as any).id;
+  const role = (session.user as any).role;
+  if (role !== "ADMIN" && resource.lesson.module.course.instructorId !== userId) {
+    throw new Error("Not authorized");
+  }
+
+  await db.resource.update({
+    where: { id: resourceId },
+    data: {
+      title: data.title,
+      url: data.url,
+      type: data.type || "LINK",
+    },
+  });
+
+  const courseId = resource.lesson.module.courseId;
   revalidatePath(`/courses/${courseId}/manage/content`);
   revalidatePath(`/courses/${courseId}/lessons/${resource.lessonId}`);
   return { success: true };

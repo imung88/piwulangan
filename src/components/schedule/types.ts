@@ -15,24 +15,24 @@ export interface SessionItem {
 }
 
 export const STATUS_COLORS: Record<string, string> = {
-  SCHEDULED: "bg-green-100 text-green-700",
-  COMPLETED: "bg-blue-100 text-blue-700",
-  CANCELLED: "bg-gray-100 text-gray-500",
+  SCHEDULED: "bg-metro-green-light text-metro-green",
+  COMPLETED: "bg-metro-blue-light text-metro-blue",
+  CANCELLED: "bg-metro-border text-metro-text-secondary",
 };
 
 export const ATTENDANCE_COLORS: Record<string, string> = {
-  PRESENT: "text-green-600",
-  ABSENT: "text-red-600",
-  LATE: "text-yellow-600",
+  PRESENT: "text-metro-green",
+  ABSENT: "text-metro-error",
+  LATE: "text-metro-orange",
 };
 
 const COURSE_PALETTE = [
-  "bg-blue-100 text-blue-800 border-blue-300",
-  "bg-purple-100 text-purple-800 border-purple-300",
-  "bg-emerald-100 text-emerald-800 border-emerald-300",
-  "bg-amber-100 text-amber-800 border-amber-300",
-  "bg-rose-100 text-rose-800 border-rose-300",
-  "bg-cyan-100 text-cyan-800 border-cyan-300",
+  "bg-metro-blue-light text-metro-blue border-metro-blue",
+  "bg-metro-blue text-white border-metro-chrome-dark",
+  "bg-metro-green-light text-metro-green border-metro-green",
+  "bg-metro-green text-white border-metro-green-hover",
+  "bg-metro-orange text-white border-metro-orange-hover",
+  "bg-metro-chrome-dark text-white border-metro-chrome-dark",
 ];
 
 export function courseColor(courseId: string) {

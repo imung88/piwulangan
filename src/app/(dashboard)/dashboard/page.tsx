@@ -148,15 +148,7 @@ export default async function DashboardPage() {
         student: {
           include: {
             enrollments: {
-              include: {
-                course: {
-                  include: {
-                    modules: {
-                      include: { lessons: { select: { id: true } } },
-                    },
-                  },
-                },
-              },
+              include: { course: true },
             },
             progress: { where: { completed: true } },
           },
@@ -209,14 +201,14 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">
-        Welcome, {session.user.name} 👋
+      <h1 className="metro-page-title">
+        Welcome, {session.user.name}
       </h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Role: {role.toLowerCase()}
-      </p>
+      <span className="metro-badge mt-2 bg-metro-blue text-white">
+        {role.toLowerCase()}
+      </span>
 
-      <div className="mt-8">
+      <div className="mt-6">
         {role === "STUDENT" && <StudentDashboard data={dashboardData} />}
         {role === "INSTRUCTOR" && <InstructorDashboard data={dashboardData} />}
         {role === "GUARDIAN" && <GuardianDashboard data={dashboardData} />}
@@ -230,27 +222,27 @@ function StudentDashboard({ data }: { data: any }) {
   const { enrollments, progress, bookings, announcements } = data;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Upcoming Sessions */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">📅 Upcoming Sessions</h2>
-          <a href="/schedule" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+          <h2 className="metro-section-title">upcoming sessions</h2>
+          <a href="/schedule" className="text-sm text-metro-blue hover:text-metro-blue-hover font-medium">
             View All
           </a>
         </div>
         {bookings.length === 0 ? (
-          <p className="text-sm text-gray-500">No upcoming sessions</p>
+          <p className="text-sm text-metro-text-secondary">No upcoming sessions</p>
         ) : (
           <div className="space-y-2">
             {bookings.map((booking: any) => (
               <div
                 key={booking.id}
-                className="flex items-center justify-between rounded-lg border bg-white p-4"
+                className="metro-card metro-card-accent flex items-center justify-between"
               >
                 <div>
-                  <p className="font-medium">{booking.title}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-metro-text">{booking.title}</p>
+                  <p className="text-sm text-metro-text-secondary">
                     {booking.course.title} · {new Date(booking.date).toLocaleDateString()} at {booking.startTime}
                   </p>
                 </div>
@@ -262,7 +254,7 @@ function StudentDashboard({ data }: { data: any }) {
 
       {/* My Courses */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📚 My Courses</h2>
+        <h2 className="metro-section-title mb-4">my courses</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {enrollments.map((enrollment: any) => {
             const course = enrollment.course;
@@ -280,20 +272,21 @@ function StudentDashboard({ data }: { data: any }) {
             return (
               <div
                 key={enrollment.id}
-                className="rounded-lg border bg-white p-4"
+                className="metro-card"
+                style={{ borderLeftColor: "var(--metro-green)" }}
               >
-                <h3 className="font-medium">{course.title}</h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <h3 className="text-base font-medium text-metro-text">{course.title}</h3>
+                <p className="text-sm text-metro-text-secondary mt-1 leading-relaxed">
                   {course.instructorId ? "Teacher" : ""}
                 </p>
                 <div className="mt-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{completedLessons}/{totalLessons} lessons</span>
-                    <span className="font-medium">{percentage}%</span>
+                    <span className="text-metro-text-secondary">{completedLessons}/{totalLessons} lessons</span>
+                    <span className="font-medium text-metro-text">{percentage}%</span>
                   </div>
-                  <div className="mt-1 h-2 rounded-full bg-gray-200">
+                  <div className="mt-1 h-2 bg-metro-border">
                     <div
-                      className="h-2 rounded-full bg-blue-600"
+                      className="h-2 bg-metro-green"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
@@ -307,22 +300,20 @@ function StudentDashboard({ data }: { data: any }) {
       {/* Recent Announcements */}
       {announcements.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">📢 Recent Announcements</h2>
+          <h2 className="metro-section-title mb-4">recent announcements</h2>
           <div className="space-y-2">
             {announcements.map((a: any) => (
               <a
                 key={a.id}
                 href={`/courses/${a.courseId}`}
-                className={`block rounded-lg border bg-white p-4 hover:shadow-sm transition-shadow ${
-                  a.pinned ? "border-blue-200 bg-blue-50" : ""
-                }`}
+                className={`metro-card ${a.pinned ? "metro-card-accent bg-metro-blue-light" : ""}`}
               >
                 <div className="flex items-center gap-2">
-                  {a.pinned && <span className="text-xs text-blue-600">📌</span>}
-                  <h3 className="text-sm font-medium">{a.title}</h3>
+                  {a.pinned && <span className="metro-badge bg-metro-blue text-white">Pinned</span>}
+                  <h3 className="text-sm font-medium text-metro-text">{a.title}</h3>
                 </div>
-                <p className="mt-1 text-sm text-gray-600 line-clamp-2">{a.body}</p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-sm text-metro-text-secondary line-clamp-2 leading-relaxed">{a.body}</p>
+                <p className="mt-1 text-sm text-metro-text-secondary">
                   {a.course.title} · {a.author.name} · {new Date(a.createdAt).toLocaleDateString()}
                 </p>
               </a>
@@ -338,29 +329,44 @@ function InstructorDashboard({ data }: { data: any }) {
   const { courses, todayBookings, weekBookingsCount, highProgressCount } = data;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Quick Stats */}
+      <section>
+        <h2 className="metro-section-title mb-4">quick stats</h2>
+        <div className="grid gap-2 grid-cols-2 sm:max-w-md">
+          <a href="/schedule" className="metro-tile metro-tile-blue">
+            <span className="metro-tile-value">{weekBookingsCount}</span>
+            <span className="metro-tile-label">Sessions This Week</span>
+          </a>
+          <a href="/courses" className="metro-tile metro-tile-green">
+            <span className="metro-tile-value">{highProgressCount}</span>
+            <span className="metro-tile-label">Students at 80%+</span>
+          </a>
+        </div>
+      </section>
+
       {/* Today's Sessions */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">📅 Today&apos;s Sessions</h2>
-          <a href="/schedule" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+          <h2 className="metro-section-title">today&apos;s sessions</h2>
+          <a href="/schedule" className="text-sm text-metro-blue hover:text-metro-blue-hover font-medium">
             View Full Schedule
           </a>
         </div>
         {todayBookings.length === 0 ? (
-          <p className="text-sm text-gray-500">No sessions today</p>
+          <p className="text-sm text-metro-text-secondary">No sessions today</p>
         ) : (
           <div className="space-y-2">
             {todayBookings.map((booking: any) => (
               <div
                 key={booking.id}
-                className="flex items-center justify-between rounded-lg border bg-white p-4"
+                className="metro-card metro-card-accent flex items-center justify-between"
               >
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-metro-text">
                     {booking.startTime} — {booking.title}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-metro-text-secondary">
                     {booking.course.title} · {booking.attendees.map((a: any) => a.student.name).join(", ")}
                   </p>
                 </div>
@@ -370,37 +376,27 @@ function InstructorDashboard({ data }: { data: any }) {
         )}
       </section>
 
-      {/* Quick Stats */}
-      <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📊 Quick Stats</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border bg-white p-4">
-            <p className="text-sm text-gray-500">Sessions This Week</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{weekBookingsCount}</p>
-          </div>
-          <div className="rounded-lg border bg-white p-4">
-            <p className="text-sm text-gray-500">Students at 80%+</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{highProgressCount}</p>
-          </div>
-        </div>
-      </section>
-
       {/* My Courses */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📚 My Courses</h2>
+        <h2 className="metro-section-title mb-4">my courses</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {courses.map((course: any) => (
             <div
               key={course.id}
-              className="rounded-lg border bg-white p-4"
+              className="metro-card"
+              style={{ borderLeftColor: course.visibility === "PUBLISHED" ? "var(--metro-green)" : "var(--metro-border)" }}
             >
-              <h3 className="font-medium">{course.title}</h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <h3 className="text-base font-medium text-metro-text">{course.title}</h3>
+              <p className="text-sm text-metro-text-secondary mt-1 leading-relaxed">
                 {course.enrollments.length} students · {course.modules.length} modules
               </p>
-              <p className="text-xs text-gray-400 mt-2">
-                {course.visibility === "PUBLISHED" ? "🟢 Published" : "📝 Draft"}
-              </p>
+              <span className={`metro-badge mt-2 ${
+                course.visibility === "PUBLISHED"
+                  ? "bg-metro-green-light text-metro-green"
+                  : "bg-metro-border text-metro-text-secondary"
+              }`}>
+                {course.visibility === "PUBLISHED" ? "Published" : "Draft"}
+              </span>
             </div>
           ))}
         </div>
@@ -413,16 +409,16 @@ function GuardianDashboard({ data }: { data: any }) {
   const { links, announcements } = data;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {links.map((link: any) => {
         const student = link.student;
         return (
           <section key={link.id}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {student.name}&apos;s Progress
+              <h2 className="metro-section-title">
+                {student.name}&apos;s progress
               </h2>
-              <a href="/schedule" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+              <a href="/schedule" className="text-sm text-metro-blue hover:text-metro-blue-hover font-medium">
                 View Schedule
               </a>
             </div>
@@ -443,17 +439,18 @@ function GuardianDashboard({ data }: { data: any }) {
                 return (
                   <div
                     key={enrollment.id}
-                    className="rounded-lg border bg-white p-4"
+                    className="metro-card"
+                    style={{ borderLeftColor: "var(--metro-green)" }}
                   >
-                    <h3 className="font-medium">{course.title}</h3>
+                    <h3 className="text-base font-medium text-metro-text">{course.title}</h3>
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">{completed}/{totalLessons} lessons</span>
-                        <span className="font-medium">{pct}%</span>
+                        <span className="text-metro-text-secondary">{completed}/{totalLessons} lessons</span>
+                        <span className="font-medium text-metro-text">{pct}%</span>
                       </div>
-                      <div className="mt-1 h-2 rounded-full bg-gray-200">
+                      <div className="mt-1 h-2 bg-metro-border">
                         <div
-                          className="h-2 rounded-full bg-blue-600"
+                          className="h-2 bg-metro-green"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -462,35 +459,33 @@ function GuardianDashboard({ data }: { data: any }) {
                 );
               })}
               {student.enrollments.length === 0 && (
-                <p className="text-sm text-gray-500">Not enrolled in any courses</p>
+                <p className="text-sm text-metro-text-secondary">Not enrolled in any courses</p>
               )}
             </div>
           </section>
         );
       })}
       {links.length === 0 && (
-        <p className="text-sm text-gray-500">No linked students. Ask an admin to link you.</p>
+        <p className="text-sm text-metro-text-secondary">No linked students. Ask an admin to link you.</p>
       )}
 
       {/* Recent Announcements */}
       {announcements.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">📢 Recent Announcements</h2>
+          <h2 className="metro-section-title mb-4">recent announcements</h2>
           <div className="space-y-2">
             {announcements.map((a: any) => (
               <a
                 key={a.id}
                 href={`/courses/${a.courseId}`}
-                className={`block rounded-lg border bg-white p-4 hover:shadow-sm transition-shadow ${
-                  a.pinned ? "border-blue-200 bg-blue-50" : ""
-                }`}
+                className={`metro-card ${a.pinned ? "metro-card-accent bg-metro-blue-light" : ""}`}
               >
                 <div className="flex items-center gap-2">
-                  {a.pinned && <span className="text-xs text-blue-600">📌</span>}
-                  <h3 className="text-sm font-medium">{a.title}</h3>
+                  {a.pinned && <span className="metro-badge bg-metro-blue text-white">Pinned</span>}
+                  <h3 className="text-sm font-medium text-metro-text">{a.title}</h3>
                 </div>
-                <p className="mt-1 text-sm text-gray-600 line-clamp-2">{a.body}</p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-sm text-metro-text-secondary line-clamp-2 leading-relaxed">{a.body}</p>
+                <p className="mt-1 text-sm text-metro-text-secondary">
                   {a.course.title} · {a.author.name} · {new Date(a.createdAt).toLocaleDateString()}
                 </p>
               </a>
@@ -511,68 +506,50 @@ function AdminDashboard({ data }: { data: any }) {
   }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Overview Stats */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📊 Overview</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border bg-white p-4">
-            <p className="text-sm text-gray-500">Total Users</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalUsers}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {roleBreakdown.map((r: any) => (
-                <span key={r.role} className="text-xs text-gray-500">
-                  {r.count} {r.role}{r.count !== 1 ? "s" : ""}
-                </span>
-              ))}
+        <h2 className="metro-section-title mb-4">overview</h2>
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 max-w-3xl">
+          <a href="/admin/users" className="metro-tile metro-tile-blue col-span-2">
+            <span className="metro-tile-value">{totalUsers}</span>
+            <div>
+              <span className="metro-tile-label block">Total Users</span>
+              <span className="mt-1 block text-xs text-white/80">
+                {roleBreakdown.map((r: any) => `${r.count} ${r.role}${r.count !== 1 ? "s" : ""}`).join(" · ")}
+              </span>
             </div>
-          </div>
-          <div className="rounded-lg border bg-white p-4">
-            <p className="text-sm text-gray-500">Courses</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalCourses}</p>
-          </div>
-          <div className="rounded-lg border bg-white p-4">
-            <p className="text-sm text-gray-500">Sessions Today</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{sessionsToday}</p>
-          </div>
+          </a>
+          <a href="/courses" className="metro-tile metro-tile-green">
+            <span className="metro-tile-value">{totalCourses}</span>
+            <span className="metro-tile-label">Courses</span>
+          </a>
+          <a href="/schedule" className="metro-tile metro-tile-orange">
+            <span className="metro-tile-value">{sessionsToday}</span>
+            <span className="metro-tile-label">Sessions Today</span>
+          </a>
         </div>
       </section>
 
       {/* Quick Links */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Quick Links</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <a
-            href="/courses"
-            className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
-          >
-            <span className="text-2xl">📖</span>
-            <h3 className="mt-2 font-medium">Manage Courses</h3>
-            <p className="text-sm text-gray-500 mt-1">View and manage all courses</p>
+        <h2 className="metro-section-title mb-4">quick links</h2>
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 max-w-3xl">
+          <a href="/courses" className="metro-tile metro-tile-blue">
+            <span className="text-3xl">📖</span>
+            <span className="metro-tile-label">Manage Courses</span>
           </a>
-          <a
-            href="/schedule"
-            className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
-          >
-            <span className="text-2xl">🗓️</span>
-            <h3 className="mt-2 font-medium">Schedule</h3>
-            <p className="text-sm text-gray-500 mt-1">View all sessions</p>
+          <a href="/schedule" className="metro-tile metro-tile-dark">
+            <span className="text-3xl">🗓️</span>
+            <span className="metro-tile-label">Schedule</span>
           </a>
-          <a
-            href="/announcements"
-            className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
-          >
-            <span className="text-2xl">📢</span>
-            <h3 className="mt-2 font-medium">Announcements</h3>
-            <p className="text-sm text-gray-500 mt-1">View all announcements</p>
+          <a href="/announcements" className="metro-tile metro-tile-green">
+            <span className="text-3xl">📢</span>
+            <span className="metro-tile-label">Announcements</span>
           </a>
-          <a
-            href="/admin/users"
-            className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
-          >
-            <span className="text-2xl">👥</span>
-            <h3 className="mt-2 font-medium">Manage Users</h3>
-            <p className="text-sm text-gray-500 mt-1">Create, edit, and manage users</p>
+          <a href="/admin/users" className="metro-tile metro-tile-orange">
+            <span className="text-3xl">👥</span>
+            <span className="metro-tile-label">Manage Users</span>
           </a>
         </div>
       </section>

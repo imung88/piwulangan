@@ -1,3 +1,169 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Metro Design System Color Tokens */
+  --metro-blue: #0078D4;
+  --metro-blue-hover: #106EBE;
+  --metro-blue-light: #E8F4FD;
+  --metro-chrome-dark: #005A9E;
+  --metro-green: #107C10;
+  --metro-green-hover: #0B6A0B;
+  --metro-green-light: #DFF6DD;
+  --metro-orange: #D83B01;
+  --metro-orange-hover: #B33201;
+  --metro-error: #D83B01;
+  --metro-bg: #F5F5F5;
+  --metro-surface: #FFFFFF;
+  --metro-border: #E1DFDD;
+  --metro-text: #323130;
+  --metro-text-secondary: #605E5C;
+  
+  /* Additional CSS variables for backward compatibility */
+  --background: var(--metro-bg);
+  --foreground: var(--metro-text);
+}
+
+@layer components {
+  .metro-input {
+    @apply w-full border-2 border-metro-border bg-metro-surface px-4 py-3 text-metro-text placeholder-metro-text-secondary transition-colors;
+    border-radius: 0 !important;
+    outline: none;
+  }
+  
+  .metro-input:focus {
+    @apply border-metro-blue;
+    box-shadow: none;
+  }
+  
+  .metro-btn {
+    @apply w-full py-3 text-base font-bold text-white transition-colors;
+    background-color: var(--metro-blue);
+    border-radius: 0 !important;
+  }
+  
+  .metro-btn:hover {
+    background-color: var(--metro-blue-hover);
+  }
+  
+  .metro-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  .metro-btn-green {
+    @apply w-full py-3 text-base font-bold text-white transition-colors;
+    background-color: var(--metro-green);
+    border-radius: 0 !important;
+  }
+  
+  .metro-btn-green:hover {
+    background-color: var(--metro-green-hover);
+  }
+  
+  .metro-btn-green:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  .metro-error {
+    @apply px-4 py-3 text-sm font-medium text-white;
+    background-color: var(--metro-error);
+    border-radius: 0 !important;
+  }
+
+  /* Metro tile — solid color block, white text, press-down feedback */
+  .metro-tile {
+    @apply relative flex flex-col justify-between p-4 text-white transition-all duration-100 select-none;
+    border-radius: 0 !important;
+    min-height: 9rem;
+  }
+
+  .metro-tile:active {
+    transform: scale(0.97);
+  }
+
+  .metro-tile-blue {
+    background-color: var(--metro-blue);
+  }
+  a.metro-tile-blue:hover, button.metro-tile-blue:hover {
+    background-color: var(--metro-blue-hover);
+  }
+
+  .metro-tile-dark {
+    background-color: var(--metro-chrome-dark);
+  }
+  a.metro-tile-dark:hover, button.metro-tile-dark:hover {
+    background-color: var(--metro-blue);
+  }
+
+  .metro-tile-green {
+    background-color: var(--metro-green);
+  }
+  a.metro-tile-green:hover, button.metro-tile-green:hover {
+    background-color: var(--metro-green-hover);
+  }
+
+  .metro-tile-orange {
+    background-color: var(--metro-orange);
+  }
+  a.metro-tile-orange:hover, button.metro-tile-orange:hover {
+    background-color: var(--metro-orange-hover);
+  }
+
+  .metro-tile-value {
+    @apply text-5xl md:text-4xl font-bold leading-none;
+  }
+
+  .metro-tile-label {
+    @apply mt-auto pt-3 text-base md:text-base font-semibold leading-tight;
+  }
+
+  /* Typography */
+  .metro-page-title {
+    @apply text-2xl md:text-4xl font-semibold md:font-light tracking-tight text-metro-text;
+  }
+
+  .metro-section-title {
+    @apply text-lg md:text-2xl font-medium tracking-normal text-metro-text;
+  }
+
+  .metro-body {
+    @apply text-lg leading-relaxed text-metro-text;
+  }
+
+  /* Square uppercase micro-badge */
+  .metro-badge {
+    @apply inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider;
+    border-radius: 0 !important;
+  }
+
+  /* Flat borderless card with left accent on hover */
+  .metro-card {
+    @apply block bg-metro-surface p-5 md:p-4 border-l-4 border-transparent transition-colors;
+    border-radius: 0 !important;
+  }
+
+  a.metro-card:hover {
+    border-left-color: var(--metro-blue);
+    background-color: var(--metro-blue-light);
+  }
+
+  .metro-card-accent {
+    border-left-color: var(--metro-blue);
+  }
+}
+
+/* Ensure modern users have access to colors in all Tailwind contexts */
+.bg-metro-blue { background-color: var(--metro-blue); }
+.bg-metro-blue-hover { background-color: var(--metro-blue-hover); }
+.bg-metro-blue-light { background-color: var(--metro-blue-light); }
+.bg-metro-green { background-color: var(--metro-green); }
+.bg-metro-green-hover { background-color: var(--metro-green-hover); }
+.bg-metro-green-light { background-color: var(--metro-green-light); }
+.bg-metro-error { background-color: var(--metro-error); }
+.bg-metro-surface { background-color: var(--metro-surface); }
+
+.text-metro-blue { color: var(--metro-blue); }
+.text-metro-error { color: var(--metro-error); }
+
+.border-metro-border { border-color: var(--metro-border); }

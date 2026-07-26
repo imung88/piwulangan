@@ -57,7 +57,7 @@ export default async function LessonPage({
   if (!isOwner && !isEnrolled && !isGuardianViewer) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">You don&apos;t have access to this lesson.</p>
+        <p className="text-metro-text-secondary">You don&apos;t have access to this lesson.</p>
       </div>
     );
   }
@@ -102,8 +102,8 @@ export default async function LessonPage({
   return (
     <div className="max-w-3xl mx-auto">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <Link href={`/courses/${params.courseId}`} className="hover:text-gray-700">
+      <div className="flex items-center gap-2 text-sm text-metro-text-secondary mb-6">
+        <Link href={`/courses/${params.courseId}`} className="hover:text-metro-text">
           ← Back
         </Link>
         <span>/</span>
@@ -111,13 +111,13 @@ export default async function LessonPage({
           Module {lesson.moduleOrder}: {lesson.moduleTitle}
         </span>
         <span>/</span>
-        <span className="text-gray-900">{lesson.title}</span>
+        <span className="text-metro-text">{lesson.title}</span>
       </div>
 
       {/* Lesson header */}
-      <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
+      <h1 className="metro-page-title">{lesson.title}</h1>
       {lesson.duration && (
-        <p className="mt-1 text-sm text-gray-500">~{lesson.duration} min read</p>
+        <p className="mt-1 text-sm text-metro-text-secondary">~{lesson.duration} min read</p>
       )}
 
       {/* Linked sessions */}
@@ -127,7 +127,7 @@ export default async function LessonPage({
             <Link
               key={s.id}
               href={`/courses/${params.courseId}/schedule`}
-              className="block rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700 hover:bg-blue-100"
+              className="block border border-metro-blue bg-metro-blue-light px-3 py-2 text-sm text-metro-blue hover:bg-metro-blue-light"
             >
               📅 Scheduled:{" "}
               {new Date(s.date).toLocaleDateString("en-US", {
@@ -151,14 +151,14 @@ export default async function LessonPage({
             }}
           />
         ) : (
-          <p className="text-gray-400 italic">No content yet</p>
+          <p className="text-metro-text-secondary italic">No content yet</p>
         )}
       </div>
 
       {/* Resources */}
       {lesson.resources.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">📎 Resources</h3>
+          <h3 className="text-sm font-semibold text-metro-text mb-2">📎 Resources</h3>
           <div className="space-y-2">
             {lesson.resources.map((r) => (
               <a
@@ -166,7 +166,7 @@ export default async function LessonPage({
                 href={r.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                className="flex items-center gap-2 border border-metro-border bg-metro-surface px-4 py-2 text-sm text-metro-blue hover:bg-metro-blue-light transition-colors"
               >
                 {r.type === "VIDEO" ? "▶" : r.type === "DOCUMENT" ? "📄" : "🔗"}
                 {r.title}
@@ -178,7 +178,7 @@ export default async function LessonPage({
 
       {/* Mark as Complete */}
       {isEnrolled && (
-        <div className="mt-8 border-t pt-6">
+        <div className="mt-8 border-t border-metro-border pt-6">
           <form
             action={async () => {
               "use server";
@@ -187,10 +187,10 @@ export default async function LessonPage({
           >
             <button
               type="submit"
-              className={`w-full rounded-lg border-2 py-3 text-sm font-semibold transition-colors ${
+              className={`w-full border-2 py-3 text-sm font-semibold transition-colors ${
                 isCompleted
-                  ? "border-green-500 bg-green-50 text-green-700"
-                  : "border-gray-300 bg-white text-gray-700 hover:border-blue-500 hover:bg-blue-50"
+                  ? "border-metro-green bg-metro-green-light text-metro-green"
+                  : "border-metro-border bg-metro-surface text-metro-text hover:border-metro-blue hover:bg-metro-blue-light"
               }`}
             >
               {isCompleted ? "✅ Completed — Click to Unmark" : "⬜ Mark as Complete"}
@@ -200,11 +200,11 @@ export default async function LessonPage({
       )}
 
       {/* Navigation */}
-      <div className="mt-8 flex items-center justify-between border-t pt-6">
+      <div className="mt-8 flex items-center justify-between border-t border-metro-border pt-6">
         {prevLesson ? (
           <Link
             href={`/courses/${params.courseId}/lessons/${prevLesson.id}`}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-metro-blue hover:underline"
           >
             ← {prevLesson.title}
           </Link>
@@ -214,14 +214,14 @@ export default async function LessonPage({
         {nextLesson ? (
           <Link
             href={`/courses/${params.courseId}/lessons/${nextLesson.id}`}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-metro-blue hover:underline"
           >
             {nextLesson.title} →
           </Link>
         ) : (
           <Link
             href={`/courses/${params.courseId}`}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-metro-blue hover:underline"
           >
             Back to course →
           </Link>
