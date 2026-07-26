@@ -45,25 +45,50 @@ export default async function CoursePage({
   const isOwner = course.instructorId === userId || role === "ADMIN";
   const isEnrolled = course.enrollments.length > 0;
 
+  // Guardian: read-only view if a linked student is enrolled here
+  let guardianStudents: { id: string; name: string }[] = [];
+  if (role === "GUARDIAN") {
+    const links = await db.guardianStudent.findMany({
+      where: {
+        guardianId: userId,
+        student: { enrollments: { some: { courseId: course.id } } },
+      },
+      include: { student: { select: { id: true, name: true } } },
+    });
+    guardianStudents = links.map((l) => l.student);
+  }
+  const isGuardianViewer = guardianStudents.length > 0;
+  const guardianStudentIds = guardianStudents.map((s) => s.id);
+
   // Next upcoming session (owner: any; student: only sessions they attend)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const nextSession =
-    isOwner || isEnrolled
+    isOwner || isEnrolled || isGuardianViewer
       ? await db.classSession.findFirst({
           where: {
             courseId: course.id,
             status: "SCHEDULED",
             date: { gte: today },
-            ...(isOwner ? {} : { attendees: { some: { studentId: userId } } }),
+            ...(isOwner
+              ? {}
+              : {
+                  attendees: {
+                    some: {
+                      studentId: isGuardianViewer
+                        ? { in: guardianStudentIds }
+                        : userId,
+                    },
+                  },
+                }),
           },
           include: { lesson: { select: { id: true, title: true } } },
           orderBy: [{ date: "asc" }, { startTime: "asc" }],
         })
       : null;
 
-  // Check if student can view (enrolled, published, or owner)
-  if (!isOwner && !isEnrolled) {
+  // Check if student can view (enrolled, published, owner, or guardian of an enrolled student)
+  if (!isOwner && !isEnrolled && !isGuardianViewer) {
     if (course.visibility !== "PUBLISHED") {
       return (
         <div className="text-center py-12">
@@ -155,10 +180,30 @@ export default async function CoursePage({
   // Find next incomplete lesson
   const nextLesson = allLessons.find((l) => !l.progress.some((p) => p.completed));
 
+  // Guardian: linked students' completed lessons in this course
+  const completedByStudent = new Map<string, Set<string>>();
+  if (isGuardianViewer) {
+    const lessonIds = allLessons.map((l) => l.id);
+    const guardianProgress = await db.progress.findMany({
+      where: {
+        userId: { in: guardianStudentIds },
+        lessonId: { in: lessonIds },
+        completed: true,
+      },
+      select: { userId: true, lessonId: true },
+    });
+    for (const p of guardianProgress) {
+      if (!completedByStudent.has(p.userId)) {
+        completedByStudent.set(p.userId, new Set());
+      }
+      completedByStudent.get(p.userId)!.add(p.lessonId);
+    }
+  }
+
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
@@ -231,6 +276,32 @@ export default async function CoursePage({
               View schedule →
             </Link>
           </div>
+        </div>
+      )}
+
+      {/* Progress per linked student (guardians) */}
+      {isGuardianViewer && totalLessons > 0 && (
+        <div className="mt-6 rounded-lg border bg-white p-4 space-y-4">
+          {guardianStudents.map((s) => {
+            const done = completedByStudent.get(s.id)?.size ?? 0;
+            const pct = Math.round((done / totalLessons) * 100);
+            return (
+              <div key={s.id}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">
+                    🎓 {s.name}: {done} of {totalLessons} lessons completed
+                  </span>
+                  <span className="font-semibold">{pct}%</span>
+                </div>
+                <div className="mt-2 h-3 rounded-full bg-gray-200">
+                  <div
+                    className="h-3 rounded-full bg-purple-600 transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -328,7 +399,11 @@ export default async function CoursePage({
               </div>
               <div className="divide-y">
                 {mod.lessons.map((lesson) => {
-                  const isCompleted = lesson.progress.some((p) => p.completed);
+                  const isCompleted = isGuardianViewer
+                    ? guardianStudents.every((s) =>
+                        completedByStudent.get(s.id)?.has(lesson.id)
+                      )
+                    : lesson.progress.some((p) => p.completed);
                   return (
                     <Link
                       key={lesson.id}

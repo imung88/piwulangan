@@ -14,6 +14,7 @@ type Course = {
   _count?: { enrollments: number; modules: number };
   _progress?: number;
   _totalLessons?: number;
+  _studentNames?: string[];
 };
 
 export default function CoursesClient({
@@ -113,6 +114,11 @@ export default function CoursesClient({
                 {course._count && <span>📚 {course._count.modules} modules</span>}
                 {course._count && <span>👥 {course._count.enrollments} students</span>}
               </div>
+              {course._studentNames && course._studentNames.length > 0 && (
+                <p className="mt-2 text-xs text-purple-600">
+                  🎓 {course._studentNames.join(", ")}
+                </p>
+              )}
             </Link>
             {role === "ADMIN" && (
               <div className="mt-3 pt-3 border-t">
@@ -161,6 +167,8 @@ export default function CoursesClient({
         <p className="mt-8 text-center text-gray-500">
           {role === "STUDENT"
             ? "You're not enrolled in any courses yet. Enter an invite code above to join one."
+            : role === "GUARDIAN"
+            ? "Your linked students are not enrolled in any courses yet."
             : showArchived
             ? "No archived courses"
             : "No courses yet. Create your first course!"}

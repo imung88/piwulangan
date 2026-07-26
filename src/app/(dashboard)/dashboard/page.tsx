@@ -148,7 +148,15 @@ export default async function DashboardPage() {
         student: {
           include: {
             enrollments: {
-              include: { course: true },
+              include: {
+                course: {
+                  include: {
+                    modules: {
+                      include: { lessons: { select: { id: true } } },
+                    },
+                  },
+                },
+              },
             },
             progress: { where: { completed: true } },
           },

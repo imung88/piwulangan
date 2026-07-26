@@ -66,12 +66,13 @@ export async function getSessionsForStudent(
 
 export async function getSessionsForStudents(
   studentIds: string[],
-  opts?: { from?: Date; limit?: number }
+  opts?: { courseId?: string; from?: Date; limit?: number }
 ) {
   return db.classSession.findMany({
     where: {
       attendees: { some: { studentId: { in: studentIds } } },
       status: { not: "CANCELLED" },
+      ...(opts?.courseId ? { courseId: opts.courseId } : {}),
       ...(opts?.from ? { date: { gte: opts.from } } : {}),
     },
     include: sessionInclude,

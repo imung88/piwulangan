@@ -1,5 +1,14 @@
 import { db } from "./db";
 
+export async function withGuardians(studentIds: string[]) {
+  if (studentIds.length === 0) return studentIds;
+  const links = await db.guardianStudent.findMany({
+    where: { studentId: { in: studentIds } },
+    select: { guardianId: true },
+  });
+  return [...studentIds, ...links.map((l) => l.guardianId)];
+}
+
 export async function notify(
   userIds: string[],
   type: string,

@@ -22,10 +22,18 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Guardian can only access dashboard, profile, and schedule (read-only)
+  // Guardian: read-only access — no manage pages
   if (role === "GUARDIAN") {
-    const allowed = ["/dashboard", "/profile", "/schedule", "/notifications"];
-    if (!allowed.some((r) => pathname.startsWith(r))) {
+    const allowed = [
+      "/dashboard",
+      "/profile",
+      "/schedule",
+      "/notifications",
+      "/courses",
+      "/announcements",
+    ];
+    const isManage = /^\/courses\/[^/]+\/manage/.test(pathname);
+    if (!allowed.some((r) => pathname.startsWith(r)) || isManage) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
   }

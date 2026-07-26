@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { notify } from "@/lib/notifications";
+import { notify, withGuardians } from "@/lib/notifications";
 
 type ActionResult = { success?: boolean; error?: any };
 
@@ -284,7 +284,7 @@ export async function createSession(formData: FormData): Promise<ActionResult> {
   );
 
   await notify(
-    attendeeIds,
+    await withGuardians(attendeeIds),
     "SESSION_CREATED",
     `New session: ${data.title}`,
     {
@@ -370,7 +370,7 @@ export async function updateSession(
   });
 
   await notify(
-    existing.attendees.map((a) => a.studentId),
+    await withGuardians(existing.attendees.map((a) => a.studentId)),
     "SESSION_UPDATED",
     `Session updated: ${data.title}`,
     {
@@ -405,7 +405,7 @@ export async function cancelSession(
   });
 
   await notify(
-    existing.attendees.map((a) => a.studentId),
+    await withGuardians(existing.attendees.map((a) => a.studentId)),
     "SESSION_CANCELLED",
     `Session cancelled: ${existing.title}`,
     {
@@ -455,10 +455,15 @@ export async function setSessionAttendees(
   ]);
 
   if (toAdd.length > 0) {
-    await notify(toAdd, "SESSION_CREATED", `New session: ${existing.title}`, {
-      body: `${existing.course.title} — ${existing.date.toISOString().split("T")[0]} at ${existing.startTime}`,
-      link: `/courses/${existing.courseId}/schedule`,
-    });
+    await notify(
+      await withGuardians(toAdd),
+      "SESSION_CREATED",
+      `New session: ${existing.title}`,
+      {
+        body: `${existing.course.title} — ${existing.date.toISOString().split("T")[0]} at ${existing.startTime}`,
+        link: `/courses/${existing.courseId}/schedule`,
+      }
+    );
   }
 
   revalidateScheduleViews(existing.courseId);

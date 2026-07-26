@@ -89,6 +89,42 @@ export default async function CoursesPage() {
       instructorName: c.instructor.name,
       moduleCount: c._count.modules,
     }));
+  } else if (role === "GUARDIAN") {
+    const links = await db.guardianStudent.findMany({
+      where: { guardianId: userId },
+      include: {
+        student: {
+          include: {
+            enrollments: {
+              include: {
+                course: {
+                  include: {
+                    instructor: true,
+                    _count: { select: { enrollments: true, modules: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const byCourse = new Map<string, any>();
+    for (const link of links) {
+      for (const e of link.student.enrollments) {
+        const existing = byCourse.get(e.courseId);
+        if (existing) {
+          existing._studentNames.push(link.student.name);
+        } else {
+          byCourse.set(e.courseId, {
+            ...e.course,
+            _studentNames: [link.student.name],
+          });
+        }
+      }
+    }
+    courses = Array.from(byCourse.values());
   }
 
   return (
@@ -107,6 +143,11 @@ export default async function CoursesPage() {
 
       {role === "STUDENT" && (
         <h2 className="mt-6 text-lg font-semibold text-gray-900">📚 My Courses</h2>
+      )}
+      {role === "GUARDIAN" && (
+        <p className="mt-2 text-sm text-gray-500">
+          Courses your linked students are enrolled in. View only.
+        </p>
       )}
 
       <div className="mt-4">

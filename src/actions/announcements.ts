@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { notify } from "@/lib/notifications";
+import { notify, withGuardians } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 
 const announcementSchema = z.object({
@@ -50,7 +50,7 @@ export async function createAnnouncement(courseId: string, formData: FormData) {
     select: { userId: true },
   });
   await notify(
-    enrollments.map((e) => e.userId),
+    await withGuardians(enrollments.map((e) => e.userId)),
     "ANNOUNCEMENT",
     `New announcement in ${course.title}: ${parsed.data.title}`,
     { link: `/courses/${courseId}/announcements` }

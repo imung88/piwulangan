@@ -74,8 +74,8 @@ export default async function ManageStudentsPage({
         <AddStudentForm courseId={params.courseId} candidates={candidates} />
       </div>
 
-      <div className="mt-6 rounded-lg border bg-white overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="mt-6 rounded-lg border bg-white overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Student</th>

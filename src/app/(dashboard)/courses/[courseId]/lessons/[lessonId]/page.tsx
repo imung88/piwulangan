@@ -40,7 +40,21 @@ export default async function LessonPage({
   const isOwner = course.instructorId === userId || role === "ADMIN";
   const isEnrolled = course.enrollments.length > 0;
 
-  if (!isOwner && !isEnrolled) {
+  // Guardian: read-only view if a linked student is enrolled here
+  let guardianStudentIds: string[] = [];
+  if (role === "GUARDIAN") {
+    const links = await db.guardianStudent.findMany({
+      where: {
+        guardianId: userId,
+        student: { enrollments: { some: { courseId: course.id } } },
+      },
+      select: { studentId: true },
+    });
+    guardianStudentIds = links.map((l) => l.studentId);
+  }
+  const isGuardianViewer = guardianStudentIds.length > 0;
+
+  if (!isOwner && !isEnrolled && !isGuardianViewer) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">You don&apos;t have access to this lesson.</p>
@@ -69,7 +83,17 @@ export default async function LessonPage({
       lessonId: lesson.id,
       status: "SCHEDULED",
       date: { gte: today },
-      ...(isOwner ? {} : { attendees: { some: { studentId: userId } } }),
+      ...(isOwner
+        ? {}
+        : {
+            attendees: {
+              some: {
+                studentId: isGuardianViewer
+                  ? { in: guardianStudentIds }
+                  : userId,
+              },
+            },
+          }),
     },
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
     take: 3,

@@ -5,6 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import {
   getSessionsForCourse,
   getSessionsForStudent,
+  getSessionsForStudents,
   getCourseAvailability,
 } from "@/lib/schedule";
 import { toSessionItem, todayStr } from "@/components/schedule/types";
@@ -34,7 +35,21 @@ export default async function CourseSchedulePage({
   const isOwner = course.instructorId === userId || role === "ADMIN";
   const isEnrolled = course.enrollments.length > 0;
 
-  if (!isOwner && !isEnrolled) {
+  // Guardian: view linked students' sessions for this course
+  let guardianStudentIds: string[] = [];
+  if (role === "GUARDIAN") {
+    const links = await db.guardianStudent.findMany({
+      where: {
+        guardianId: userId,
+        student: { enrollments: { some: { courseId: course.id } } },
+      },
+      select: { studentId: true },
+    });
+    guardianStudentIds = links.map((l) => l.studentId);
+  }
+  const isGuardianViewer = guardianStudentIds.length > 0;
+
+  if (!isOwner && !isEnrolled && !isGuardianViewer) {
     redirect(`/courses/${course.id}`);
   }
 
@@ -67,6 +82,8 @@ export default async function CourseSchedulePage({
 
       {isOwner ? (
         <OwnerView courseId={course.id} />
+      ) : isGuardianViewer ? (
+        <GuardianView courseId={course.id} studentIds={guardianStudentIds} />
       ) : (
         <StudentView
           courseId={course.id}
@@ -85,6 +102,29 @@ async function OwnerView({ courseId }: { courseId: string }) {
       sessions={sessions.map((s) => toSessionItem(s))}
       showCourse={false}
       showAttendees
+    />
+  );
+}
+
+async function GuardianView({
+  courseId,
+  studentIds,
+}: {
+  courseId: string;
+  studentIds: string[];
+}) {
+  const sessions = await getSessionsForStudents(studentIds, { courseId });
+  if (sessions.length === 0) {
+    return (
+      <p className="text-sm text-gray-500">
+        No sessions scheduled for your students in this course yet.
+      </p>
+    );
+  }
+  return (
+    <ScheduleView
+      sessions={sessions.map((s) => toSessionItem(s, studentIds))}
+      showCourse={false}
     />
   );
 }
