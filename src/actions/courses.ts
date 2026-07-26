@@ -238,3 +238,49 @@ export async function removeEnrollment(courseId: string, studentId: string) {
   revalidatePath(`/courses/${courseId}/members`);
   return { success: true };
 }
+
+export async function archiveCourse(courseId: string): Promise<{ success?: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const course = await db.course.findUnique({ where: { id: courseId } });
+  if (!course) throw new Error("Course not found");
+
+  const userId = (session.user as any).id;
+  const role = (session.user as any).role;
+  if (role !== "ADMIN" && course.instructorId !== userId) {
+    throw new Error("Not authorized");
+  }
+
+  await db.course.update({
+    where: { id: courseId },
+    data: { visibility: "ARCHIVED" },
+  });
+
+  revalidatePath("/courses");
+  revalidatePath(`/courses/${courseId}`);
+  return { success: true };
+}
+
+export async function unarchiveCourse(courseId: string): Promise<{ success?: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const course = await db.course.findUnique({ where: { id: courseId } });
+  if (!course) throw new Error("Course not found");
+
+  const userId = (session.user as any).id;
+  const role = (session.user as any).role;
+  if (role !== "ADMIN" && course.instructorId !== userId) {
+    throw new Error("Not authorized");
+  }
+
+  await db.course.update({
+    where: { id: courseId },
+    data: { visibility: "PUBLISHED" },
+  });
+
+  revalidatePath("/courses");
+  revalidatePath(`/courses/${courseId}`);
+  return { success: true };
+}

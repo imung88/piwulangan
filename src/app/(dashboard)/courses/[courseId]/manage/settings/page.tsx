@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { updateCourse, publishCourse, unpublishCourse, deleteCourse } from "@/actions/courses";
+import { updateCourse, publishCourse, unpublishCourse, deleteCourse, archiveCourse, unarchiveCourse } from "@/actions/courses";
 
 export default async function CourseSettingsPage({
   params,
@@ -110,9 +110,11 @@ export default async function CourseSettingsPage({
         <p className="text-sm text-gray-500 mb-4">
           {course.visibility === "PUBLISHED"
             ? "This course is published and visible to enrolled students."
+            : course.visibility === "ARCHIVED"
+            ? "This course is archived. It is hidden from students and instructors."
             : "This course is a draft. Only you and admins can see it."}
         </p>
-        {course.visibility === "DRAFT" ? (
+        {course.visibility === "DRAFT" && (
           <form
             action={async () => {
               "use server";
@@ -126,18 +128,51 @@ export default async function CourseSettingsPage({
               Publish Course
             </button>
           </form>
-        ) : (
+        )}
+        {course.visibility === "PUBLISHED" && (
+          <div className="flex gap-2">
+            <form
+              action={async () => {
+                "use server";
+                await unpublishCourse(params.courseId);
+              }}
+            >
+              <button
+                type="submit"
+                className="rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700"
+              >
+                Unpublish (Back to Draft)
+              </button>
+            </form>
+            {role === "ADMIN" && (
+              <form
+                action={async () => {
+                  "use server";
+                  await archiveCourse(params.courseId);
+                }}
+              >
+                <button
+                  type="submit"
+                  className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                >
+                  Archive Course
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+        {course.visibility === "ARCHIVED" && role === "ADMIN" && (
           <form
             action={async () => {
               "use server";
-              await unpublishCourse(params.courseId);
+              await unarchiveCourse(params.courseId);
             }}
           >
             <button
               type="submit"
-              className="rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700"
+              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
             >
-              Unpublish (Back to Draft)
+              Unarchive Course
             </button>
           </form>
         )}

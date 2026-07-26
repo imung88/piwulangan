@@ -44,7 +44,16 @@ export default async function DashboardPage() {
       take: 5,
     });
 
-    dashboardData = { enrollments, progress, bookings };
+    // Fetch announcements from enrolled courses
+    const enrolledCourseIds = enrollments.map((e: any) => e.courseId);
+    const announcements = await db.announcement.findMany({
+      where: { courseId: { in: enrolledCourseIds } },
+      include: { author: true, course: true },
+      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+      take: 5,
+    });
+
+    dashboardData = { enrollments, progress, bookings, announcements };
   } else if (role === "INSTRUCTOR") {
     const courses = await db.course.findMany({
       where: { instructorId: userId },
@@ -69,7 +78,69 @@ export default async function DashboardPage() {
       orderBy: { startTime: "asc" },
     });
 
-    dashboardData = { courses, todayBookings };
+    // Quick stats: sessions this week
+    const weekStart = new Date(today);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const weekBookingsCount = await db.booking.count({
+      where: {
+        instructorId: userId,
+        date: { gte: weekStart, lt: weekEnd },
+        status: "CONFIRMED",
+      },
+    });
+
+    // Quick stats: students at 80%+ progress
+    const courseIds = courses.map((c: any) => c.id);
+    const allEnrollments = await db.enrollment.findMany({
+      where: { courseId: { in: courseIds } },
+      include: {
+        user: true,
+        course: {
+          include: {
+            modules: { include: { lessons: true } },
+          },
+        },
+      },
+    });
+
+    const allProgress = await db.progress.findMany({
+      where: {
+        userId: { in: allEnrollments.map((e: any) => e.userId) },
+        completed: true,
+      },
+    });
+
+    let highProgressCount = 0;
+    const seen = new Set<string>();
+    for (const enrollment of allEnrollments) {
+      if (seen.has(enrollment.userId)) continue;
+      seen.add(enrollment.userId);
+      const totalLessons = enrollment.course.modules.reduce(
+        (sum: number, mod: any) => sum + mod.lessons.length,
+        0
+      );
+      if (totalLessons === 0) continue;
+      const completed = allProgress.filter(
+        (p) =>
+          p.userId === enrollment.userId &&
+          enrollment.course.modules.some((mod: any) =>
+            mod.lessons.some((l: any) => l.id === p.lessonId)
+          )
+      ).length;
+      if (completed / totalLessons >= 0.8) {
+        highProgressCount++;
+      }
+    }
+
+    dashboardData = {
+      courses,
+      todayBookings,
+      weekBookingsCount,
+      highProgressCount,
+    };
   } else if (role === "GUARDIAN") {
     const links = await db.guardianStudent.findMany({
       where: { guardianId: userId },
@@ -85,7 +156,47 @@ export default async function DashboardPage() {
       },
     });
 
-    dashboardData = { links };
+    // Fetch announcements from linked students' courses
+    const allLinkedCourseIds = links.flatMap((link: any) =>
+      link.student.enrollments.map((e: any) => e.courseId)
+    );
+    const linkedCourseIds = Array.from(new Set(allLinkedCourseIds));
+    const announcements = linkedCourseIds.length > 0
+      ? await db.announcement.findMany({
+          where: { courseId: { in: linkedCourseIds } },
+          include: { author: true, course: true },
+          orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+          take: 5,
+        })
+      : [];
+
+    dashboardData = { links, announcements };
+  } else if (role === "ADMIN") {
+    // Overview stats
+    const userCounts = await db.user.groupBy({
+      by: ["role"],
+      _count: true,
+    });
+    const totalUsers = userCounts.reduce(
+      (sum: number, g: any) => sum + g._count,
+      0
+    );
+
+    const totalCourses = await db.course.count();
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
+    const sessionsToday = await db.booking.count({
+      where: {
+        date: { gte: todayStart, lt: todayEnd },
+        status: "CONFIRMED",
+      },
+    });
+
+    dashboardData = { totalUsers, totalCourses, sessionsToday, userCounts };
   }
 
   return (
@@ -101,20 +212,25 @@ export default async function DashboardPage() {
         {role === "STUDENT" && <StudentDashboard data={dashboardData} />}
         {role === "INSTRUCTOR" && <InstructorDashboard data={dashboardData} />}
         {role === "GUARDIAN" && <GuardianDashboard data={dashboardData} />}
-        {role === "ADMIN" && <AdminDashboard />}
+        {role === "ADMIN" && <AdminDashboard data={dashboardData} />}
       </div>
     </div>
   );
 }
 
 function StudentDashboard({ data }: { data: any }) {
-  const { enrollments, progress, bookings } = data;
+  const { enrollments, progress, bookings, announcements } = data;
 
   return (
     <div className="space-y-8">
       {/* Upcoming Sessions */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📅 Upcoming Sessions</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">📅 Upcoming Sessions</h2>
+          <a href="/schedule" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+            View All
+          </a>
+        </div>
         {bookings.length === 0 ? (
           <p className="text-sm text-gray-500">No upcoming sessions</p>
         ) : (
@@ -179,18 +295,50 @@ function StudentDashboard({ data }: { data: any }) {
           })}
         </div>
       </section>
+
+      {/* Recent Announcements */}
+      {announcements.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">📢 Recent Announcements</h2>
+          <div className="space-y-2">
+            {announcements.map((a: any) => (
+              <a
+                key={a.id}
+                href={`/courses/${a.courseId}`}
+                className={`block rounded-lg border bg-white p-4 hover:shadow-sm transition-shadow ${
+                  a.pinned ? "border-blue-200 bg-blue-50" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {a.pinned && <span className="text-xs text-blue-600">📌</span>}
+                  <h3 className="text-sm font-medium">{a.title}</h3>
+                </div>
+                <p className="mt-1 text-sm text-gray-600 line-clamp-2">{a.body}</p>
+                <p className="mt-1 text-xs text-gray-400">
+                  {a.course.title} · {a.author.name} · {new Date(a.createdAt).toLocaleDateString()}
+                </p>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
 
 function InstructorDashboard({ data }: { data: any }) {
-  const { courses, todayBookings } = data;
+  const { courses, todayBookings, weekBookingsCount, highProgressCount } = data;
 
   return (
     <div className="space-y-8">
       {/* Today's Sessions */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📅 Today&apos;s Sessions</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">📅 Today&apos;s Sessions</h2>
+          <a href="/schedule" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+            View Full Schedule
+          </a>
+        </div>
         {todayBookings.length === 0 ? (
           <p className="text-sm text-gray-500">No sessions today</p>
         ) : (
@@ -210,6 +358,21 @@ function InstructorDashboard({ data }: { data: any }) {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Quick Stats */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">📊 Quick Stats</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border bg-white p-4">
+            <p className="text-sm text-gray-500">Sessions This Week</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{weekBookingsCount}</p>
+          </div>
+          <div className="rounded-lg border bg-white p-4">
+            <p className="text-sm text-gray-500">Students at 80%+</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{highProgressCount}</p>
+          </div>
+        </div>
       </section>
 
       {/* My Courses */}
@@ -237,7 +400,7 @@ function InstructorDashboard({ data }: { data: any }) {
 }
 
 function GuardianDashboard({ data }: { data: any }) {
-  const { links } = data;
+  const { links, announcements } = data;
 
   return (
     <div className="space-y-8">
@@ -245,9 +408,14 @@ function GuardianDashboard({ data }: { data: any }) {
         const student = link.student;
         return (
           <section key={link.id}>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              {student.name}&apos;s Progress
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {student.name}&apos;s Progress
+              </h2>
+              <a href="/schedule" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                View Schedule
+              </a>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {student.enrollments.map((enrollment: any) => {
                 const course = enrollment.course;
@@ -293,26 +461,79 @@ function GuardianDashboard({ data }: { data: any }) {
       {links.length === 0 && (
         <p className="text-sm text-gray-500">No linked students. Ask an admin to link you.</p>
       )}
+
+      {/* Recent Announcements */}
+      {announcements.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">📢 Recent Announcements</h2>
+          <div className="space-y-2">
+            {announcements.map((a: any) => (
+              <a
+                key={a.id}
+                href={`/courses/${a.courseId}`}
+                className={`block rounded-lg border bg-white p-4 hover:shadow-sm transition-shadow ${
+                  a.pinned ? "border-blue-200 bg-blue-50" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {a.pinned && <span className="text-xs text-blue-600">📌</span>}
+                  <h3 className="text-sm font-medium">{a.title}</h3>
+                </div>
+                <p className="mt-1 text-sm text-gray-600 line-clamp-2">{a.body}</p>
+                <p className="mt-1 text-xs text-gray-400">
+                  {a.course.title} · {a.author.name} · {new Date(a.createdAt).toLocaleDateString()}
+                </p>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
 
-function AdminDashboard() {
+function AdminDashboard({ data }: { data: any }) {
+  const { totalUsers, totalCourses, sessionsToday, userCounts } = data;
+
+  const roleBreakdown = userCounts.map((g: any) => ({
+    role: g.role.toLowerCase(),
+    count: g._count,
+  }));
+
   return (
     <div className="space-y-8">
+      {/* Overview Stats */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Admin Panel</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">📊 Overview</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border bg-white p-4">
+            <p className="text-sm text-gray-500">Total Users</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{totalUsers}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {roleBreakdown.map((r: any) => (
+                <span key={r.role} className="text-xs text-gray-500">
+                  {r.count} {r.role}{r.count !== 1 ? "s" : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg border bg-white p-4">
+            <p className="text-sm text-gray-500">Courses</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{totalCourses}</p>
+          </div>
+          <div className="rounded-lg border bg-white p-4">
+            <p className="text-sm text-gray-500">Sessions Today</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{sessionsToday}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Links */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Quick Links</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <a
-            href="/admin/users"
-            className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
-          >
-            <span className="text-2xl">👥</span>
-            <h3 className="mt-2 font-medium">Manage Users</h3>
-            <p className="text-sm text-gray-500 mt-1">Add, edit, and link users</p>
-          </a>
-          <a
-            href="/admin/courses"
+            href="/courses"
             className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
           >
             <span className="text-2xl">📖</span>
@@ -320,7 +541,7 @@ function AdminDashboard() {
             <p className="text-sm text-gray-500 mt-1">View and manage all courses</p>
           </a>
           <a
-            href="/admin/schedule"
+            href="/schedule"
             className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
           >
             <span className="text-2xl">🗓️</span>
@@ -328,12 +549,20 @@ function AdminDashboard() {
             <p className="text-sm text-gray-500 mt-1">View all sessions</p>
           </a>
           <a
-            href="/admin/settings"
+            href="/announcements"
             className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
           >
-            <span className="text-2xl">⚙️</span>
-            <h3 className="mt-2 font-medium">Settings</h3>
-            <p className="text-sm text-gray-500 mt-1">Global configuration</p>
+            <span className="text-2xl">📢</span>
+            <h3 className="mt-2 font-medium">Announcements</h3>
+            <p className="text-sm text-gray-500 mt-1">View all announcements</p>
+          </a>
+          <a
+            href="/admin/users"
+            className="rounded-lg border bg-white p-6 hover:shadow-md transition-shadow"
+          >
+            <span className="text-2xl">👥</span>
+            <h3 className="mt-2 font-medium">Manage Users</h3>
+            <p className="text-sm text-gray-500 mt-1">Create, edit, and manage users</p>
           </a>
         </div>
       </section>

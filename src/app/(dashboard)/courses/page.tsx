@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import CoursesClient from "./CoursesClient";
 
 export default async function CoursesPage() {
   const session = await auth();
@@ -36,16 +37,34 @@ export default async function CoursesPage() {
           include: {
             instructor: true,
             modules: { include: { lessons: true } },
-            progress: { where: { userId, completed: true } },
           },
         },
       },
     });
-    courses = enrollments.map((e) => ({
-      ...e.course,
-      _progress: e.course.progress.length,
-      _totalLessons: e.course.modules.reduce((sum, m) => sum + m.lessons.length, 0),
-    }));
+
+    // Get completed lesson IDs for this user
+    const completedProgress = await db.progress.findMany({
+      where: { userId, completed: true },
+      select: { lessonId: true },
+    });
+    const completedLessonIds = new Set(completedProgress.map((p) => p.lessonId));
+
+    courses = enrollments.map((e) => {
+      const totalLessons = e.course.modules.reduce(
+        (sum: number, m: any) => sum + m.lessons.length,
+        0
+      );
+      const completedLessons = e.course.modules.reduce(
+        (sum: number, m: any) =>
+          sum + m.lessons.filter((l: any) => completedLessonIds.has(l.id)).length,
+        0
+      );
+      return {
+        ...e.course,
+        _progress: completedLessons,
+        _totalLessons: totalLessons,
+      };
+    });
   }
 
   return (
@@ -68,62 +87,9 @@ export default async function CoursesPage() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course: any) => (
-          <Link
-            key={course.id}
-            href={`/courses/${course.id}`}
-            className="rounded-lg border bg-white p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between">
-              <h2 className="font-semibold text-gray-900">{course.title}</h2>
-              {course.visibility === "DRAFT" && (
-                <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">
-                  Draft
-                </span>
-              )}
-            </div>
-            {course.description && (
-              <p className="mt-1 text-sm text-gray-500 line-clamp-2">
-                {course.description}
-              </p>
-            )}
-            <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
-              {course.instructor && <span>👤 {course.instructor.name}</span>}
-              {course._count && <span>📚 {course._count.modules} modules</span>}
-              {course._count && <span>👥 {course._count.enrollments} students</span>}
-            </div>
-            {role === "STUDENT" && course._totalLessons > 0 && (
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">
-                    {course._progress}/{course._totalLessons} lessons
-                  </span>
-                  <span className="font-medium">
-                    {Math.round((course._progress / course._totalLessons) * 100)}%
-                  </span>
-                </div>
-                <div className="mt-1 h-1.5 rounded-full bg-gray-200">
-                  <div
-                    className="h-1.5 rounded-full bg-blue-600"
-                    style={{
-                      width: `${Math.round((course._progress / course._totalLessons) * 100)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </Link>
-        ))}
+      <div className="mt-6">
+        <CoursesClient courses={courses} role={role} />
       </div>
-
-      {courses.length === 0 && (
-        <p className="mt-8 text-center text-gray-500">
-          {role === "STUDENT"
-            ? "You're not enrolled in any courses yet. Enter an invite code above to join one."
-            : "No courses yet. Create your first course!"}
-        </p>
-      )}
     </div>
   );
 }

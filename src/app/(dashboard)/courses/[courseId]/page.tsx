@@ -132,7 +132,25 @@ export default async function CoursePage({
       {/* Announcements */}
       {course.announcements.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">📢 Announcements</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">📢 Announcements</h2>
+            <div className="flex items-center gap-3">
+              {isOwner && (
+                <Link
+                  href={`/courses/${course.id}/manage/announcements`}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Manage
+                </Link>
+              )}
+              <Link
+                href={`/courses/${course.id}/announcements`}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View All →
+              </Link>
+            </div>
+          </div>
           <div className="space-y-2">
             {course.announcements.map((a) => (
               <div

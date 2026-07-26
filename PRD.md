@@ -626,8 +626,9 @@ The module system is designed for extensibility. These modules are not built in 
 │
 ├── /dashboard                  # Role-aware home (admin/instructor/student/guardian)
 │
-├── /schedule                   # Core: always on
-│   ├── /schedule/manage        # Admin/Instructor: create & manage sessions
+├── /announcements              # Global announcements (all courses)
+│
+├── /schedule                   # Core: always on (admin sees all instructors)
 │   ├── /schedule/availability  # Instructor: set available hours
 │   └── /schedule/book          # Student: self-book (if enabled for course)
 │
@@ -638,22 +639,19 @@ The module system is designed for extensibility. These modules are not built in 
 │   │   ├── /lessons/[lessonId] # Lesson viewer
 │   │   ├── /assignments        # (if assignments enabled)
 │   │   │   └── /[assignmentId]
-│   │   ├── /announcements      # (if announcements enabled)
+│   │   ├── /announcements      # Per-course announcements
 │   │   ├── /grades             # (if gradebook enabled)
 │   │   └── /members            # Course roster
 │   │
 │   └── /courses/[courseId]/manage
 │       ├── /manage/content     # Content editor
 │       ├── /manage/students    # Roster + progress
-│       ├── /manage/schedule    # Course schedule
+│       ├── /manage/announcements # Announcement management
 │       ├── /manage/settings    # Course settings + module toggles
 │       └── /manage/grades      # (if gradebook enabled)
 │
 ├── /admin
-│   ├── /admin/users            # Manage all users (including guardian linking)
-│   ├── /admin/courses
-│   ├── /admin/schedule         # Full schedule across all instructors
-│   └── /admin/settings         # Global module defaults
+│   └── /admin/schedule         # Admin: create/manage sessions (advanced)
 │
 └── /profile
 ```

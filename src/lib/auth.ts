@@ -34,7 +34,7 @@ export const {
           where: { email },
         });
 
-        if (!user) {
+        if (!user || !user.active) {
           return null;
         }
 

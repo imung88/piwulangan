@@ -18,19 +18,21 @@ model User {
   email        String    @unique
   passwordHash String
   role         Role      @default(STUDENT)
+  active       Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  enrollments       Enrollment[]
-  progress          Progress[]
-  submissions       Submission[]
-  announcements     Announcement[]     @relation("Author")
-  coursesCreated    Course[]           @relation("Instructor")
-  bookings          Booking[]          @relation("Student")
-  availability      Availability[]
-  attendances       Attendance[]       @relation("Instructor")
-  guardianLinks     GuardianStudent[]  @relation("Guardian")
-  studentLinks      GuardianStudent[]  @relation("Student")
+  enrollments           Enrollment[]
+  progress              Progress[]
+  submissions           Submission[]
+  announcements         Announcement[]     @relation("Author")
+  coursesCreated        Course[]           @relation("Instructor")
+  bookings              Booking[]          @relation("Student")
+  bookingsAsInstructor  Booking[]          @relation("BookingInstructor")
+  availability          Availability[]
+  attendances           Attendance[]       @relation("Instructor")
+  guardianLinks         GuardianStudent[]  @relation("Guardian")
+  studentLinks          GuardianStudent[]  @relation("Student")
 }
 
 enum Role {
@@ -85,6 +87,7 @@ model Course {
 enum Visibility {
   DRAFT
   PUBLISHED
+  ARCHIVED
 }
 
 enum EnrollmentMode {
@@ -196,6 +199,7 @@ model Booking {
   studentId     String
   student       User          @relation("Student", fields: [studentId], references: [id])
   instructorId  String
+  instructor    User          @relation("BookingInstructor", fields: [instructorId], references: [id])
   date          DateTime      @db.Date
   startTime     String
   endTime       String

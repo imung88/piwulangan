@@ -41,6 +41,7 @@ piwulangan/
 │   │   │
 │   │   ├── (dashboard)/       # Authenticated routes
 │   │   │   ├── dashboard/     # Role-aware home
+│   │   │   ├── announcements/ # Global announcements (sidebar link)
 │   │   │   │
 │   │   │   ├── courses/
 │   │   │   │   ├── page.tsx           # Course list
@@ -51,26 +52,22 @@ piwulangan/
 │   │   │   │       │   └── [lessonId]/page.tsx
 │   │   │   │       ├── assignments/   # (if module enabled)
 │   │   │   │       │   └── [assignmentId]/
-│   │   │   │       ├── announcements/ # (if module enabled)
+│   │   │   │       ├── announcements/ # Per-course announcements
 │   │   │   │       ├── grades/        # (if module enabled)
 │   │   │   │       ├── members/
 │   │   │   │       └── manage/        # Instructor/admin
 │   │   │   │           ├── content/
 │   │   │   │           ├── students/
-│   │   │   │           ├── schedule/
+│   │   │   │           ├── announcements/
 │   │   │   │           └── settings/
 │   │   │   │
 │   │   │   ├── schedule/              # Core: always on
-│   │   │   │   ├── page.tsx           # Calendar view (role-aware)
-│   │   │   │   ├── manage/page.tsx    # Admin/Instructor: create sessions
+│   │   │   │   ├── page.tsx           # Calendar view (role-aware, admin sees all)
 │   │   │   │   ├── availability/      # Instructor: set hours
 │   │   │   │   └── book/page.tsx      # Student: self-book (if enabled)
 │   │   │   │
-│   │   │   ├── admin/                 # Admin-only
-│   │   │   │   ├── users/
-│   │   │   │   ├── courses/
-│   │   │   │   ├── schedule/          # All-instructor calendar
-│   │   │   │   └── settings/
+│   │   │   ├── admin/
+│   │   │   │   └── schedule/          # Admin: create/manage sessions
 │   │   │   │
 │   │   │   └── profile/
 │   │   │

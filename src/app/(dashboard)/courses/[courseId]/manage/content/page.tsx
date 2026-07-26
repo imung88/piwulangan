@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createModule, createLesson, deleteModule, deleteLesson } from "@/actions/lessons";
 
@@ -153,19 +154,7 @@ export default async function ManageContentPage({
 
             {/* Add Lesson */}
             <div className="border-t px-4 py-3">
-              <form
-                action={async (formData: FormData) => {
-                  "use server";
-                  const title = formData.get(`lessonTitle-${mod.id}`) as string;
-                  if (title) {
-                    await createLesson(mod.id, new FormData());
-                    // We need to create the FormData properly
-                  }
-                }}
-                className="flex gap-2"
-              >
-                <AddLessonForm moduleId={mod.id} courseId={params.courseId} />
-              </form>
+              <AddLessonForm moduleId={mod.id} courseId={params.courseId} />
             </div>
           </div>
         ))}
@@ -180,7 +169,7 @@ export default async function ManageContentPage({
   );
 }
 
-function AddLessonForm({ moduleId, courseId }: { moduleId: string; courseId: string }) {
+function AddLessonForm({ moduleId }: { moduleId: string; courseId: string }) {
   return (
     <form
       action={async (formData: FormData) => {

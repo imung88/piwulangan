@@ -3,19 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/actions/auth";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "🏠" },
   { href: "/courses", label: "Courses", icon: "📚" },
   { href: "/schedule", label: "Schedule", icon: "📅" },
+  { href: "/announcements", label: "Announcements", icon: "📢" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 
-const adminItems = [
-  { href: "/admin/users", label: "Users", icon: "👥" },
-  { href: "/admin/courses", label: "Courses", icon: "📖" },
-  { href: "/admin/schedule", label: "Schedule", icon: "🗓️" },
-  { href: "/admin/settings", label: "Settings", icon: "⚙️" },
+const adminNavItems = [
+  { href: "/admin/users", label: "User Management", icon: "👥" },
 ];
 
 export default function DashboardLayout({
@@ -24,6 +23,27 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get role from cookie or session
+    // For simplicity, we'll check if the pathname starts with /admin
+    // The middleware will handle access control anyway
+    const fetchRole = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        const session = await res.json();
+        if (session?.user?.role) {
+          setRole(session.user.role);
+        }
+      } catch {
+        // Ignore errors
+      }
+    };
+    fetchRole();
+  }, []);
+
+  const isAdmin = role === "ADMIN" || pathname.startsWith("/admin");
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -51,18 +71,20 @@ export default function DashboardLayout({
             </Link>
           ))}
 
-          <div className="pt-4 mt-4 border-t">
-            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Admin
-            </p>
-            <div className="mt-2 space-y-1">
-              {adminItems.map((item) => (
+          {isAdmin && (
+            <>
+              <div className="pt-4 pb-2">
+                <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Admin
+                </p>
+              </div>
+              {adminNavItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     pathname === item.href
-                      ? "bg-blue-50 text-blue-700"
+                      ? "bg-purple-50 text-purple-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
@@ -70,8 +92,8 @@ export default function DashboardLayout({
                   {item.label}
                 </Link>
               ))}
-            </div>
-          </div>
+            </>
+          )}
         </nav>
 
         <div className="p-4 border-t">

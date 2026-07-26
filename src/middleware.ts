@@ -22,9 +22,9 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Guardian can only access dashboard and profile
+  // Guardian can only access dashboard, profile, and schedule (read-only)
   if (role === "GUARDIAN") {
-    const allowed = ["/dashboard", "/profile"];
+    const allowed = ["/dashboard", "/profile", "/schedule"];
     if (!allowed.some((r) => pathname.startsWith(r))) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
