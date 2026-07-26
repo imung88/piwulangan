@@ -61,6 +61,20 @@ export default async function LessonPage({
     lessonIndex < allLessons.length - 1 ? allLessons[lessonIndex + 1] : null;
   const isCompleted = lesson.progress.some((p) => p.completed);
 
+  // Upcoming sessions linked to this lesson
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const linkedSessions = await db.classSession.findMany({
+    where: {
+      lessonId: lesson.id,
+      status: "SCHEDULED",
+      date: { gte: today },
+      ...(isOwner ? {} : { attendees: { some: { studentId: userId } } }),
+    },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+    take: 3,
+  });
+
   return (
     <div className="max-w-3xl mx-auto">
       {/* Breadcrumb */}
@@ -80,6 +94,28 @@ export default async function LessonPage({
       <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
       {lesson.duration && (
         <p className="mt-1 text-sm text-gray-500">~{lesson.duration} min read</p>
+      )}
+
+      {/* Linked sessions */}
+      {linkedSessions.length > 0 && (
+        <div className="mt-4 space-y-1">
+          {linkedSessions.map((s) => (
+            <Link
+              key={s.id}
+              href={`/courses/${params.courseId}/schedule`}
+              className="block rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700 hover:bg-blue-100"
+            >
+              📅 Scheduled:{" "}
+              {new Date(s.date).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}{" "}
+              {s.startTime} – {s.endTime}
+              {s.location && <> · {s.location}</>}
+            </Link>
+          ))}
+        </div>
       )}
 
       {/* Content */}

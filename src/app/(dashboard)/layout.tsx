@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/actions/auth";
 import { useEffect, useState } from "react";
+import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "🏠" },
@@ -70,6 +71,8 @@ export default function DashboardLayout({
               {item.label}
             </Link>
           ))}
+
+          <NotificationBell />
 
           {isAdmin && (
             <>

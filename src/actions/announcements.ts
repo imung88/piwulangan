@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { notify } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 
 const announcementSchema = z.object({
@@ -43,6 +44,17 @@ export async function createAnnouncement(courseId: string, formData: FormData) {
       pinned: parsed.data.pinned ?? false,
     },
   });
+
+  const enrollments = await db.enrollment.findMany({
+    where: { courseId },
+    select: { userId: true },
+  });
+  await notify(
+    enrollments.map((e) => e.userId),
+    "ANNOUNCEMENT",
+    `New announcement in ${course.title}: ${parsed.data.title}`,
+    { link: `/courses/${courseId}/announcements` }
+  );
 
   revalidatePath(`/courses/${courseId}`);
   revalidatePath(`/courses/${courseId}/manage/announcements`);

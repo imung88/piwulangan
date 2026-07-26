@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import CoursesClient from "./CoursesClient";
+import BrowseCourses from "./BrowseCourses";
 
 export default async function CoursesPage() {
   const session = await auth();
@@ -12,6 +13,7 @@ export default async function CoursesPage() {
   const role = (session.user as any).role;
 
   let courses: any[] = [];
+  let browseCourses: any[] = [];
 
   if (role === "ADMIN") {
     courses = await db.course.findMany({
@@ -65,6 +67,28 @@ export default async function CoursesPage() {
         _totalLessons: totalLessons,
       };
     });
+
+    // Published courses the student is not enrolled in
+    const enrolledCourseIds = enrollments.map((e) => e.courseId);
+    const available = await db.course.findMany({
+      where: {
+        visibility: "PUBLISHED",
+        id: { notIn: enrolledCourseIds },
+      },
+      include: {
+        instructor: { select: { name: true } },
+        _count: { select: { modules: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    browseCourses = available.map((c) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      enrollmentMode: c.enrollmentMode,
+      instructorName: c.instructor.name,
+      moduleCount: c._count.modules,
+    }));
   }
 
   return (
@@ -82,41 +106,14 @@ export default async function CoursesPage() {
       </div>
 
       {role === "STUDENT" && (
-        <div className="mt-4">
-          <EnrollByCode />
-        </div>
+        <h2 className="mt-6 text-lg font-semibold text-gray-900">📚 My Courses</h2>
       )}
 
-      <div className="mt-6">
+      <div className="mt-4">
         <CoursesClient courses={courses} role={role} />
       </div>
-    </div>
-  );
-}
 
-function EnrollByCode() {
-  return (
-    <form
-      action={async (formData: FormData) => {
-        "use server";
-        const code = formData.get("code") as string;
-        if (!code) return;
-        const { enrollByCode } = await import("@/actions/courses");
-        await enrollByCode(code);
-      }}
-      className="flex gap-2"
-    >
-      <input
-        name="code"
-        placeholder="Enter invite code"
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-      />
-      <button
-        type="submit"
-        className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-      >
-        Join Course
-      </button>
-    </form>
+      {role === "STUDENT" && <BrowseCourses courses={browseCourses} />}
+    </div>
   );
 }

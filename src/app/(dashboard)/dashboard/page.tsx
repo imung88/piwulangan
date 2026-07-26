@@ -33,10 +33,10 @@ export default async function DashboardPage() {
       where: { userId, completed: true },
     });
 
-    const bookings = await db.booking.findMany({
+    const bookings = await db.classSession.findMany({
       where: {
-        studentId: userId,
-        status: "CONFIRMED",
+        attendees: { some: { studentId: userId } },
+        status: "SCHEDULED",
         date: { gte: new Date() },
       },
       include: { course: true },
@@ -68,13 +68,13 @@ export default async function DashboardPage() {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todayBookings = await db.booking.findMany({
+    const todayBookings = await db.classSession.findMany({
       where: {
         instructorId: userId,
         date: { gte: today, lt: tomorrow },
-        status: "CONFIRMED",
+        status: "SCHEDULED",
       },
-      include: { student: true, course: true },
+      include: { attendees: { include: { student: true } }, course: true },
       orderBy: { startTime: "asc" },
     });
 
@@ -84,11 +84,11 @@ export default async function DashboardPage() {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
-    const weekBookingsCount = await db.booking.count({
+    const weekBookingsCount = await db.classSession.count({
       where: {
         instructorId: userId,
         date: { gte: weekStart, lt: weekEnd },
-        status: "CONFIRMED",
+        status: "SCHEDULED",
       },
     });
 
@@ -189,10 +189,10 @@ export default async function DashboardPage() {
     const todayEnd = new Date(todayStart);
     todayEnd.setDate(todayEnd.getDate() + 1);
 
-    const sessionsToday = await db.booking.count({
+    const sessionsToday = await db.classSession.count({
       where: {
         date: { gte: todayStart, lt: todayEnd },
-        status: "CONFIRMED",
+        status: "SCHEDULED",
       },
     });
 
@@ -241,9 +241,9 @@ function StudentDashboard({ data }: { data: any }) {
                 className="flex items-center justify-between rounded-lg border bg-white p-4"
               >
                 <div>
-                  <p className="font-medium">{booking.course.title}</p>
+                  <p className="font-medium">{booking.title}</p>
                   <p className="text-sm text-gray-500">
-                    {new Date(booking.date).toLocaleDateString()} at {booking.startTime}
+                    {booking.course.title} · {new Date(booking.date).toLocaleDateString()} at {booking.startTime}
                   </p>
                 </div>
               </div>
@@ -350,9 +350,11 @@ function InstructorDashboard({ data }: { data: any }) {
               >
                 <div>
                   <p className="font-medium">
-                    {booking.startTime} — {booking.student.name}
+                    {booking.startTime} — {booking.title}
                   </p>
-                  <p className="text-sm text-gray-500">{booking.course.title}</p>
+                  <p className="text-sm text-gray-500">
+                    {booking.course.title} · {booking.attendees.map((a: any) => a.student.name).join(", ")}
+                  </p>
                 </div>
               </div>
             ))}

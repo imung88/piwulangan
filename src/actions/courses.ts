@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { notify } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 
 const courseSchema = z.object({
@@ -166,6 +167,9 @@ export async function deleteCourse(courseId: string) {
 export async function enrollByCode(code: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Not authenticated");
+  if ((session.user as any).role !== "STUDENT") {
+    return { error: "Only students can enroll" };
+  }
 
   const course = await db.course.findUnique({
     where: { inviteCode: code.toUpperCase() },
@@ -173,6 +177,9 @@ export async function enrollByCode(code: string) {
 
   if (!course) return { error: "Invalid invite code" };
   if (course.visibility !== "PUBLISHED") return { error: "Course is not available" };
+  if (course.enrollmentMode !== "INVITE_CODE") {
+    return { error: "This course does not accept invite codes" };
+  }
 
   const userId = (session.user as any).id;
 
@@ -189,6 +196,57 @@ export async function enrollByCode(code: string) {
 
   revalidatePath("/courses");
   return { success: true, courseId: course.id };
+}
+
+export async function enrollOpen(courseId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+  if ((session.user as any).role !== "STUDENT") {
+    return { error: "Only students can enroll" };
+  }
+
+  const course = await db.course.findUnique({ where: { id: courseId } });
+  if (!course) return { error: "Course not found" };
+  if (course.visibility !== "PUBLISHED") return { error: "Course is not available" };
+  if (course.enrollmentMode !== "OPEN") {
+    return { error: "This course does not allow open enrollment" };
+  }
+
+  const userId = (session.user as any).id;
+
+  const existing = await db.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+  });
+
+  if (existing) return { error: "Already enrolled" };
+
+  await db.enrollment.create({
+    data: { userId, courseId },
+  });
+
+  revalidatePath("/courses");
+  revalidatePath(`/courses/${courseId}`);
+  return { success: true, courseId };
+}
+
+export async function unenrollSelf(courseId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const userId = (session.user as any).id;
+
+  const enrollment = await db.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+  });
+  if (!enrollment) return { error: "Not enrolled" };
+
+  await db.enrollment.delete({
+    where: { userId_courseId: { userId, courseId } },
+  });
+
+  revalidatePath("/courses");
+  revalidatePath(`/courses/${courseId}`);
+  return { success: true };
 }
 
 export async function enrollStudent(courseId: string, studentId: string) {
@@ -214,7 +272,12 @@ export async function enrollStudent(courseId: string, studentId: string) {
     data: { userId: studentId, courseId },
   });
 
+  await notify([studentId], "ENROLLMENT", `You were enrolled in ${course.title}`, {
+    link: `/courses/${courseId}`,
+  });
+
   revalidatePath(`/courses/${courseId}/members`);
+  revalidatePath(`/courses/${courseId}/manage/students`);
   return { success: true };
 }
 

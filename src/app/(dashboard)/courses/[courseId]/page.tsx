@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import UnenrollButton from "./UnenrollButton";
 
 export default async function CoursePage({
   params,
@@ -44,6 +45,23 @@ export default async function CoursePage({
   const isOwner = course.instructorId === userId || role === "ADMIN";
   const isEnrolled = course.enrollments.length > 0;
 
+  // Next upcoming session (owner: any; student: only sessions they attend)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const nextSession =
+    isOwner || isEnrolled
+      ? await db.classSession.findFirst({
+          where: {
+            courseId: course.id,
+            status: "SCHEDULED",
+            date: { gte: today },
+            ...(isOwner ? {} : { attendees: { some: { studentId: userId } } }),
+          },
+          include: { lesson: { select: { id: true, title: true } } },
+          orderBy: [{ date: "asc" }, { startTime: "asc" }],
+        })
+      : null;
+
   // Check if student can view (enrolled, published, or owner)
   if (!isOwner && !isEnrolled) {
     if (course.visibility !== "PUBLISHED") {
@@ -53,6 +71,74 @@ export default async function CoursePage({
         </div>
       );
     }
+
+    // Published but not enrolled: preview only (no content list)
+    return (
+      <div className="max-w-2xl mx-auto py-8">
+        <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
+        <p className="mt-1 text-sm text-gray-500">👤 {course.instructor.name}</p>
+        {course.description && (
+          <p className="mt-4 text-gray-600">{course.description}</p>
+        )}
+        <p className="mt-4 text-sm text-gray-500">
+          {course.modules.length} module{course.modules.length !== 1 ? "s" : ""} ·{" "}
+          {course.modules.reduce((sum, m) => sum + m.lessons.length, 0)} lessons
+        </p>
+
+        <div className="mt-8 rounded-lg border bg-white p-6 text-center">
+          {role !== "STUDENT" ? (
+            <p className="text-sm text-gray-500">
+              Enroll in this course to see its content.
+            </p>
+          ) : course.enrollmentMode === "OPEN" ? (
+            <form
+              action={async () => {
+                "use server";
+                const { enrollOpen } = await import("@/actions/courses");
+                await enrollOpen(course.id);
+              }}
+            >
+              <p className="mb-3 text-sm text-gray-600">
+                This course is open for enrollment.
+              </p>
+              <button
+                type="submit"
+                className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Enroll Now
+              </button>
+            </form>
+          ) : course.enrollmentMode === "INVITE_CODE" ? (
+            <form
+              action={async (formData: FormData) => {
+                "use server";
+                const code = formData.get("code") as string;
+                if (!code) return;
+                const { enrollByCode } = await import("@/actions/courses");
+                await enrollByCode(code);
+              }}
+              className="flex justify-center gap-2"
+            >
+              <input
+                name="code"
+                placeholder="Enter invite code"
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Join
+              </button>
+            </form>
+          ) : (
+            <p className="text-sm text-gray-500">
+              Enrollment for this course is managed by the instructor.
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
 
   // Calculate progress
@@ -84,23 +170,68 @@ export default async function CoursePage({
           </div>
           <p className="mt-1 text-sm text-gray-500">
             👤 {course.instructor.name}
-            {course.inviteCode && (
+            {isOwner && course.inviteCode && (
               <span className="ml-3">🔑 Code: {course.inviteCode}</span>
             )}
           </p>
         </div>
-        {isOwner && (
+        <div className="flex items-center gap-2">
           <Link
-            href={`/courses/${course.id}/manage/settings`}
+            href={`/courses/${course.id}/schedule`}
             className="rounded-md border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
           >
-            ⚙️ Settings
+            📅 Schedule
           </Link>
-        )}
+          {isOwner && (
+            <Link
+              href={`/courses/${course.id}/manage/settings`}
+              className="rounded-md border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              ⚙️ Settings
+            </Link>
+          )}
+        </div>
       </div>
 
       {course.description && (
         <p className="mt-4 text-gray-600">{course.description}</p>
+      )}
+
+      {/* Next session */}
+      {nextSession && (
+        <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
+                Next Session
+              </p>
+              <p className="mt-1 font-medium text-gray-900">{nextSession.title}</p>
+              <p className="mt-0.5 text-sm text-gray-600">
+                {new Date(nextSession.date).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                })}{" "}
+                · {nextSession.startTime} – {nextSession.endTime}
+                {nextSession.location && <> · {nextSession.location}</>}
+              </p>
+              {nextSession.lesson && (
+                <Link
+                  href={`/courses/${course.id}/lessons/${nextSession.lesson.id}`}
+                  className="mt-1 inline-block text-sm text-blue-600 hover:underline"
+                >
+                  Lesson: {nextSession.lesson.title} →
+                </Link>
+              )}
+            </div>
+            <Link
+              href={`/courses/${course.id}/schedule`}
+              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+            >
+              View schedule →
+            </Link>
+          </div>
+        </div>
       )}
 
       {/* Progress bar (students) */}
@@ -253,13 +384,16 @@ export default async function CoursePage({
 
       {/* Members link */}
       {(isOwner || isEnrolled) && (
-        <div className="mt-8">
+        <div className="mt-8 flex items-center justify-between">
           <Link
             href={`/courses/${course.id}/members`}
             className="text-sm text-gray-500 hover:text-gray-700"
           >
             👥 View members
           </Link>
+          {isEnrolled && !isOwner && (
+            <UnenrollButton courseId={course.id} courseTitle={course.title} />
+          )}
         </div>
       )}
     </div>

@@ -1,8 +1,14 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { getBookingsForInstructor, getBookingsForStudent } from "@/lib/schedule";
-import ScheduleClient from "./ScheduleClient";
+import {
+  getSessionsForInstructor,
+  getSessionsForStudent,
+  getSessionsForStudents,
+  getAllSessions,
+} from "@/lib/schedule";
+import { toSessionItem } from "@/components/schedule/types";
+import ScheduleView from "@/components/schedule/ScheduleView";
 
 export default async function SchedulePage() {
   const session = await auth();
@@ -11,25 +17,20 @@ export default async function SchedulePage() {
   const role = (session.user as any).role;
   const userId = (session.user as any).id;
 
-  // Admin: show all sessions across all instructors
-  if (role === "ADMIN") {
-    const bookings = await db.booking.findMany({
-      where: { status: { not: "CANCELLED" } },
-      include: {
-        course: { select: { id: true, title: true } },
-        student: { select: { id: true, name: true } },
-        instructor: { select: { id: true, name: true } },
-        attendance: true,
-      },
-      orderBy: [{ date: "asc" }, { startTime: "asc" }],
-    });
+  const windowStart = new Date();
+  windowStart.setDate(windowStart.getDate() - 60);
+  windowStart.setHours(0, 0, 0, 0);
 
+  if (role === "ADMIN") {
+    const sessions = await getAllSessions({ from: windowStart, limit: 300 });
     return (
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-            <p className="text-gray-600">All sessions across all instructors.</p>
+            <p className="text-gray-600">
+              All sessions across all courses (last 60 days onward).
+            </p>
           </div>
           <a
             href="/admin/schedule"
@@ -38,48 +39,36 @@ export default async function SchedulePage() {
             Manage Sessions
           </a>
         </div>
-
-        <ScheduleClient bookings={bookings} role="ADMIN" />
+        <ScheduleView
+          sessions={sessions.map((s) => toSessionItem(s))}
+          showAttendees
+          showInstructor
+        />
       </div>
     );
   }
 
-  // Guardian: get linked student's bookings
   if (role === "GUARDIAN") {
     const links = await db.guardianStudent.findMany({
       where: { guardianId: userId },
       select: { studentId: true },
     });
-
     const studentIds = links.map((l) => l.studentId);
-    const bookings = [];
 
-    for (const studentId of studentIds) {
-      const studentBookings = await db.booking.findMany({
-        where: {
-          studentId,
-          status: { not: "CANCELLED" },
-        },
-        include: {
-          course: { select: { id: true, title: true } },
-          instructor: { select: { id: true, name: true } },
-          attendance: true,
-        },
-        orderBy: [{ date: "asc" }, { startTime: "asc" }],
-        take: 20,
-      });
-      bookings.push(...studentBookings);
-    }
-
-    const students = await db.user.findMany({
-      where: { id: { in: studentIds } },
-      select: { id: true, name: true },
-    });
+    const [sessions, students] = await Promise.all([
+      getSessionsForStudents(studentIds, { from: windowStart }),
+      db.user.findMany({
+        where: { id: { in: studentIds } },
+        select: { id: true, name: true },
+      }),
+    ]);
 
     return (
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Schedule</h1>
-        <p className="text-gray-600 mb-6">View your linked students&apos; upcoming sessions.</p>
+        <p className="text-gray-600 mb-6">
+          View your linked students&apos; sessions.
+        </p>
 
         {students.length > 0 && (
           <div className="mb-6">
@@ -88,7 +77,10 @@ export default async function SchedulePage() {
             </h2>
             <div className="flex gap-2">
               {students.map((s) => (
-                <span key={s.id} className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
+                <span
+                  key={s.id}
+                  className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm"
+                >
                   {s.name}
                 </span>
               ))}
@@ -96,21 +88,25 @@ export default async function SchedulePage() {
           </div>
         )}
 
-        <ScheduleClient bookings={bookings} role="GUARDIAN" />
+        <ScheduleView
+          sessions={sessions.map((s) => toSessionItem(s, studentIds))}
+          showAttendees
+          showInstructor
+        />
       </div>
     );
   }
 
-  // Instructor
   if (role === "INSTRUCTOR") {
-    const bookings = await getBookingsForInstructor(userId);
-
+    const sessions = await getSessionsForInstructor(userId, {
+      from: windowStart,
+    });
     return (
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-            <p className="text-gray-600">Your upcoming sessions.</p>
+            <p className="text-gray-600">Sessions you teach.</p>
           </div>
           <a
             href="/schedule/availability"
@@ -119,41 +115,30 @@ export default async function SchedulePage() {
             Set Availability
           </a>
         </div>
-
-        <ScheduleClient bookings={bookings} role="INSTRUCTOR" />
+        <ScheduleView
+          sessions={sessions.map((s) => toSessionItem(s))}
+          showAttendees
+        />
       </div>
     );
   }
 
   // Student
-  const bookings = await getBookingsForStudent(userId);
-
-  const coursesWithBooking = await db.course.findMany({
-    where: {
-      studentBookingEnabled: true,
-      enrollments: { some: { userId } },
-    },
-    select: { id: true, title: true },
-  });
+  const sessions = await getSessionsForStudent(userId, { from: windowStart });
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-          <p className="text-gray-600">Your upcoming sessions.</p>
-        </div>
-        {coursesWithBooking.length > 0 && (
-          <a
-            href="/schedule/book"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-          >
-            Book a Session
-          </a>
-        )}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
+        <p className="text-gray-600">
+          Your sessions across all courses. Sessions are scheduled by your
+          instructors — check each course&apos;s Schedule tab for details.
+        </p>
       </div>
-
-      <ScheduleClient bookings={bookings} role="STUDENT" />
+      <ScheduleView
+        sessions={sessions.map((s) => toSessionItem(s, [userId]))}
+        showInstructor
+      />
     </div>
   );
 }

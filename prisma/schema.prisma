@@ -27,10 +27,11 @@ model User {
   submissions           Submission[]
   announcements         Announcement[]     @relation("Author")
   coursesCreated        Course[]           @relation("Instructor")
-  bookings              Booking[]          @relation("Student")
-  bookingsAsInstructor  Booking[]          @relation("BookingInstructor")
+  sessionsAsInstructor  ClassSession[]     @relation("SessionInstructor")
+  sessionAttendances    SessionAttendee[]  @relation("SessionStudent")
   availability          Availability[]
-  attendances           Attendance[]       @relation("Instructor")
+  blockedDates          BlockedDate[]
+  notifications         Notification[]
   guardianLinks         GuardianStudent[]  @relation("Guardian")
   studentLinks          GuardianStudent[]  @relation("Student")
 }
@@ -63,14 +64,6 @@ model Course {
   visibility     Visibility     @default(DRAFT)
   enrollmentMode EnrollmentMode @default(OPEN)
   inviteCode     String?        @unique
-  enabledModules String[]       @default([])
-
-  // Scheduling config
-  studentBookingEnabled Boolean @default(false)
-  slotDuration          Int     @default(60)
-  bufferTime            Int     @default(15)
-  maxAdvanceDays        Int     @default(30)
-  cancellationHours     Int     @default(24)
 
   instructorId String
   instructor   User   @relation("Instructor", fields: [instructorId], references: [id])
@@ -78,7 +71,8 @@ model Course {
   modules       Module[]
   enrollments   Enrollment[]
   announcements Announcement[]
-  bookings      Booking[]
+  sessions      ClassSession[]
+  availability  Availability[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -118,6 +112,7 @@ model Lesson {
   resources  Resource[]
   progress   Progress[]
   assignment Assignment?
+  sessions   ClassSession[]
 }
 
 enum LessonType {
@@ -178,7 +173,8 @@ model Availability {
   dayOfWeek Int
   startTime String
   endTime   String
-  courseId   String?
+  courseId  String?
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   active    Boolean  @default(true)
 
   @@unique([userId, dayOfWeek, startTime, courseId])
@@ -187,46 +183,73 @@ model Availability {
 model BlockedDate {
   id        String   @id @default(cuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime @db.Date
   reason    String?
   createdAt DateTime @default(now())
 }
 
-model Booking {
+model ClassSession {
   id           String        @id @default(cuid())
-  courseId      String
-  course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  studentId     String
-  student       User          @relation("Student", fields: [studentId], references: [id])
-  instructorId  String
-  instructor    User          @relation("BookingInstructor", fields: [instructorId], references: [id])
-  date          DateTime      @db.Date
-  startTime     String
-  endTime       String
-  status        BookingStatus @default(CONFIRMED)
-  cancelledAt   DateTime?
-  cancelReason  String?
-  createdAt     DateTime      @default(now())
+  courseId     String
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructorId String
+  instructor   User          @relation("SessionInstructor", fields: [instructorId], references: [id])
+  lessonId     String?
+  lesson       Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  title        String
+  description  String?       @db.Text
+  date         DateTime      @db.Date
+  startTime    String
+  endTime      String
+  location     String?
+  status       SessionStatus @default(SCHEDULED)
+  cancelReason String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  attendance Attendance?
+  attendees SessionAttendee[]
 }
 
-enum BookingStatus {
-  CONFIRMED
+enum SessionStatus {
+  SCHEDULED
   CANCELLED
   COMPLETED
-  NO_SHOW
 }
 
-model Attendance {
-  id           String   @id @default(cuid())
-  bookingId    String   @unique
-  booking      Booking  @relation(fields: [bookingId], references: [id])
-  instructorId String
-  instructor    User     @relation("Instructor", fields: [instructorId], references: [id])
-  present       Boolean
-  notes         String?
-  recordedAt    DateTime @default(now())
+model SessionAttendee {
+  id         String            @id @default(cuid())
+  sessionId  String
+  session    ClassSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    User              @relation("SessionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  attendance AttendanceStatus?
+  notes      String?
+  recordedAt DateTime?
+
+  @@unique([sessionId, studentId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+// ─── Notifications ───
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?   @db.Text
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
 }
 
 // ─── Assignments Module ───

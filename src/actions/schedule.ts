@@ -4,23 +4,66 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { getAvailableSlots } from "@/lib/schedule";
+import { notify } from "@/lib/notifications";
+
+type ActionResult = { success?: boolean; error?: any };
+
+const TIME_REGEX = /^\d{2}:\d{2}$/;
+
+async function requireUser() {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+  return {
+    userId: (session.user as any).id as string,
+    role: (session.user as any).role as string,
+  };
+}
+
+function parseDateOnly(dateStr: string) {
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function isPastDate(date: Date) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date.getTime() < today.getTime();
+}
+
+/** ADMIN can manage any course; INSTRUCTOR only their own. */
+async function requireCourseManager(courseId: string) {
+  const { userId, role } = await requireUser();
+  if (role !== "ADMIN" && role !== "INSTRUCTOR") {
+    throw new Error("Not authorized");
+  }
+  const course = await db.course.findUnique({ where: { id: courseId } });
+  if (!course) throw new Error("Course not found");
+  if (role !== "ADMIN" && course.instructorId !== userId) {
+    throw new Error("Not authorized");
+  }
+  return { userId, role, course };
+}
+
+function revalidateScheduleViews(courseId: string) {
+  revalidatePath("/schedule");
+  revalidatePath("/admin/schedule");
+  revalidatePath("/dashboard");
+  revalidatePath(`/courses/${courseId}/schedule`);
+  revalidatePath(`/courses/${courseId}/manage/schedule`);
+}
 
 // ─── Availability Actions ───
 
 const availabilitySchema = z.object({
   dayOfWeek: z.number().min(0).max(6),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/),
+  startTime: z.string().regex(TIME_REGEX),
+  endTime: z.string().regex(TIME_REGEX),
   courseId: z.string().optional(),
 });
 
-export async function setAvailability(formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
-
+export async function setAvailability(formData: FormData): Promise<ActionResult> {
+  const { userId, role } = await requireUser();
   if (role !== "ADMIN" && role !== "INSTRUCTOR") {
     throw new Error("Not authorized");
   }
@@ -38,37 +81,22 @@ export async function setAvailability(formData: FormData) {
 
   const { dayOfWeek, startTime, endTime, courseId } = parsed.data;
 
-  // Validate endTime > startTime
   if (startTime >= endTime) {
     return { error: { endTime: ["End time must be after start time"] } };
   }
 
-  // Check if availability already exists for this slot
   const existing = await db.availability.findFirst({
-    where: {
-      userId,
-      dayOfWeek,
-      startTime,
-      courseId: courseId || null,
-    },
+    where: { userId, dayOfWeek, startTime, courseId: courseId || null },
   });
 
   if (existing) {
-    // Update existing
     await db.availability.update({
       where: { id: existing.id },
       data: { endTime, active: true },
     });
   } else {
-    // Create new
     await db.availability.create({
-      data: {
-        userId,
-        dayOfWeek,
-        startTime,
-        endTime,
-        courseId: courseId || null,
-      },
+      data: { userId, dayOfWeek, startTime, endTime, courseId: courseId || null },
     });
   }
 
@@ -76,11 +104,8 @@ export async function setAvailability(formData: FormData) {
   return { success: true };
 }
 
-export async function removeAvailability(id: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
+export async function removeAvailability(id: string): Promise<ActionResult> {
+  const { userId, role } = await requireUser();
 
   const availability = await db.availability.findUnique({ where: { id } });
   if (!availability) throw new Error("Availability not found");
@@ -108,12 +133,8 @@ const blockedDateSchema = z.object({
   reason: z.string().max(200).optional(),
 });
 
-export async function addBlockedDate(formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
-
+export async function addBlockedDate(formData: FormData): Promise<ActionResult> {
+  const { userId, role } = await requireUser();
   if (role !== "ADMIN" && role !== "INSTRUCTOR") {
     throw new Error("Not authorized");
   }
@@ -127,32 +148,21 @@ export async function addBlockedDate(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors };
   }
 
-  const dateStr = parsed.data.date;
+  const date = parseDateOnly(parsed.data.date);
 
-  // Check if already blocked
-  const existing = await db.blockedDate.findFirst({
-    where: { userId, date: new Date(dateStr) },
-  });
-
+  const existing = await db.blockedDate.findFirst({ where: { userId, date } });
   if (existing) return { error: "Date is already blocked" };
 
   await db.blockedDate.create({
-    data: {
-      userId,
-      date: new Date(dateStr),
-      reason: parsed.data.reason,
-    },
+    data: { userId, date, reason: parsed.data.reason },
   });
 
   revalidatePath("/schedule/availability");
   return { success: true };
 }
 
-export async function removeBlockedDate(id: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
+export async function removeBlockedDate(id: string): Promise<ActionResult> {
+  const { userId, role } = await requireUser();
 
   const blocked = await db.blockedDate.findUnique({ where: { id } });
   if (!blocked) throw new Error("Blocked date not found");
@@ -173,291 +183,302 @@ export async function getBlockedDates(userId: string) {
   });
 }
 
-// ─── Booking Actions ───
+// ─── Class Session Actions ───
 
-const bookingSchema = z.object({
+const sessionSchema = z.object({
   courseId: z.string(),
-  studentIds: z.array(z.string()).min(1),
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  lessonId: z.string().optional(),
   date: z.string(),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/),
+  startTime: z.string().regex(TIME_REGEX),
+  endTime: z.string().regex(TIME_REGEX),
+  location: z.string().max(300).optional(),
+  studentIds: z.array(z.string()),
+  allEnrolled: z.boolean(),
+  repeatWeeks: z.number().int().min(1).max(12),
 });
 
-export async function createBooking(formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
-
-  if (role !== "ADMIN" && role !== "INSTRUCTOR") {
-    throw new Error("Not authorized");
-  }
-
-  const studentIds = JSON.parse(formData.get("studentIds") as string || "[]");
-
-  const parsed = bookingSchema.safeParse({
+export async function createSession(formData: FormData): Promise<ActionResult> {
+  const parsed = sessionSchema.safeParse({
     courseId: formData.get("courseId"),
-    studentIds,
+    title: formData.get("title"),
+    description: formData.get("description") || undefined,
+    lessonId: formData.get("lessonId") || undefined,
     date: formData.get("date"),
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
+    location: formData.get("location") || undefined,
+    studentIds: JSON.parse((formData.get("studentIds") as string) || "[]"),
+    allEnrolled: formData.get("allEnrolled") === "true",
+    repeatWeeks: Number(formData.get("repeatWeeks") || 1),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors };
   }
 
-  const { courseId, studentIds: students, date, startTime, endTime } = parsed.data;
+  const data = parsed.data;
+  const { course } = await requireCourseManager(data.courseId);
 
-  // Verify course exists and user has access
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) return { error: "Course not found" };
-  if (role !== "ADMIN" && course.instructorId !== userId) {
-    return { error: "Not authorized" };
+  if (data.startTime >= data.endTime) {
+    return { error: "End time must be after start time" };
   }
 
-  const instructorId = role === "ADMIN" ? course.instructorId : userId;
+  const firstDate = parseDateOnly(data.date);
+  if (isNaN(firstDate.getTime())) return { error: "Invalid date" };
+  if (isPastDate(firstDate)) return { error: "Cannot schedule a session in the past" };
 
-  // Check slot availability
-  const bookingDate = new Date(date);
-  const slots = await getAvailableSlots(instructorId, courseId, bookingDate);
-  const slotAvailable = slots.some(
-    (s) => s.startTime === startTime && s.endTime === endTime
-  );
-
-  if (!slotAvailable) {
-    return { error: "Time slot is not available" };
-  }
-
-  // Create bookings (one per student, same time slot)
-  const bookingDateObj = new Date(date);
-  for (const studentId of students) {
-    // Verify student is enrolled
-    const enrollment = await db.enrollment.findUnique({
-      where: { userId_courseId: { userId: studentId, courseId } },
+  if (data.lessonId) {
+    const lesson = await db.lesson.findUnique({
+      where: { id: data.lessonId },
+      include: { module: { select: { courseId: true } } },
     });
-    if (!enrollment) continue;
-
-    await db.booking.create({
-      data: {
-        courseId,
-        studentId,
-        instructorId,
-        date: bookingDateObj,
-        startTime,
-        endTime,
-        status: "CONFIRMED",
-      },
-    });
-  }
-
-  revalidatePath("/schedule");
-  revalidatePath("/admin/schedule");
-  return { success: true };
-}
-
-export async function cancelBooking(bookingId: string, reason?: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
-
-  const booking = await db.booking.findUnique({
-    where: { id: bookingId },
-    include: { course: true },
-  });
-
-  if (!booking) return { error: "Booking not found" };
-
-  // Students can only cancel their own bookings
-  if (role === "STUDENT" && booking.studentId !== userId) {
-    return { error: "Not authorized" };
-  }
-
-  // Instructors/admins can cancel any booking for their courses
-  if (role === "INSTRUCTOR" && booking.course.instructorId !== userId) {
-    return { error: "Not authorized" };
-  }
-
-  // Check cancellation window for students
-  if (role === "STUDENT") {
-    const course = booking.course;
-    const bookingDateTime = new Date(booking.date);
-    const [hours, minutes] = booking.startTime.split(":").map(Number);
-    bookingDateTime.setHours(hours, minutes, 0, 0);
-
-    const now = new Date();
-    const hoursUntil = (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (hoursUntil < course.cancellationHours) {
-      return { error: `Cannot cancel less than ${course.cancellationHours} hours before session` };
+    if (!lesson || lesson.module.courseId !== data.courseId) {
+      return { error: "Lesson does not belong to this course" };
     }
   }
 
-  await db.booking.update({
-    where: { id: bookingId },
-    data: {
-      status: "CANCELLED",
-      cancelledAt: new Date(),
-      cancelReason: reason,
-    },
+  const enrollments = await db.enrollment.findMany({
+    where: { courseId: data.courseId },
+    select: { userId: true },
   });
+  const enrolledIds = new Set(enrollments.map((e) => e.userId));
 
-  revalidatePath("/schedule");
-  revalidatePath("/admin/schedule");
+  const attendeeIds = data.allEnrolled
+    ? Array.from(enrolledIds)
+    : data.studentIds.filter((id) => enrolledIds.has(id));
+
+  if (attendeeIds.length === 0) {
+    return { error: "Select at least one enrolled student" };
+  }
+
+  const dates: Date[] = [];
+  for (let week = 0; week < data.repeatWeeks; week++) {
+    const d = new Date(firstDate);
+    d.setDate(d.getDate() + week * 7);
+    dates.push(d);
+  }
+
+  await db.$transaction(
+    dates.map((date) =>
+      db.classSession.create({
+        data: {
+          courseId: data.courseId,
+          instructorId: course.instructorId,
+          lessonId: data.lessonId || null,
+          title: data.title,
+          description: data.description,
+          date,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          location: data.location,
+          attendees: {
+            createMany: {
+              data: attendeeIds.map((studentId) => ({ studentId })),
+            },
+          },
+        },
+      })
+    )
+  );
+
+  await notify(
+    attendeeIds,
+    "SESSION_CREATED",
+    `New session: ${data.title}`,
+    {
+      body: `${course.title} — ${data.date} at ${data.startTime}${
+        data.repeatWeeks > 1 ? ` (repeats weekly, ${data.repeatWeeks} weeks)` : ""
+      }`,
+      link: `/courses/${data.courseId}/schedule`,
+    }
+  );
+
+  revalidateScheduleViews(data.courseId);
   return { success: true };
 }
 
-export async function getBookingsForCourse(courseId: string) {
-  return db.booking.findMany({
-    where: { courseId, status: { not: "CANCELLED" } },
-    include: {
-      student: { select: { id: true, name: true, email: true } },
-      attendance: true,
-    },
-    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+const sessionUpdateSchema = sessionSchema.omit({
+  courseId: true,
+  studentIds: true,
+  allEnrolled: true,
+  repeatWeeks: true,
+});
+
+export async function updateSession(
+  sessionId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const existing = await db.classSession.findUnique({
+    where: { id: sessionId },
+    include: { attendees: true, course: { select: { title: true } } },
   });
-}
+  if (!existing) return { error: "Session not found" };
 
-export async function getBookingsForInstructor(instructorId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  await requireCourseManager(existing.courseId);
 
-  return db.booking.findMany({
-    where: {
-      instructorId,
-      date: { gte: today },
-      status: { not: "CANCELLED" },
-    },
-    include: {
-      course: { select: { id: true, title: true } },
-      student: { select: { id: true, name: true } },
-      attendance: true,
-    },
-    orderBy: [{ date: "asc" }, { startTime: "asc" }],
-  });
-}
-
-export async function getBookingsForStudent(studentId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return db.booking.findMany({
-    where: {
-      studentId,
-      date: { gte: today },
-      status: { not: "CANCELLED" },
-    },
-    include: {
-      course: { select: { id: true, title: true } },
-      instructor: { select: { id: true, name: true } },
-      attendance: true,
-    },
-    orderBy: [{ date: "asc" }, { startTime: "asc" }],
-  });
-}
-
-// ─── Student Self-Booking ───
-
-export async function bookSlotAsStudent(
-  courseId: string,
-  date: string,
-  startTime: string
-) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
-
-  if (role !== "STUDENT") {
-    return { error: "Only students can self-book" };
+  if (existing.status === "CANCELLED") {
+    return { error: "Cannot edit a cancelled session" };
   }
 
-  // Verify course allows student booking
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) return { error: "Course not found" };
-  if (!course.studentBookingEnabled) {
-    return { error: "Student booking is not enabled for this course" };
-  }
-
-  // Verify student is enrolled
-  const enrollment = await db.enrollment.findUnique({
-    where: { userId_courseId: { userId, courseId } },
-  });
-  if (!enrollment) return { error: "Not enrolled in this course" };
-
-  // Check max advance days
-  const bookingDate = new Date(date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const daysAhead = (bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
-
-  if (daysAhead > course.maxAdvanceDays) {
-    return { error: `Cannot book more than ${course.maxAdvanceDays} days in advance` };
-  }
-
-  // Get available slots
-  const slots = await getAvailableSlots(course.instructorId, courseId, bookingDate);
-  const slot = slots.find((s) => s.startTime === startTime);
-
-  if (!slot) {
-    return { error: "Time slot is not available" };
-  }
-
-  // Check for existing booking by student on same date/time
-  const existing = await db.booking.findFirst({
-    where: {
-      studentId: userId,
-      date: bookingDate,
-      startTime,
-      status: { not: "CANCELLED" },
-    },
+  const parsed = sessionUpdateSchema.safeParse({
+    title: formData.get("title"),
+    description: formData.get("description") || undefined,
+    lessonId: formData.get("lessonId") || undefined,
+    date: formData.get("date"),
+    startTime: formData.get("startTime"),
+    endTime: formData.get("endTime"),
+    location: formData.get("location") || undefined,
   });
 
-  if (existing) {
-    return { error: "You already have a booking at this time" };
+  if (!parsed.success) {
+    return { error: parsed.error.flatten().fieldErrors };
   }
 
-  await db.booking.create({
+  const data = parsed.data;
+
+  if (data.startTime >= data.endTime) {
+    return { error: "End time must be after start time" };
+  }
+
+  const date = parseDateOnly(data.date);
+  if (isNaN(date.getTime())) return { error: "Invalid date" };
+  if (isPastDate(date)) return { error: "Cannot move a session to the past" };
+
+  if (data.lessonId) {
+    const lesson = await db.lesson.findUnique({
+      where: { id: data.lessonId },
+      include: { module: { select: { courseId: true } } },
+    });
+    if (!lesson || lesson.module.courseId !== existing.courseId) {
+      return { error: "Lesson does not belong to this course" };
+    }
+  }
+
+  await db.classSession.update({
+    where: { id: sessionId },
     data: {
-      courseId,
-      studentId: userId,
-      instructorId: course.instructorId,
-      date: bookingDate,
-      startTime,
-      endTime: slot.endTime,
-      status: "CONFIRMED",
+      title: data.title,
+      description: data.description ?? null,
+      lessonId: data.lessonId || null,
+      date,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      location: data.location ?? null,
     },
   });
 
-  revalidatePath("/schedule");
-  revalidatePath("/schedule/book");
+  await notify(
+    existing.attendees.map((a) => a.studentId),
+    "SESSION_UPDATED",
+    `Session updated: ${data.title}`,
+    {
+      body: `${existing.course.title} — now ${data.date} at ${data.startTime}`,
+      link: `/courses/${existing.courseId}/schedule`,
+    }
+  );
+
+  revalidateScheduleViews(existing.courseId);
+  return { success: true };
+}
+
+export async function cancelSession(
+  sessionId: string,
+  reason?: string
+): Promise<ActionResult> {
+  const existing = await db.classSession.findUnique({
+    where: { id: sessionId },
+    include: { attendees: true, course: { select: { title: true } } },
+  });
+  if (!existing) return { error: "Session not found" };
+
+  await requireCourseManager(existing.courseId);
+
+  if (existing.status === "CANCELLED") {
+    return { error: "Session is already cancelled" };
+  }
+
+  await db.classSession.update({
+    where: { id: sessionId },
+    data: { status: "CANCELLED", cancelReason: reason },
+  });
+
+  await notify(
+    existing.attendees.map((a) => a.studentId),
+    "SESSION_CANCELLED",
+    `Session cancelled: ${existing.title}`,
+    {
+      body: `${existing.course.title} — ${existing.date.toISOString().split("T")[0]} at ${existing.startTime}${reason ? `. Reason: ${reason}` : ""}`,
+      link: `/courses/${existing.courseId}/schedule`,
+    }
+  );
+
+  revalidateScheduleViews(existing.courseId);
+  return { success: true };
+}
+
+export async function setSessionAttendees(
+  sessionId: string,
+  studentIds: string[]
+): Promise<ActionResult> {
+  const existing = await db.classSession.findUnique({
+    where: { id: sessionId },
+    include: { attendees: true, course: { select: { title: true } } },
+  });
+  if (!existing) return { error: "Session not found" };
+
+  await requireCourseManager(existing.courseId);
+
+  const enrollments = await db.enrollment.findMany({
+    where: { courseId: existing.courseId },
+    select: { userId: true },
+  });
+  const enrolledIds = new Set(enrollments.map((e) => e.userId));
+  const targetIds = studentIds.filter((id) => enrolledIds.has(id));
+
+  if (targetIds.length === 0) {
+    return { error: "Select at least one enrolled student" };
+  }
+
+  const currentIds = existing.attendees.map((a) => a.studentId);
+  const toAdd = targetIds.filter((id) => !currentIds.includes(id));
+  const toRemove = currentIds.filter((id) => !targetIds.includes(id));
+
+  await db.$transaction([
+    db.sessionAttendee.deleteMany({
+      where: { sessionId, studentId: { in: toRemove } },
+    }),
+    db.sessionAttendee.createMany({
+      data: toAdd.map((studentId) => ({ sessionId, studentId })),
+    }),
+  ]);
+
+  if (toAdd.length > 0) {
+    await notify(toAdd, "SESSION_CREATED", `New session: ${existing.title}`, {
+      body: `${existing.course.title} — ${existing.date.toISOString().split("T")[0]} at ${existing.startTime}`,
+      link: `/courses/${existing.courseId}/schedule`,
+    });
+  }
+
+  revalidateScheduleViews(existing.courseId);
   return { success: true };
 }
 
 // ─── Attendance Actions ───
 
 const attendanceSchema = z.object({
-  bookingId: z.string(),
+  sessionId: z.string(),
   studentId: z.string(),
-  present: z.boolean(),
+  attendance: z.enum(["PRESENT", "ABSENT", "LATE"]),
   notes: z.string().max(500).optional(),
 });
 
-export async function markAttendance(formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
-
-  if (role !== "ADMIN" && role !== "INSTRUCTOR") {
-    throw new Error("Not authorized");
-  }
-
+export async function markAttendance(formData: FormData): Promise<ActionResult> {
   const parsed = attendanceSchema.safeParse({
-    bookingId: formData.get("bookingId"),
+    sessionId: formData.get("sessionId"),
     studentId: formData.get("studentId"),
-    present: formData.get("present") === "true",
+    attendance: formData.get("attendance"),
     notes: formData.get("notes") || undefined,
   });
 
@@ -465,43 +486,54 @@ export async function markAttendance(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors };
   }
 
-  const { bookingId, present, notes } = parsed.data;
+  const { sessionId, studentId, attendance, notes } = parsed.data;
 
-  // Verify booking exists and instructor has access
-  const booking = await db.booking.findUnique({
-    where: { id: bookingId },
-    include: { course: true },
+  const classSession = await db.classSession.findUnique({
+    where: { id: sessionId },
+    include: { course: { select: { title: true } } },
+  });
+  if (!classSession) return { error: "Session not found" };
+
+  await requireCourseManager(classSession.courseId);
+
+  const attendee = await db.sessionAttendee.findUnique({
+    where: { sessionId_studentId: { sessionId, studentId } },
+  });
+  if (!attendee) return { error: "Student is not assigned to this session" };
+
+  await db.sessionAttendee.update({
+    where: { id: attendee.id },
+    data: { attendance, notes, recordedAt: new Date() },
   });
 
-  if (!booking) return { error: "Booking not found" };
-  if (role !== "ADMIN" && booking.course.instructorId !== userId) {
-    return { error: "Not authorized" };
+  // A session with recorded attendance on a past/current date is complete
+  if (classSession.status === "SCHEDULED") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (classSession.date.getTime() <= today.getTime()) {
+      await db.classSession.update({
+        where: { id: sessionId },
+        data: { status: "COMPLETED" },
+      });
+    }
   }
 
-  // Check if attendance already recorded
-  const existing = await db.attendance.findUnique({
-    where: { bookingId },
-  });
-
-  if (existing) {
-    // Update existing
-    await db.attendance.update({
-      where: { bookingId },
-      data: { present, notes, recordedAt: new Date() },
+  if (attendance === "ABSENT") {
+    const guardians = await db.guardianStudent.findMany({
+      where: { studentId },
+      select: { guardianId: true },
     });
-  } else {
-    // Create new
-    await db.attendance.create({
-      data: {
-        bookingId,
-        instructorId: userId,
-        present,
-        notes,
-      },
-    });
+    await notify(
+      [studentId, ...guardians.map((g) => g.guardianId)],
+      "ATTENDANCE_ABSENT",
+      `Marked absent: ${classSession.title}`,
+      {
+        body: `${classSession.course.title} — ${classSession.date.toISOString().split("T")[0]}${notes ? `. ${notes}` : ""}`,
+        link: `/courses/${classSession.courseId}/schedule`,
+      }
+    );
   }
 
-  revalidatePath("/schedule");
-  revalidatePath("/admin/schedule");
+  revalidateScheduleViews(classSession.courseId);
   return { success: true };
 }

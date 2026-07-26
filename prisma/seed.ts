@@ -7,8 +7,9 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Clean existing data
-  await prisma.attendance.deleteMany();
-  await prisma.booking.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.sessionAttendee.deleteMany();
+  await prisma.classSession.deleteMany();
   await prisma.blockedDate.deleteMany();
   await prisma.availability.deleteMany();
   await prisma.submission.deleteMany();
@@ -99,8 +100,6 @@ async function main() {
       enrollmentMode: EnrollmentMode.INVITE_CODE,
       inviteCode: "ENG001",
       instructorId: teacherA.id,
-      enabledModules: ["announcements", "assignments"],
-      studentBookingEnabled: true,
     },
   });
 
@@ -187,8 +186,6 @@ async function main() {
       visibility: Visibility.PUBLISHED,
       enrollmentMode: EnrollmentMode.OPEN,
       instructorId: teacherB.id,
-      enabledModules: [],
-      studentBookingEnabled: false,
     },
   });
 
@@ -280,6 +277,86 @@ async function main() {
       },
     });
   }
+
+  // ─── Class Sessions (English Basics) ───
+
+  const addDays = (base: Date, days: number) => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + days);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+  const today = new Date();
+
+  // Past session — attendance recorded
+  const pastSession = await prisma.classSession.create({
+    data: {
+      courseId: englishCourse.id,
+      instructorId: teacherA.id,
+      lessonId: lessons[0].id,
+      title: "Week 1: Greetings Practice",
+      description: "Live practice of greetings and introductions.",
+      date: addDays(today, -7),
+      startTime: "09:00",
+      endTime: "10:00",
+      location: "Room 101",
+      status: "COMPLETED",
+    },
+  });
+  await prisma.sessionAttendee.create({
+    data: {
+      sessionId: pastSession.id,
+      studentId: studentAlice.id,
+      attendance: "PRESENT",
+      recordedAt: addDays(today, -7),
+    },
+  });
+  await prisma.sessionAttendee.create({
+    data: {
+      sessionId: pastSession.id,
+      studentId: studentBob.id,
+      attendance: "ABSENT",
+      notes: "Sick",
+      recordedAt: addDays(today, -7),
+    },
+  });
+
+  // Upcoming session — linked to a lesson, both students assigned
+  const upcomingSession = await prisma.classSession.create({
+    data: {
+      courseId: englishCourse.id,
+      instructorId: teacherA.id,
+      lessonId: lessons[2].id,
+      title: "Week 2: Numbers & Colors",
+      description: "Group session covering counting and colors.",
+      date: addDays(today, 3),
+      startTime: "09:00",
+      endTime: "10:30",
+      location: "Room 101",
+    },
+  });
+  await prisma.sessionAttendee.createMany({
+    data: [
+      { sessionId: upcomingSession.id, studentId: studentAlice.id },
+      { sessionId: upcomingSession.id, studentId: studentBob.id },
+    ],
+  });
+
+  // Upcoming session — Alice only, no lesson link
+  const soloSession = await prisma.classSession.create({
+    data: {
+      courseId: englishCourse.id,
+      instructorId: teacherA.id,
+      title: "1-on-1 Conversation Practice",
+      date: addDays(today, 5),
+      startTime: "14:00",
+      endTime: "15:00",
+      location: "https://meet.example.com/english",
+    },
+  });
+  await prisma.sessionAttendee.create({
+    data: { sessionId: soloSession.id, studentId: studentAlice.id },
+  });
 
   // ─── Sample Announcement ───
 

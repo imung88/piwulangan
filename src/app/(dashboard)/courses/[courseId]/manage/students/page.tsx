@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import { AddStudentForm, RemoveStudentButton } from "./StudentActions";
 
 export default async function ManageStudentsPage({
   params,
@@ -39,6 +40,13 @@ export default async function ManageStudentsPage({
     redirect("/courses");
   }
 
+  const enrolledIds = course.enrollments.map((e) => e.userId);
+  const candidates = await db.user.findMany({
+    where: { role: "STUDENT", id: { notIn: enrolledIds } },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: "asc" },
+  });
+
   const totalLessons = course.modules.reduce(
     (sum, m) => sum + m.lessons.length,
     0
@@ -59,6 +67,13 @@ export default async function ManageStudentsPage({
         {course.enrollments.length} enrolled · {totalLessons} lessons total
       </p>
 
+      <div className="mt-6 rounded-lg border bg-white p-4">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">
+          ➕ Add Student
+        </h2>
+        <AddStudentForm courseId={params.courseId} candidates={candidates} />
+      </div>
+
       <div className="mt-6 rounded-lg border bg-white overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
@@ -68,6 +83,7 @@ export default async function ManageStudentsPage({
               <th className="px-4 py-3 text-left font-medium text-gray-600">Progress</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Completed</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Enrolled</th>
+              <th className="px-4 py-3 text-right font-medium text-gray-600"></th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -104,6 +120,13 @@ export default async function ManageStudentsPage({
                   <td className="px-4 py-3 text-gray-400 text-xs">
                     {new Date(enrollment.enrolledAt).toLocaleDateString()}
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    <RemoveStudentButton
+                      courseId={params.courseId}
+                      studentId={student.id}
+                      studentName={student.name}
+                    />
+                  </td>
                 </tr>
               );
             })}
@@ -112,7 +135,7 @@ export default async function ManageStudentsPage({
 
         {course.enrollments.length === 0 && (
           <p className="px-4 py-8 text-center text-gray-500">
-            No students enrolled yet. Share the invite code to get started.
+            No students enrolled yet. Add students above or share the invite code.
           </p>
         )}
       </div>
