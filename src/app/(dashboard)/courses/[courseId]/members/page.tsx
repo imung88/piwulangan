@@ -6,8 +6,9 @@ import { redirect, notFound } from "next/navigation";
 export default async function MembersPage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>;
 }) {
+  const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -15,7 +16,7 @@ export default async function MembersPage({
   const role = (session.user as any).role;
 
   const course = await db.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
     include: {
       instructor: true,
       enrollments: {
@@ -50,7 +51,7 @@ export default async function MembersPage({
   return (
     <div>
       <Link
-        href={`/courses/${params.courseId}`}
+        href={`/courses/${courseId}`}
         className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
         ← Back to course

@@ -6,7 +6,7 @@ Step-by-step guide to get Piwulangan running on your machine.
 
 ## Prerequisites
 
-- **Node.js** 18+ (you have v22, that's fine)
+- **Node.js** 20+ (Next.js 15 requires it; v22 is fine)
 - **Docker** (for local PostgreSQL)
 - **npm** (you're using npm)
 
@@ -116,19 +116,25 @@ You'll be redirected to the login page. Sign in with any test account.
 
 ---
 
-## What's Built (Phase 0 + Phase 1)
+## What's Built (Phase 0 – 5)
 
 ### Auth
 - Login / signup with email + password
 - Role-based access control (admin, instructor, student, guardian)
 - Route protection via middleware
 
+### Scheduling
+- Course-centric scheduling with sessions, availability blocks, and instructor availability
+- Admin schedule management
+- Instructor availability editor
+- Student schedule viewer
+
 ### Courses
 - Create new course (title, description, enrollment mode)
 - Course list page (role-aware: shows enrolled courses for students, own courses for instructors)
 - Course overview with module/lesson tree, progress bar, announcements
 - Edit course settings (title, description, enrollment mode)
-- Publish / unpublish course
+- Publish / unpublish / archive course
 - Delete course
 - Invite code enrollment (students enter code to join)
 - Manual enrollment (instructor/admin adds students)
@@ -152,15 +158,23 @@ You'll be redirected to the login page. Sign in with any test account.
 - Checkmarks on lesson list
 - Instructor view: per-student progress table
 
+### Announcements
+- Course-level announcements with pinning
+- Announcements management (create, edit, delete, pin/unpin)
+
+### Members
+- Course roster page showing all enrolled students
+- Per-student progress percentage
+
 ### Dashboards
 - Admin: quick links to manage users, courses, schedule
 - Instructor: today's sessions, my courses with student counts
 - Student: upcoming sessions, course progress bars
 - Guardian: linked student's progress (read-only)
 
-### Members
-- Course roster page showing all enrolled students
-- Per-student progress percentage
+### Admin & User Management
+- Admin user management (create, edit, delete, role assignment)
+- Guardian linking to student accounts
 
 ---
 
@@ -189,13 +203,13 @@ password123
 
 ---
 
-## What's NOT Built Yet (Next Phases)
+## What's NOT Built Yet
 
-- Scheduling (sessions, availability, booking) — Phase 2
-- Assignments module — Phase 4
-- Announcements module — Phase 4
-- Admin user management, guardian linking — Phase 5
-- Vercel deployment — Phase 6
+- **Assignments module** — create assignments, student submissions, instructor grading with feedback (Phase 4.2)
+- **Deployment** — Vercel or other production deployment (Phase 6)
+- **Tests & audit** — automated tests, SEO audit, deployment config (not yet started)
+
+> Note: This is a local development setup guide. For project-level scope, status, and the Next.js 14 → 15 migration record, see `DEVELOPMENT_PLAN.md` and `MIGRATION_14_TO_15.md` in the repo root.
 
 ---
 

@@ -36,3 +36,5 @@ prisma/*.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+MIGRATION.md
+MIGRATION_14_TO_15.md

@@ -7,8 +7,9 @@ import { updateCourse, publishCourse, unpublishCourse, deleteCourse, archiveCour
 export default async function CourseSettingsPage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>;
 }) {
+  const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -16,7 +17,7 @@ export default async function CourseSettingsPage({
   const role = (session.user as any).role;
 
   const course = await db.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
   });
 
   if (!course) notFound();
@@ -28,7 +29,7 @@ export default async function CourseSettingsPage({
   return (
     <div>
       <Link
-        href={`/courses/${params.courseId}`}
+        href={`/courses/${courseId}`}
         className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
         ← Back to course
@@ -43,7 +44,7 @@ export default async function CourseSettingsPage({
         <form
           action={async (formData: FormData) => {
             "use server";
-            await updateCourse(params.courseId, formData);
+            await updateCourse(courseId, formData);
           }}
           className="space-y-4"
         >
@@ -118,7 +119,7 @@ export default async function CourseSettingsPage({
           <form
             action={async () => {
               "use server";
-              await publishCourse(params.courseId);
+              await publishCourse(courseId);
             }}
           >
             <button
@@ -134,7 +135,7 @@ export default async function CourseSettingsPage({
             <form
               action={async () => {
                 "use server";
-                await unpublishCourse(params.courseId);
+                await unpublishCourse(courseId);
               }}
             >
               <button
@@ -148,7 +149,7 @@ export default async function CourseSettingsPage({
               <form
                 action={async () => {
                   "use server";
-                  await archiveCourse(params.courseId);
+                  await archiveCourse(courseId);
                 }}
               >
                 <button
@@ -165,7 +166,7 @@ export default async function CourseSettingsPage({
           <form
             action={async () => {
               "use server";
-              await unarchiveCourse(params.courseId);
+              await unarchiveCourse(courseId);
             }}
           >
             <button
@@ -201,7 +202,7 @@ export default async function CourseSettingsPage({
         <form
           action={async () => {
             "use server";
-            await deleteCourse(params.courseId);
+            await deleteCourse(courseId);
           }}
         >
           <button

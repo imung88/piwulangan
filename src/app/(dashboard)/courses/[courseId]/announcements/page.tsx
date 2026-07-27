@@ -6,8 +6,9 @@ import { redirect, notFound } from "next/navigation";
 export default async function AnnouncementsPage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>;
 }) {
+  const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -15,7 +16,7 @@ export default async function AnnouncementsPage({
   const role = (session.user as any).role;
 
   const course = await db.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
     include: { enrollments: true },
   });
   if (!course) notFound();
@@ -29,7 +30,7 @@ export default async function AnnouncementsPage({
     const link = await db.guardianStudent.findFirst({
       where: {
         guardianId: userId,
-        student: { enrollments: { some: { courseId: params.courseId } } },
+        student: { enrollments: { some: { courseId } } },
       },
     });
     isGuardianLinked = !!link;
@@ -46,7 +47,7 @@ export default async function AnnouncementsPage({
   }
 
   const announcements = await db.announcement.findMany({
-    where: { courseId: params.courseId },
+    where: { courseId },
     include: { author: true },
     orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
   });
@@ -54,7 +55,7 @@ export default async function AnnouncementsPage({
   return (
     <div>
       <Link
-        href={`/courses/${params.courseId}`}
+        href={`/courses/${courseId}`}
         className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
         ← Back to course
@@ -65,7 +66,7 @@ export default async function AnnouncementsPage({
 
       {isOwner && (
         <Link
-          href={`/courses/${params.courseId}/manage/announcements`}
+          href={`/courses/${courseId}/manage/announcements`}
           className="mt-3 inline-block text-sm text-metro-blue hover:underline"
         >
           Manage announcements →

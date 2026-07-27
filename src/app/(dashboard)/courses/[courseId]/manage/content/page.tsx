@@ -8,8 +8,9 @@ import { LessonEditForm } from "./LessonEditForm";
 export default async function ManageContentPage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>;
 }) {
+  const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -17,7 +18,7 @@ export default async function ManageContentPage({
   const role = (session.user as any).role;
 
   const course = await db.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
     include: {
       modules: {
         include: {
@@ -42,7 +43,7 @@ export default async function ManageContentPage({
       <div className="flex items-center justify-between">
         <div>
           <Link
-            href={`/courses/${params.courseId}`}
+            href={`/courses/${courseId}`}
             className="text-sm text-metro-text-secondary hover:text-metro-text"
           >
             ← Back to course
@@ -59,7 +60,7 @@ export default async function ManageContentPage({
           action={async (formData: FormData) => {
             "use server";
             const title = formData.get("moduleTitle") as string;
-            if (title) await createModule(params.courseId, title);
+            if (title) await createModule(courseId, title);
           }}
           className="flex gap-2"
         >
@@ -107,7 +108,7 @@ export default async function ManageContentPage({
                 <LessonEditForm
                   key={lesson.id}
                   lessonId={lesson.id}
-                  courseId={params.courseId}
+                  courseId={courseId}
                   initialTitle={lesson.title}
                   initialDuration={lesson.duration}
                   initialContent={lesson.content}
@@ -119,7 +120,7 @@ export default async function ManageContentPage({
 
             {/* Add Lesson */}
             <div className="border-t border-metro-border px-4 py-3">
-              <AddLessonForm moduleId={mod.id} courseId={params.courseId} />
+              <AddLessonForm moduleId={mod.id} courseId={courseId} />
             </div>
           </div>
         ))}

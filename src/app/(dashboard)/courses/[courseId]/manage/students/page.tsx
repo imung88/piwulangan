@@ -7,8 +7,9 @@ import { AddStudentForm, RemoveStudentButton } from "./StudentActions";
 export default async function ManageStudentsPage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>;
 }) {
+  const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -16,7 +17,7 @@ export default async function ManageStudentsPage({
   const role = (session.user as any).role;
 
   const course = await db.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
     include: {
       enrollments: {
         include: {
@@ -55,7 +56,7 @@ export default async function ManageStudentsPage({
   return (
     <div>
       <Link
-        href={`/courses/${params.courseId}`}
+        href={`/courses/${courseId}`}
         className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
         ← Back to course
@@ -71,7 +72,7 @@ export default async function ManageStudentsPage({
         <h2 className="metro-section-title mb-3">
           add student
         </h2>
-        <AddStudentForm courseId={params.courseId} candidates={candidates} />
+        <AddStudentForm courseId={courseId} candidates={candidates} />
       </div>
 
       <div className="mt-6 border border-metro-border bg-metro-surface overflow-x-auto">
@@ -122,7 +123,7 @@ export default async function ManageStudentsPage({
                   </td>
                   <td className="px-4 py-3 text-right">
                     <RemoveStudentButton
-                      courseId={params.courseId}
+                      courseId={courseId}
                       studentId={student.id}
                       studentName={student.name}
                     />

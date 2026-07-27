@@ -15,8 +15,9 @@ import AvailabilityDisplay from "@/components/schedule/AvailabilityDisplay";
 export default async function CourseSchedulePage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>;
 }) {
+  const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -24,7 +25,7 @@ export default async function CourseSchedulePage({
   const role = (session.user as any).role;
 
   const course = await db.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
     include: {
       instructor: { select: { id: true, name: true } },
       enrollments: { where: { userId } },

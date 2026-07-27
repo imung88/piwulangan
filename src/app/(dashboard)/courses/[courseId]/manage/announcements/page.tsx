@@ -11,8 +11,9 @@ import {
 export default async function ManageAnnouncementsPage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>;
 }) {
+  const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -20,7 +21,7 @@ export default async function ManageAnnouncementsPage({
   const role = (session.user as any).role;
 
   const course = await db.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
   });
   if (!course) notFound();
 
@@ -29,7 +30,7 @@ export default async function ManageAnnouncementsPage({
   }
 
   const announcements = await db.announcement.findMany({
-    where: { courseId: params.courseId },
+    where: { courseId },
     include: { author: true },
     orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
   });
@@ -39,7 +40,7 @@ export default async function ManageAnnouncementsPage({
       <div className="flex items-start justify-between">
         <div>
           <Link
-            href={`/courses/${params.courseId}`}
+            href={`/courses/${courseId}`}
             className="text-sm text-metro-text-secondary hover:text-metro-text"
           >
             ← Back to course
@@ -56,7 +57,7 @@ export default async function ManageAnnouncementsPage({
         <form
           action={async (formData: FormData) => {
             "use server";
-            await createAnnouncement(params.courseId, formData);
+            await createAnnouncement(courseId, formData);
           }}
           className="space-y-4"
         >

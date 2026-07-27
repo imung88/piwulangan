@@ -7,8 +7,9 @@ import { toggleProgress } from "@/actions/progress";
 export default async function LessonPage({
   params,
 }: {
-  params: { courseId: string; lessonId: string };
+  params: Promise<{ courseId: string; lessonId: string }>;
 }) {
+  const { courseId, lessonId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -16,7 +17,7 @@ export default async function LessonPage({
   const role = (session.user as any).role;
 
   const course = await db.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
     include: {
       instructor: true,
       enrollments: { where: { userId } },
@@ -66,7 +67,7 @@ export default async function LessonPage({
   const allLessons = course.modules.flatMap((m) =>
     m.lessons.map((l) => ({ ...l, moduleTitle: m.title, moduleOrder: m.order }))
   );
-  const lessonIndex = allLessons.findIndex((l) => l.id === params.lessonId);
+  const lessonIndex = allLessons.findIndex((l) => l.id === lessonId);
   if (lessonIndex === -1) notFound();
 
   const lesson = allLessons[lessonIndex];
@@ -103,7 +104,7 @@ export default async function LessonPage({
     <div className="max-w-3xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-metro-text-secondary mb-6">
-        <Link href={`/courses/${params.courseId}`} className="hover:text-metro-text">
+        <Link href={`/courses/${courseId}`} className="hover:text-metro-text">
           ← Back
         </Link>
         <span>/</span>
@@ -126,7 +127,7 @@ export default async function LessonPage({
           {linkedSessions.map((s) => (
             <Link
               key={s.id}
-              href={`/courses/${params.courseId}/schedule`}
+              href={`/courses/${courseId}/schedule`}
               className="block border border-metro-blue bg-metro-blue-light px-3 py-2 text-sm text-metro-blue hover:bg-metro-blue-light"
             >
               📅 Scheduled:{" "}
@@ -182,7 +183,7 @@ export default async function LessonPage({
           <form
             action={async () => {
               "use server";
-              await toggleProgress(params.lessonId);
+              await toggleProgress(lessonId);
             }}
           >
             <button
@@ -203,7 +204,7 @@ export default async function LessonPage({
       <div className="mt-8 flex items-center justify-between border-t border-metro-border pt-6">
         {prevLesson ? (
           <Link
-            href={`/courses/${params.courseId}/lessons/${prevLesson.id}`}
+            href={`/courses/${courseId}/lessons/${prevLesson.id}`}
             className="text-sm text-metro-blue hover:underline"
           >
             ← {prevLesson.title}
@@ -213,14 +214,14 @@ export default async function LessonPage({
         )}
         {nextLesson ? (
           <Link
-            href={`/courses/${params.courseId}/lessons/${nextLesson.id}`}
+            href={`/courses/${courseId}/lessons/${nextLesson.id}`}
             className="text-sm text-metro-blue hover:underline"
           >
             {nextLesson.title} →
           </Link>
         ) : (
           <Link
-            href={`/courses/${params.courseId}`}
+            href={`/courses/${courseId}`}
             className="text-sm text-metro-blue hover:underline"
           >
             Back to course →
