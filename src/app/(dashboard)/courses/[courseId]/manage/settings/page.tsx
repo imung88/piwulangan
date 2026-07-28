@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { updateCourse, publishCourse, unpublishCourse, deleteCourse, archiveCourse, unarchiveCourse } from "@/actions/courses";
+import { serverT, formatT } from "@/lib/i18n/serverT";
 
 export default async function CourseSettingsPage({
   params,
@@ -26,21 +27,48 @@ export default async function CourseSettingsPage({
     redirect("/courses");
   }
 
+  const labels = {
+    back: await serverT("settings.back"),
+    title: await serverT("settings.title"),
+    courseDetails: await serverT("settings.courseDetails"),
+    titleLbl: await serverT("settings.titleLbl"),
+    description: await serverT("settings.description"),
+    coverImage: await serverT("settings.coverImage"),
+    enrollmentMode: await serverT("settings.enrollmentMode"),
+    enrollmentOpen: await serverT("settings.enrollmentOpen"),
+    enrollmentInvite: await serverT("settings.enrollmentInvite"),
+    enrollmentManual: await serverT("settings.enrollmentManual"),
+    saveChanges: await serverT("settings.saveChanges"),
+    visibility: await serverT("settings.visibility"),
+    publishedDesc: await serverT("settings.publishedDesc"),
+    archivedDesc: await serverT("settings.archivedDesc"),
+    draftDesc: await serverT("settings.draftDesc"),
+    publish: await serverT("settings.publish"),
+    unpublish: await serverT("settings.unpublish"),
+    archive: await serverT("settings.archive"),
+    unarchive: await serverT("settings.unarchive"),
+    inviteCode: await serverT("settings.inviteCode"),
+    inviteDesc: await serverT("settings.inviteDesc"),
+    danger: await serverT("settings.danger"),
+    dangerDesc: await serverT("settings.dangerDesc"),
+    delete: await serverT("settings.delete"),
+  };
+
   return (
     <div>
       <Link
         href={`/courses/${courseId}`}
         className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
-        ← Back to course
+        {labels.back}
       </Link>
       <h1 className="metro-page-title mt-2">
-        Course Settings
+        {labels.title}
       </h1>
 
       {/* Edit form */}
       <div className="mt-6 metro-card p-6">
-        <h2 className="metro-section-title mb-4">course details</h2>
+        <h2 className="metro-section-title mb-4">{labels.courseDetails}</h2>
         <form
           action={async (formData: FormData) => {
             "use server";
@@ -49,7 +77,7 @@ export default async function CourseSettingsPage({
           className="space-y-4"
         >
           <div>
-            <label className="block text-sm font-medium text-metro-text">Title</label>
+            <label className="block text-sm font-medium text-metro-text">{labels.titleLbl}</label>
             <input
               name="title"
               defaultValue={course.title}
@@ -60,7 +88,7 @@ export default async function CourseSettingsPage({
           </div>
           <div>
             <label className="block text-sm font-medium text-metro-text">
-              Description
+              {labels.description}
             </label>
             <textarea
               name="description"
@@ -72,7 +100,7 @@ export default async function CourseSettingsPage({
           </div>
           <div>
             <label className="block text-sm font-medium text-metro-text">
-              Cover Image URL
+              {labels.coverImage}
             </label>
             <input
               name="coverImageUrl"
@@ -84,36 +112,36 @@ export default async function CourseSettingsPage({
           </div>
           <div>
             <label className="block text-sm font-medium text-metro-text">
-              Enrollment Mode
+              {labels.enrollmentMode}
             </label>
             <select
               name="enrollmentMode"
               defaultValue={course.enrollmentMode}
               className="metro-input mt-1 block w-full px-3 py-2 text-sm"
             >
-              <option value="OPEN">Open — anyone with the link</option>
-              <option value="INVITE_CODE">Invite Code — students enter a code</option>
-              <option value="MANUAL">Manual — admin adds students</option>
+              <option value="OPEN">{labels.enrollmentOpen}</option>
+              <option value="INVITE_CODE">{labels.enrollmentInvite}</option>
+              <option value="MANUAL">{labels.enrollmentManual}</option>
             </select>
           </div>
           <button
             type="submit"
             className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
           >
-            Save Changes
+            {labels.saveChanges}
           </button>
         </form>
       </div>
 
       {/* Publish/Unpublish */}
       <div className="mt-6 metro-card p-6">
-        <h2 className="metro-section-title mb-2">visibility</h2>
+        <h2 className="metro-section-title mb-2">{labels.visibility}</h2>
         <p className="text-sm text-metro-text-secondary mb-4">
           {course.visibility === "PUBLISHED"
-            ? "This course is published and visible to enrolled students."
+            ? labels.publishedDesc
             : course.visibility === "ARCHIVED"
-            ? "This course is archived. It is hidden from students and instructors."
-            : "This course is a draft. Only you and admins can see it."}
+            ? labels.archivedDesc
+            : labels.draftDesc}
         </p>
         {course.visibility === "DRAFT" && (
           <form
@@ -126,7 +154,7 @@ export default async function CourseSettingsPage({
               type="submit"
               className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
             >
-              Publish Course
+              {labels.publish}
             </button>
           </form>
         )}
@@ -142,7 +170,7 @@ export default async function CourseSettingsPage({
                 type="submit"
                 className="bg-metro-orange px-4 py-2 text-sm font-medium text-white hover:opacity-90"
               >
-                Unpublish (Back to Draft)
+                {labels.unpublish}
               </button>
             </form>
             {role === "ADMIN" && (
@@ -156,7 +184,7 @@ export default async function CourseSettingsPage({
                   type="submit"
                   className="bg-metro-chrome-dark px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                 >
-                  Archive Course
+                  {labels.archive}
                 </button>
               </form>
             )}
@@ -165,15 +193,15 @@ export default async function CourseSettingsPage({
         {course.visibility === "ARCHIVED" && role === "ADMIN" && (
           <form
             action={async () => {
-              "use server";
-              await unarchiveCourse(courseId);
+                "use server";
+                await unarchiveCourse(courseId);
             }}
           >
             <button
               type="submit"
               className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
             >
-              Unarchive Course
+              {labels.unarchive}
             </button>
           </form>
         )}
@@ -182,9 +210,9 @@ export default async function CourseSettingsPage({
       {/* Invite Code */}
       {course.inviteCode && (
         <div className="mt-6 metro-card p-6">
-          <h2 className="metro-section-title mb-2">invite code</h2>
+          <h2 className="metro-section-title mb-2">{labels.inviteCode}</h2>
           <p className="text-sm text-metro-text-secondary mb-2">
-            Share this code with students so they can enroll.
+            {labels.inviteDesc}
           </p>
           <code className="text-2xl font-mono font-bold tracking-wider text-metro-blue">
             {course.inviteCode}
@@ -194,10 +222,9 @@ export default async function CourseSettingsPage({
 
       {/* Danger Zone */}
       <div className="mt-6 metro-card p-6" style={{ borderLeftColor: "var(--metro-error)" }}>
-        <h2 className="metro-section-title mb-2 text-metro-error">danger zone</h2>
+        <h2 className="metro-section-title mb-2 text-metro-error">{labels.danger}</h2>
         <p className="text-sm text-metro-error mb-4">
-          Deleting a course is permanent. All lessons, progress, and enrollments will be
-          lost.
+          {labels.dangerDesc}
         </p>
         <form
           action={async () => {
@@ -209,7 +236,7 @@ export default async function CourseSettingsPage({
             type="submit"
             className="bg-metro-error px-4 py-2 text-sm font-medium text-white hover:opacity-90"
           >
-            Delete Course
+            {labels.delete}
           </button>
         </form>
       </div>

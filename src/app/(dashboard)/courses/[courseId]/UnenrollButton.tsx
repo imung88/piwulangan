@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/useT";
+import { format } from "@/lib/i18n/useT";
 import { unenrollSelf } from "@/actions/courses";
 
 export default function UnenrollButton({
@@ -12,15 +14,12 @@ export default function UnenrollButton({
   courseTitle: string;
 }) {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
 
   async function handleUnenroll() {
-    if (
-      !confirm(
-        `Leave "${courseTitle}"? Your progress will be kept, but you will lose access to the course.`
-      )
-    )
-      return;
+    const msg = format(t("unenroll.confirm"), { title: courseTitle });
+    if (!confirm(msg)) return;
     setLoading(true);
     await unenrollSelf(courseId);
     setLoading(false);
@@ -34,7 +33,7 @@ export default function UnenrollButton({
       disabled={loading}
       className="text-sm text-metro-error hover:underline disabled:opacity-50"
     >
-      Leave course
+      {t("unenroll.leaveCourse")}
     </button>
   );
 }

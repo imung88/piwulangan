@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import { serverT, formatT } from "@/lib/i18n/serverT";
 
 export default async function MembersPage({
   params,
@@ -33,7 +34,6 @@ export default async function MembersPage({
       },
     },
   });
-
   if (!course) notFound();
 
   const isOwner = course.instructorId === userId || role === "ADMIN";
@@ -48,33 +48,38 @@ export default async function MembersPage({
     0
   );
 
+  const labels = {
+    back: await serverT("members.back"),
+    title: await serverT("members.title"),
+    instructor: await serverT("members.instructor"),
+    students: await serverT("members.students"),
+    noStudents: await serverT("members.noStudents"),
+    lessonsCompleted: await serverT("members.lessonsCompleted"),
+  };
+
   return (
     <div>
       <Link
         href={`/courses/${courseId}`}
         className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
-        ← Back to course
+        {labels.back}
       </Link>
       <h1 className="metro-page-title mt-2">
-        Members: {course.title}
+        {formatT(labels.title, { title: course.title })}
       </h1>
 
-      {/* Instructor */}
       <div className="mt-6">
-        <h2 className="metro-section-title">
-          instructor
-        </h2>
+        <h2 className="metro-section-title">{labels.instructor}</h2>
         <div className="mt-2 metro-card">
           <p className="font-medium">👤 {course.instructor.name}</p>
           <p className="text-sm text-metro-text-secondary">{course.instructor.email}</p>
         </div>
       </div>
 
-      {/* Students */}
       <div className="mt-6">
         <h2 className="metro-section-title">
-          students ({course.enrollments.length})
+          {formatT(labels.students, { n: course.enrollments.length })}
         </h2>
         <div className="mt-2 space-y-2">
           {course.enrollments.map((enrollment) => {
@@ -101,14 +106,14 @@ export default async function MembersPage({
                 <div className="text-right">
                   <p className="text-sm font-medium">{percentage}%</p>
                   <p className="text-xs text-metro-text-secondary">
-                    {completedCount}/{totalLessons} lessons
+                    {formatT(labels.lessonsCompleted, { done: completedCount, total: totalLessons })}
                   </p>
                 </div>
               </div>
             );
           })}
           {course.enrollments.length === 0 && (
-            <p className="text-sm text-metro-text-secondary py-4">No students enrolled yet.</p>
+            <p className="text-sm text-metro-text-secondary py-4">{labels.noStudents}</p>
           )}
         </div>
       </div>

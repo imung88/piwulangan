@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { AddStudentForm, RemoveStudentButton } from "./StudentActions";
+import { serverT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageStudentsPage({
   params,
@@ -53,24 +54,37 @@ export default async function ManageStudentsPage({
     0
   );
 
+  const labels = {
+    back: await serverT("courseManage.back"),
+    title: await serverT("courseManage.studentsTitle"),
+    enrolledAndLessons: await serverT("courseManage.enrolledAndLessons"),
+    addStudent: await serverT("courseManage.addStudent"),
+    student: await serverT("courseManage.student"),
+    email: await serverT("courseManage.email"),
+    progress: await serverT("courseManage.progress"),
+    completed: await serverT("courseManage.completed"),
+    enrolled: await serverT("courseManage.enrolled"),
+    noStudents: await serverT("courseManage.noStudents"),
+  };
+
   return (
     <div>
       <Link
         href={`/courses/${courseId}`}
         className="text-sm text-metro-text-secondary hover:text-metro-text"
       >
-        ← Back to course
+        {labels.back}
       </Link>
       <h1 className="metro-page-title mt-2">
-        Students: {course.title}
+        {formatT(labels.title, { title: course.title })}
       </h1>
       <p className="text-sm text-metro-text-secondary mt-1">
-        {course.enrollments.length} enrolled · {totalLessons} lessons total
+        {formatT(labels.enrolledAndLessons, { n: course.enrollments.length, total: totalLessons })}
       </p>
 
       <div className="mt-6 metro-card">
         <h2 className="metro-section-title mb-3">
-          add student
+          {labels.addStudent}
         </h2>
         <AddStudentForm courseId={courseId} candidates={candidates} />
       </div>
@@ -79,11 +93,11 @@ export default async function ManageStudentsPage({
         <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-metro-bg border-b border-metro-border">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">Student</th>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">Email</th>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">Progress</th>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">Completed</th>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">Enrolled</th>
+              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.student}</th>
+              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.email}</th>
+              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.progress}</th>
+              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.completed}</th>
+              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.enrolled}</th>
               <th className="px-4 py-3 text-right font-medium text-metro-text-secondary"></th>
             </tr>
           </thead>
@@ -136,7 +150,7 @@ export default async function ManageStudentsPage({
 
         {course.enrollments.length === 0 && (
           <p className="px-4 py-8 text-center text-metro-text-secondary">
-            No students enrolled yet. Add students above or share the invite code.
+            {labels.noStudents}
           </p>
         )}
       </div>

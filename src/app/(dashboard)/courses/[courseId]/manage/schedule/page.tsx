@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSessionsForCourse } from "@/lib/schedule";
 import ManageScheduleClient from "./ManageScheduleClient";
+import { serverT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageSchedulePage({
   params,
@@ -45,6 +46,12 @@ export default async function ManageSchedulePage({
     }))
   );
 
+  const labels = {
+    back: await serverT("schedule.back"),
+    manageTitle: await serverT("schedule.manageSessions"),
+    manageDesc: await serverT("schedule.manageDesc"),
+  };
+
   return (
     <div>
       <div className="mb-6">
@@ -52,13 +59,13 @@ export default async function ManageSchedulePage({
           href={`/courses/${course.id}/schedule`}
           className="text-sm text-metro-text-secondary hover:text-metro-text"
         >
-          ← Course schedule
+          {labels.back}
         </Link>
         <h1 className="metro-page-title mt-1">
-          Manage Sessions — {course.title}
+          {formatT(labels.manageTitle, { title: course.title })}
         </h1>
         <p className="text-metro-text-secondary">
-          Create sessions, assign students, and record attendance.
+          {labels.manageDesc}
         </p>
       </div>
 

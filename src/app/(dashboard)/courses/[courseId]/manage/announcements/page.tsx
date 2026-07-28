@@ -7,6 +7,7 @@ import {
   deleteAnnouncement,
   togglePin,
 } from "@/actions/announcements";
+import { serverT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageAnnouncementsPage({
   params,
@@ -35,6 +36,21 @@ export default async function ManageAnnouncementsPage({
     orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
   });
 
+  const labels = {
+    back: await serverT("courseManage.back"),
+    title: await serverT("courseManage.announceTitle"),
+    newAnnouncement: await serverT("courseManage.newAnnouncement"),
+    allAnnouncements: await serverT("courseManage.allAnnouncements"),
+    titleLbl: await serverT("courseManage.title"),
+    body: await serverT("courseManage.body"),
+    pinAnnouncement: await serverT("courseManage.pinAnnouncement"),
+    createAnnouncement: await serverT("courseManage.createAnnouncement"),
+    noAnnouncements: await serverT("courseManage.noAnnouncements"),
+    unpin: await serverT("courseManage.unpin"),
+    pin: await serverT("courseManage.pin"),
+    delete: await serverT("courseManage.delete"),
+  };
+
   return (
     <div>
       <div className="flex items-start justify-between">
@@ -43,17 +59,17 @@ export default async function ManageAnnouncementsPage({
             href={`/courses/${courseId}`}
             className="text-sm text-metro-text-secondary hover:text-metro-text"
           >
-            ← Back to course
+            {labels.back}
           </Link>
           <h1 className="metro-page-title mt-2">
-            Manage Announcements: {course.title}
+            {formatT(labels.title, { title: course.title })}
           </h1>
         </div>
       </div>
 
       {/* Create form */}
       <div className="mt-6 metro-card p-6">
-        <h2 className="metro-section-title mb-4">new announcement</h2>
+        <h2 className="metro-section-title mb-4">{labels.newAnnouncement}</h2>
         <form
           action={async (formData: FormData) => {
             "use server";
@@ -63,7 +79,7 @@ export default async function ManageAnnouncementsPage({
         >
           <div>
             <label className="block text-sm font-medium text-metro-text">
-              Title
+              {labels.titleLbl}
             </label>
             <input
               name="title"
@@ -74,7 +90,7 @@ export default async function ManageAnnouncementsPage({
           </div>
           <div>
             <label className="block text-sm font-medium text-metro-text">
-              Body
+              {labels.body}
             </label>
             <textarea
               name="body"
@@ -91,14 +107,14 @@ export default async function ManageAnnouncementsPage({
               className="border-metro-border text-metro-blue"
             />
             <label htmlFor="pinned" className="text-sm text-metro-text">
-              Pin this announcement
+              {labels.pinAnnouncement}
             </label>
           </div>
           <button
             type="submit"
             className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
           >
-            Create Announcement
+            {labels.createAnnouncement}
           </button>
         </form>
       </div>
@@ -106,10 +122,10 @@ export default async function ManageAnnouncementsPage({
       {/* Announcements list */}
       <div className="mt-8">
         <h2 className="metro-section-title mb-4">
-          all announcements ({announcements.length})
+          {formatT(labels.allAnnouncements, { n: announcements.length })}
         </h2>
         {announcements.length === 0 ? (
-          <p className="text-sm text-metro-text-secondary">No announcements yet.</p>
+          <p className="text-sm text-metro-text-secondary">{labels.noAnnouncements}</p>
         ) : (
           <div className="space-y-3">
             {announcements.map((a) => (
@@ -145,7 +161,7 @@ export default async function ManageAnnouncementsPage({
                       <button
                         type="submit"
                         className="text-sm text-metro-text-secondary hover:text-metro-blue"
-                        title={a.pinned ? "Unpin" : "Pin"}
+                        title={a.pinned ? labels.unpin : labels.pin}
                       >
                         {a.pinned ? "📌" : "📍"}
                       </button>
@@ -159,7 +175,7 @@ export default async function ManageAnnouncementsPage({
                       <button
                         type="submit"
                         className="text-sm text-metro-text-secondary hover:text-metro-error"
-                        title="Delete"
+                        title={labels.delete}
                       >
                         🗑️
                       </button>

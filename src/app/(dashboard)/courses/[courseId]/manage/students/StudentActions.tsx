@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/useT";
 import { enrollStudent, removeEnrollment } from "@/actions/courses";
 
 interface StudentOption {
@@ -18,13 +19,14 @@ export function AddStudentForm({
   candidates: StudentOption[];
 }) {
   const router = useRouter();
+  const t = useT();
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (candidates.length === 0) {
     return (
-      <p className="text-sm text-metro-text-secondary">All students are already enrolled.</p>
+      <p className="text-sm text-metro-text-secondary">{t("courseManage.allEnrolled")}</p>
     );
   }
 
@@ -35,7 +37,7 @@ export function AddStudentForm({
     const res = await enrollStudent(courseId, selected);
     setLoading(false);
     if (res?.error) {
-      setError(typeof res.error === "string" ? res.error : "Failed to enroll");
+      setError(typeof res.error === "string" ? res.error : t("courseManage.failedEnroll"));
       return;
     }
     setSelected("");
@@ -49,7 +51,7 @@ export function AddStudentForm({
         onChange={(e) => setSelected(e.target.value)}
         className="metro-input px-3 py-2 text-sm"
       >
-        <option value="">Select a student…</option>
+        <option value="">{t("courseManage.selectStudent")}</option>
         {candidates.map((s) => (
           <option key={s.id} value={s.id}>
             {s.name} ({s.email})
@@ -61,7 +63,7 @@ export function AddStudentForm({
         disabled={!selected || loading}
         className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover disabled:opacity-50"
       >
-        Add Student
+        {t("courseManage.addStudentBtn")}
       </button>
       {error && <span className="text-sm text-metro-error">{error}</span>}
     </div>
@@ -78,10 +80,12 @@ export function RemoveStudentButton({
   studentName: string;
 }) {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
 
   async function handleRemove() {
-    if (!confirm(`Remove ${studentName} from this course?`)) return;
+    const msg = t("courseManage.confirmRemove").replace("{name}", studentName);
+    if (!confirm(msg)) return;
     setLoading(true);
     await removeEnrollment(courseId, studentId);
     setLoading(false);

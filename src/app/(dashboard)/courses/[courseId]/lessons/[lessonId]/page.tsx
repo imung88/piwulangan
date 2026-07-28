@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { toggleProgress } from "@/actions/progress";
+import { serverT, formatT } from "@/lib/i18n/serverT";
 
 export default async function LessonPage({
   params,
@@ -55,10 +56,23 @@ export default async function LessonPage({
   }
   const isGuardianViewer = guardianStudentIds.length > 0;
 
+  const labels = {
+    noAccess: await serverT("lesson.noAccess"),
+    back: await serverT("lesson.back"),
+    module: await serverT("lesson.module"),
+    duration: await serverT("lesson.readDuration"),
+    scheduled: await serverT("lesson.scheduled"),
+    noContent: await serverT("lesson.noContent"),
+    resources: await serverT("lesson.resources"),
+    completed: await serverT("lesson.completed"),
+    markComplete: await serverT("lesson.markComplete"),
+    backToCourse: await serverT("lesson.backToCourse"),
+  };
+
   if (!isOwner && !isEnrolled && !isGuardianViewer) {
     return (
       <div className="text-center py-12">
-        <p className="text-metro-text-secondary">You don&apos;t have access to this lesson.</p>
+        <p className="text-metro-text-secondary">{labels.noAccess}</p>
       </div>
     );
   }
@@ -105,11 +119,11 @@ export default async function LessonPage({
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-metro-text-secondary mb-6">
         <Link href={`/courses/${courseId}`} className="hover:text-metro-text">
-          ← Back
+          {labels.back}
         </Link>
         <span>/</span>
         <span>
-          Module {lesson.moduleOrder}: {lesson.moduleTitle}
+          {formatT(labels.module, { order: lesson.moduleOrder })}: {lesson.moduleTitle}
         </span>
         <span>/</span>
         <span className="text-metro-text">{lesson.title}</span>
@@ -118,7 +132,7 @@ export default async function LessonPage({
       {/* Lesson header */}
       <h1 className="metro-page-title">{lesson.title}</h1>
       {lesson.duration && (
-        <p className="mt-1 text-sm text-metro-text-secondary">~{lesson.duration} min read</p>
+        <p className="mt-1 text-sm text-metro-text-secondary">{formatT(labels.duration, { n: lesson.duration })}</p>
       )}
 
       {/* Linked sessions */}
@@ -130,7 +144,7 @@ export default async function LessonPage({
               href={`/courses/${courseId}/schedule`}
               className="block border border-metro-blue bg-metro-blue-light px-3 py-2 text-sm text-metro-blue hover:bg-metro-blue-light"
             >
-              📅 Scheduled:{" "}
+              📅 {labels.scheduled}
               {new Date(s.date).toLocaleDateString("en-US", {
                 weekday: "short",
                 month: "short",
@@ -152,14 +166,14 @@ export default async function LessonPage({
             }}
           />
         ) : (
-          <p className="text-metro-text-secondary italic">No content yet</p>
+          <p className="text-metro-text-secondary italic">{labels.noContent}</p>
         )}
       </div>
 
       {/* Resources */}
       {lesson.resources.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-sm font-semibold text-metro-text mb-2">📎 Resources</h3>
+          <h3 className="text-sm font-semibold text-metro-text mb-2">{labels.resources}</h3>
           <div className="space-y-2">
             {lesson.resources.map((r) => (
               <a
@@ -194,7 +208,7 @@ export default async function LessonPage({
                   : "border-metro-border bg-metro-surface text-metro-text hover:border-metro-blue hover:bg-metro-blue-light"
               }`}
             >
-              {isCompleted ? "✅ Completed — Click to Unmark" : "⬜ Mark as Complete"}
+              {isCompleted ? labels.completed : labels.markComplete}
             </button>
           </form>
         </div>
@@ -224,7 +238,7 @@ export default async function LessonPage({
             href={`/courses/${courseId}`}
             className="text-sm text-metro-blue hover:underline"
           >
-            Back to course →
+            {labels.backToCourse}
           </Link>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/useT";
 import {
   createSession,
   updateSession,
@@ -71,6 +72,7 @@ export default function ManageScheduleClient({
   lessons,
   sessions,
 }: Props) {
+  const t = useT();
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -203,7 +205,7 @@ export default function ManageScheduleClient({
           onClick={openCreate}
           className="bg-metro-blue text-white px-4 py-2 text-sm font-medium hover:bg-metro-blue-hover"
         >
-          + New Session
+          {t("schedule.newSession")}
         </button>
       )}
 
@@ -213,7 +215,7 @@ export default function ManageScheduleClient({
           className="metro-card space-y-4"
         >
           <h2 className="metro-section-title">
-            {editingId ? "edit session" : "new session"}
+            {editingId ? t("schedule.editSession") : t("schedule.newSessionTitle")}
           </h2>
 
           {error && (
@@ -225,21 +227,21 @@ export default function ManageScheduleClient({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-metro-text mb-1">
-                Topic *
+                {t("schedule.topic")}
               </label>
               <input
                 type="text"
                 required
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="e.g. Week 3: Past Tense"
+                placeholder={t("schedule.topicPlaceholder")}
                 className="metro-input w-full px-3 py-2 text-sm"
               />
             </div>
 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-metro-text mb-1">
-                Description
+                {t("schedule.description")}
               </label>
               <textarea
                 value={form.description}
@@ -253,14 +255,14 @@ export default function ManageScheduleClient({
 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-metro-text mb-1">
-                Linked Lesson
+                {t("schedule.linkedLesson")}
               </label>
               <select
                 value={form.lessonId}
                 onChange={(e) => setForm({ ...form, lessonId: e.target.value })}
                 className="metro-input w-full px-3 py-2 text-sm"
               >
-                <option value="">— None —</option>
+                <option value="">{t("schedule.none")}</option>
                 {lessons.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.title}
@@ -271,7 +273,7 @@ export default function ManageScheduleClient({
 
             <div>
               <label className="block text-sm font-medium text-metro-text mb-1">
-                Date *
+                {t("schedule.date")}
               </label>
               <input
                 type="date"
@@ -286,7 +288,7 @@ export default function ManageScheduleClient({
             <div className="flex gap-2">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-metro-text mb-1">
-                  Start *
+                  {t("schedule.start")}
                 </label>
                 <input
                   type="time"
@@ -300,7 +302,7 @@ export default function ManageScheduleClient({
               </div>
               <div className="flex-1">
                 <label className="block text-sm font-medium text-metro-text mb-1">
-                  End *
+                  {t("schedule.end")}
                 </label>
                 <input
                   type="time"
@@ -316,13 +318,13 @@ export default function ManageScheduleClient({
 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-metro-text mb-1">
-                Location / Meeting link
+                {t("schedule.location")}
               </label>
               <input
                 type="text"
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
-                placeholder="Room 101 or https://meet..."
+                placeholder={t("schedule.locationPlaceholder")}
                 className="metro-input w-full px-3 py-2 text-sm"
               />
             </div>
@@ -331,7 +333,7 @@ export default function ManageScheduleClient({
               <>
                 <div>
                   <label className="block text-sm font-medium text-metro-text mb-1">
-                    Repeat weekly
+                    {t("schedule.repeatWeekly")}
                   </label>
                   <select
                     value={form.repeatWeeks}
@@ -340,10 +342,10 @@ export default function ManageScheduleClient({
                     }
                     className="metro-input w-full px-3 py-2 text-sm"
                   >
-                    <option value={1}>No repeat</option>
+                    <option value={1}>{t("schedule.noRepeat")}</option>
                     {[2, 3, 4, 6, 8, 10, 12].map((n) => (
                       <option key={n} value={n}>
-                        {n} weeks
+                        {t("schedule.weeks").replace("{n}", String(n))}
                       </option>
                     ))}
                   </select>
@@ -351,7 +353,7 @@ export default function ManageScheduleClient({
 
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-metro-text mb-2">
-                    Students
+                    {t("schedule.students")}
                   </label>
                   <label className="flex items-center gap-2 text-sm mb-2">
                     <input
@@ -359,7 +361,7 @@ export default function ManageScheduleClient({
                       checked={allEnrolled}
                       onChange={(e) => setAllEnrolled(e.target.checked)}
                     />
-                    All enrolled students ({students.length})
+                    {t("schedule.allEnrolled").replace("{n}", String(students.length))}
                   </label>
                   {!allEnrolled && (
                     <div className="grid gap-1 sm:grid-cols-2 max-h-48 overflow-y-auto border border-metro-border p-2">
@@ -385,7 +387,7 @@ export default function ManageScheduleClient({
                       ))}
                       {students.length === 0 && (
                         <p className="text-sm text-metro-text-secondary">
-                          No enrolled students.
+                          {t("schedule.noEnrolledStudents")}
                         </p>
                       )}
                     </div>
@@ -401,37 +403,21 @@ export default function ManageScheduleClient({
               disabled={loading}
               className="bg-metro-blue text-white px-4 py-2 text-sm font-medium hover:bg-metro-blue-hover disabled:opacity-50"
             >
-              {editingId ? "Save Changes" : "Create Session"}
+              {editingId ? t("schedule.saveChanges") : t("schedule.createSession")}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
               className="border border-metro-border px-4 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
             >
-              Cancel
+              {t("schedule.cancel")}
             </button>
           </div>
         </form>
       )}
 
       <SessionSection
-        title="Upcoming"
-        sessions={upcoming}
-        past={false}
-        loading={loading}
-        students={students}
-        attendeeEditId={attendeeEditId}
-        attendeeDraft={attendeeDraft}
-        onEdit={openEdit}
-        onCancel={handleCancel}
-        onAttendance={handleAttendance}
-        onOpenAttendees={openAttendeeEdit}
-        onToggleDraft={toggleDraftStudent}
-        onSaveAttendees={saveAttendees}
-        onCloseAttendees={() => setAttendeeEditId(null)}
-      />
-      <SessionSection
-        title="Past"
+        title={t("schedule.past")}
         sessions={past}
         past
         loading={loading}
@@ -445,6 +431,41 @@ export default function ManageScheduleClient({
         onToggleDraft={toggleDraftStudent}
         onSaveAttendees={saveAttendees}
         onCloseAttendees={() => setAttendeeEditId(null)}
+        t={t}
+      />
+      <SessionSection
+        title={t("schedule.past")}
+        sessions={past}
+        past
+        loading={loading}
+        students={students}
+        attendeeEditId={attendeeEditId}
+        attendeeDraft={attendeeDraft}
+        onEdit={openEdit}
+        onCancel={handleCancel}
+        onAttendance={handleAttendance}
+        onOpenAttendees={openAttendeeEdit}
+        onToggleDraft={toggleDraftStudent}
+        onSaveAttendees={saveAttendees}
+        onCloseAttendees={() => setAttendeeEditId(null)}
+        t={t}
+      />
+      <SessionSection
+        title={t("schedule.upcoming")}
+        sessions={upcoming}
+        past={false}
+        loading={loading}
+        students={students}
+        attendeeEditId={attendeeEditId}
+        attendeeDraft={attendeeDraft}
+        onEdit={openEdit}
+        onCancel={handleCancel}
+        onAttendance={handleAttendance}
+        onOpenAttendees={openAttendeeEdit}
+        onToggleDraft={toggleDraftStudent}
+        onSaveAttendees={saveAttendees}
+        onCloseAttendees={() => setAttendeeEditId(null)}
+        t={t}
       />
     </div>
   );
@@ -465,6 +486,7 @@ function SessionSection({
   onToggleDraft,
   onSaveAttendees,
   onCloseAttendees,
+  t,
 }: {
   title: string;
   sessions: ManagedSession[];
@@ -480,12 +502,13 @@ function SessionSection({
   onToggleDraft: (id: string) => void;
   onSaveAttendees: (sessionId: string) => void;
   onCloseAttendees: () => void;
+  t: (p: string) => string;
 }) {
   if (sessions.length === 0) {
     return (
       <section>
         <h2 className="metro-section-title mb-3">{title.toLowerCase()}</h2>
-        <p className="text-sm text-metro-text-secondary">No {title.toLowerCase()} sessions.</p>
+        <p className="text-sm text-metro-text-secondary">Tidak ada {title.toLowerCase()} sesi.</p>
       </section>
     );
   }
@@ -530,13 +553,13 @@ function SessionSection({
                         onClick={() => onEdit(s)}
                         className="text-metro-blue hover:text-metro-blue-hover"
                       >
-                        Edit
+                        {t("schedule.edit")}
                       </button>
                       <button
                         onClick={() => onOpenAttendees(s)}
                         className="text-metro-text-secondary hover:text-metro-text"
                       >
-                        Students
+                        {t("schedule.studentsLbl")}
                       </button>
                     </>
                   )}
@@ -545,7 +568,7 @@ function SessionSection({
                     disabled={loading}
                     className="text-metro-error hover:underline disabled:opacity-50"
                   >
-                    Cancel
+                    {t("schedule.cancelBtn")}
                   </button>
                 </div>
               )}
@@ -555,7 +578,7 @@ function SessionSection({
             {attendeeEditId === s.id ? (
               <div className="mt-3 border-t border-metro-border pt-3">
                 <p className="text-sm font-medium text-metro-text mb-2">
-                  Assigned students
+                  {t("schedule.assignedStudents")}
                 </p>
                 <div className="grid gap-1 sm:grid-cols-2">
                   {students.map((st) => (
@@ -578,13 +601,13 @@ function SessionSection({
                     disabled={loading}
                     className="bg-metro-blue text-white px-3 py-1.5 text-sm hover:bg-metro-blue-hover disabled:opacity-50"
                   >
-                    Save
+                    {t("schedule.save")}
                   </button>
                   <button
                     onClick={onCloseAttendees}
                     className="border border-metro-border px-3 py-1.5 text-sm text-metro-text-secondary"
                   >
-                    Close
+                    {t("schedule.close")}
                   </button>
                 </div>
               </div>

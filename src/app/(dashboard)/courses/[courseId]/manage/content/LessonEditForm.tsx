@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/useT";
 import {
   updateLesson,
   deleteLesson,
@@ -30,6 +31,7 @@ export function LessonEditForm({
   order: number;
   initialResources: Resource[];
 }) {
+  const t = useT();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState(initialTitle);
@@ -66,7 +68,6 @@ export function LessonEditForm({
     formData.set("title", title);
     formData.set("content", content);
     if (duration) formData.set("duration", duration);
-
     try {
       const result: any = await updateLesson(lessonId, formData);
       setSaving(false);
@@ -76,14 +77,14 @@ export function LessonEditForm({
           typeof result.error === "string"
             ? result.error
             : Object.values(result.error).flat().join(", ");
-        setError(msgs || "Save failed");
+        setError(msgs || t("schedule.saving"));
         return;
       }
       setExpanded(false);
       router.refresh();
     } catch {
       setSaving(false);
-      setError("An unexpected error occurred");
+      setError(t("lesson.noContent"));
     }
   }
 
@@ -122,7 +123,7 @@ export function LessonEditForm({
   }
 
   async function handleDeleteResource(resourceId: string) {
-    if (!window.confirm("Remove this resource?")) return;
+    if (!window.confirm(t("lesson.deleteResource"))) return;
     try {
       await deleteResource(resourceId);
       router.refresh();
@@ -173,13 +174,13 @@ export function LessonEditForm({
     return (
       <div className="px-4 py-4 bg-metro-bg border-b border-metro-border">
         <div className="text-sm font-medium text-metro-text mb-3">
-          Editing Lesson {order}
+          {t("lesson.module").replace("{order}", String(order))}
         </div>
         <div className="space-y-3 max-w-2xl">
           {/* Title */}
           <div>
             <label className="block text-xs font-medium text-metro-text-secondary mb-1">
-              Title
+              {t("settings.titleLbl")}
             </label>
             <input
               value={title}
@@ -190,7 +191,7 @@ export function LessonEditForm({
           {/* Duration */}
           <div>
             <label className="block text-xs font-medium text-metro-text-secondary mb-1">
-              Duration (minutes)
+              {t("schedule.duration")}
             </label>
             <input
               type="number"
@@ -203,29 +204,29 @@ export function LessonEditForm({
           <div>
             <div className="flex items-center justify-between">
               <label className="block text-xs font-medium text-metro-text-secondary mb-1">
-                Content (Markdown)
+                {t("lesson.content")}
               </label>
-              <button
-                type="button"
-                onClick={() => setShowGuide(true)}
-                className="text-xs text-metro-blue hover:underline mb-1"
-              >
-                Markdown guide
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowGuide(true)}
+                  className="text-xs text-metro-blue hover:underline mb-1"
+                >
+                  {t("lesson.markdownGuide")}
+                </button>
             </div>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={12}
               className="metro-input w-full px-3 py-2 text-sm font-mono"
-              placeholder="Write lesson content in Markdown..."
+              placeholder={t("lesson.markdownContentPlaceholder")}
             />
           </div>
 
           {/* Resources */}
           <div className="border-t border-metro-border pt-3 mt-3">
             <label className="block text-xs font-medium text-metro-text-secondary mb-2">
-              Resources ({resources.length}/5)
+              {t("lesson.resourcesLabel").replace("{n}", String(resources.length))}
             </label>
 
             {/* Existing resources */}
@@ -240,7 +241,7 @@ export function LessonEditForm({
                           <input
                             value={editResTitle}
                             onChange={(e) => setEditResTitle(e.target.value)}
-                            placeholder="Title"
+                            placeholder={t("lesson.title")}
                             className="metro-input flex-1 px-2 py-1 text-sm"
                           />
                           <select
@@ -248,15 +249,15 @@ export function LessonEditForm({
                             onChange={(e) => setEditResType(e.target.value as any)}
                             className="metro-input px-2 py-1 text-sm"
                           >
-                            <option value="LINK">Link</option>
-                            <option value="VIDEO">Video</option>
-                            <option value="DOCUMENT">Document</option>
+                            <option value="LINK">{t("lesson.link")}</option>
+                            <option value="VIDEO">{t("lesson.video")}</option>
+                            <option value="DOCUMENT">{t("lesson.document")}</option>
                           </select>
                         </div>
                         <input
                           value={editResUrl}
                           onChange={(e) => setEditResUrl(e.target.value)}
-                          placeholder="URL"
+                          placeholder={t("lesson.url")}
                           className="metro-input w-full px-2 py-1 text-sm"
                         />
                         <div className="flex gap-2">
@@ -265,13 +266,13 @@ export function LessonEditForm({
                             disabled={!editResTitle.trim() || !editResUrl.trim()}
                             className="bg-metro-blue px-3 py-1 text-xs font-medium text-white hover:bg-metro-blue-hover disabled:opacity-50"
                           >
-                            Save
+                            {t("lesson.save")}
                           </button>
                           <button
                             onClick={() => setEditingResId(null)}
                             className="bg-metro-border px-3 py-1 text-xs font-medium text-metro-text hover:bg-metro-blue-light"
                           >
-                            Cancel
+                            {t("lesson.cancel")}
                           </button>
                         </div>
                       </div>
@@ -290,13 +291,13 @@ export function LessonEditForm({
                             onClick={() => startEditResource(res)}
                             className="text-xs text-metro-blue hover:underline"
                           >
-                            Edit
+                            {t("lesson.editResource")}
                           </button>
                           <button
                             onClick={() => handleDeleteResource(res.id)}
                             className="text-xs text-metro-error hover:underline"
                           >
-                            Delete
+                            {t("lesson.deleteResource")}
                           </button>
                         </div>
                       </div>
@@ -313,7 +314,7 @@ export function LessonEditForm({
                   <input
                     value={newResTitle}
                     onChange={(e) => setNewResTitle(e.target.value)}
-                    placeholder="Resource title"
+                    placeholder={t("lesson.resourceTitle")}
                     className="metro-input flex-1 px-2 py-1 text-sm"
                   />
                   <select
@@ -321,9 +322,9 @@ export function LessonEditForm({
                     onChange={(e) => setNewResType(e.target.value as any)}
                     className="metro-input px-2 py-1 text-sm"
                   >
-                    <option value="LINK">Link</option>
-                    <option value="VIDEO">Video</option>
-                    <option value="DOCUMENT">Document</option>
+                    <option value="LINK">{t("lesson.link")}</option>
+                    <option value="VIDEO">{t("lesson.video")}</option>
+                    <option value="DOCUMENT">{t("lesson.document")}</option>
                   </select>
                 </div>
                 <div className="flex gap-2">
@@ -338,12 +339,12 @@ export function LessonEditForm({
                     disabled={!newResTitle.trim() || !newResUrl.trim()}
                     className="bg-metro-border px-3 py-1 text-xs font-medium text-metro-text hover:bg-metro-blue-light disabled:opacity-50"
                   >
-                    + Add
+                    {t("lesson.addResource")}
                   </button>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-metro-text-secondary italic">Maximum 5 resources per lesson</p>
+              <p className="text-xs text-metro-text-secondary italic">{t("lesson.maxResources")}</p>
             )}
 
             {resourceError && (
@@ -422,14 +423,14 @@ export function LessonEditForm({
               disabled={saving || !title.trim()}
               className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("lesson.saving") : t("lesson.save")}
             </button>
             <button
               onClick={handleCancel}
               disabled={saving}
               className="bg-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-blue-light disabled:opacity-50"
             >
-              Cancel
+              {t("lesson.cancel")}
             </button>
             {error && <span className="text-sm text-metro-error">{error}</span>}
           </div>
@@ -468,13 +469,13 @@ export function LessonEditForm({
           onClick={() => setExpanded(true)}
           className="text-xs text-metro-blue hover:underline"
         >
-          Edit
+          {t("lesson.editResource")}
         </button>
         <Link
           href={`/courses/${courseId}/lessons/${lessonId}`}
           className="text-xs text-metro-blue hover:underline"
         >
-          View
+          {t("lesson.view")}
         </Link>
         <form
           action={async () => {

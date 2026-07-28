@@ -11,6 +11,7 @@ import {
 import { toSessionItem, todayStr } from "@/components/schedule/types";
 import ScheduleView from "@/components/schedule/ScheduleView";
 import AvailabilityDisplay from "@/components/schedule/AvailabilityDisplay";
+import { serverT, formatT } from "@/lib/i18n/serverT";
 
 export default async function CourseSchedulePage({
   params,
@@ -50,6 +51,15 @@ export default async function CourseSchedulePage({
   }
   const isGuardianViewer = guardianStudentIds.length > 0;
 
+  const labels = {
+    back: await serverT("courseSchedule.back"),
+    title: await serverT("courseSchedule.title"),
+    instructor: await serverT("courseSchedule.instructor"),
+    manageSessions: await serverT("courseSchedule.manageSessions"),
+    instructorAvailability: await serverT("courseSchedule.instructorAvailability"),
+    noSessionsForStudents: await serverT("courseSchedule.noSessionsForStudents"),
+  };
+
   if (!isOwner && !isEnrolled && !isGuardianViewer) {
     redirect(`/courses/${course.id}`);
   }
@@ -62,13 +72,13 @@ export default async function CourseSchedulePage({
             href={`/courses/${course.id}`}
             className="text-sm text-metro-text-secondary hover:text-metro-text"
           >
-            ← {course.title}
+            {labels.back}
           </Link>
           <h1 className="metro-page-title mt-1">
-            Course Schedule
+            {formatT(labels.title, { title: course.title })}
           </h1>
           <p className="text-metro-text-secondary">
-            Instructor: {course.instructor.name}
+            {labels.instructor}: {course.instructor.name}
           </p>
         </div>
         {isOwner && (
@@ -76,10 +86,11 @@ export default async function CourseSchedulePage({
             href={`/courses/${course.id}/manage/schedule`}
             className="bg-metro-blue text-white px-4 py-2 text-sm font-medium hover:bg-metro-blue-hover"
           >
-            Manage Sessions
+            {labels.manageSessions}
           </Link>
         )}
       </div>
+
 
       {isOwner ? (
         <OwnerView courseId={course.id} />
@@ -116,10 +127,9 @@ async function GuardianView({
 }) {
   const sessions = await getSessionsForStudents(studentIds, { courseId });
   if (sessions.length === 0) {
+    const noSessions = await serverT("courseSchedule.noSessionsForStudents");
     return (
-      <p className="text-sm text-metro-text-secondary">
-        No sessions scheduled for your students in this course yet.
-      </p>
+      <p className="text-sm text-metro-text-secondary">{noSessions}</p>
     );
   }
   return (
