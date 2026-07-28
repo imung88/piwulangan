@@ -164,6 +164,14 @@ Specifically, `LayoutContent.tsx` wraps children in `<LocaleProvider initial={re
 **When to revisit:** If the user decides to tackle SSR locale resolution properly (e.g. passing locale via headers → server component → props, or using middleware to rewrite locale), fix `LocaleProvider.tsx` + `LayoutContent.tsx` at that time. Until then, leave untouched.
 
 ## Localization pattern to follow
+1. **Client component:** `import { useT } from "@/lib/i18n/useT"; const t = useT();` then `{t("namespace.key")}`.
+2. **Client interpolation:** `import { format } from "@/lib/i18n/useT"; {format(t("courses.moduleCount"), { n: 3 })}`.
+3. **Server component:** `import { serverT, formatT } from "@/lib/i18n/serverT";` then pre-await a `labels` object: `const labels = { x: await serverT("ns.x") }` and use `labels.x` + `formatT(labels.x, { n: 3 })` in JSX.
+4. **Always add keys to BOTH `id.ts` and `en.ts`** before touching components.
+5. Every `useT()` caller MUST be inside the `LocaleProvider` in `LayoutContent.tsx`.
+6. New client components need `"use client"` at the top.
+
+## Sanity checks after each batch
 1. Log in as `admin@example.com` (password `password123`)
 2. 👤 Profile → switch language via 🇮🇩/🇺🇸 selector
 3. Verify **sidebar labels change** ("Beranda" ↔ "Dashboard") — the whole app switches as one unit.
