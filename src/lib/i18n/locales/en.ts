@@ -330,6 +330,7 @@ export default {
     students: "Students",
     allEnrolled: "All enrolled students ({n})",
     noEnrolledStudents: "No enrolled students.",
+    noSections: "No {section} sessions.",
     saveChanges: "Save Changes",
     createSession: "Create Session",
     cancel: "Cancel",

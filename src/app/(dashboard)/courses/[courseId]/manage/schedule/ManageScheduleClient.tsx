@@ -508,7 +508,9 @@ function SessionSection({
     return (
       <section>
         <h2 className="metro-section-title mb-3">{title.toLowerCase()}</h2>
-        <p className="text-sm text-metro-text-secondary">Tidak ada {title.toLowerCase()} sesi.</p>
+        <p className="text-sm text-metro-text-secondary">
+          {t("schedule.noSections").replace("{section}", title.toLowerCase())}
+        </p>
       </section>
     );
   }

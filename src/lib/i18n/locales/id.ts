@@ -331,6 +331,7 @@ export default {
     students: "Siswa",
     allEnrolled: "Semua siswa terdaftar ({n})",
     noEnrolledStudents: "Tidak ada siswa terdaftar.",
+    noSections: "Tidak ada sesi {section}.",
     saveChanges: "Simpan Perubahan",
     createSession: "Buat Sesi",
     cancel: "Batal",
