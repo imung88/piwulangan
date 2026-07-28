@@ -1,9 +1,10 @@
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import CoursesClient from "./CoursesClient";
-import BrowseCourses from "./BrowseCourses";
+import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import CoursesClient from "./CoursesClient"
+import BrowseCourses from "./BrowseCourses"
+import { serverT } from "@/lib/i18n/serverT"
 
 export default async function CoursesPage() {
   const session = await auth();
@@ -127,26 +128,34 @@ export default async function CoursesPage() {
     courses = Array.from(byCourse.values());
   }
 
+  // Server-side translations for page-header labels (already async function)
+  const labels = {
+    allCourses: await serverT("courses.allCourses"),
+    newCourse: await serverT("courses.newCourse"),
+    myCourses: await serverT("courses.myCourses"),
+    guardianDesc: await serverT("courses.myCoursesGuardian"),
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="metro-page-title">Courses</h1>
+        <h1 className="metro-page-title">{labels.allCourses}</h1>
         {(role === "ADMIN" || role === "INSTRUCTOR") && (
           <Link
             href="/courses/new"
             className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
           >
-            + New Course
+            {labels.newCourse}
           </Link>
         )}
       </div>
 
       {role === "STUDENT" && (
-        <h2 className="metro-section-title mt-6">my courses</h2>
+        <h2 className="metro-section-title mt-6">{labels.myCourses}</h2>
       )}
       {role === "GUARDIAN" && (
         <p className="mt-2 text-sm text-metro-text-secondary">
-          Courses your linked students are enrolled in. View only.
+          {labels.guardianDesc}
         </p>
       )}
 

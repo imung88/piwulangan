@@ -1,9 +1,11 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { archiveCourse, unarchiveCourse } from "@/actions/courses";
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useT } from "@/lib/i18n/useT"
+import { format } from "@/lib/i18n/useT"
+import { archiveCourse, unarchiveCourse } from "@/actions/courses"
 
 type Course = {
   id: string;
@@ -24,8 +26,9 @@ export default function CoursesClient({
   courses: Course[];
   role: string;
 }) {
-  const router = useRouter();
-  const [courses] = useState(initialCourses);
+  const router = useRouter()
+  const t = useT()
+  const [courses] = useState(initialCourses)
   const [showArchived, setShowArchived] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -66,7 +69,7 @@ export default function CoursesClient({
             onClick={() => setMessage(null)}
             className="ml-2 underline text-sm"
           >
-            Dismiss
+            {t("courses.dismiss")}
           </button>
         </div>
       )}
@@ -78,8 +81,8 @@ export default function CoursesClient({
             className="text-sm text-metro-blue hover:text-metro-blue-hover font-medium"
           >
             {showArchived
-              ? `Show Active Courses (${activeCourses.length})`
-              : `Show Archived Courses (${archivedCourses.length})`}
+              ? `${t("courses.activeCourses")} (${activeCourses.length})`
+              : `${t("courses.archivedCourses")} (${archivedCourses.length})`}
           </button>
         </div>
       )}
@@ -100,7 +103,7 @@ export default function CoursesClient({
                 )}
                 {course.visibility === "ARCHIVED" && (
                   <span className="metro-badge bg-metro-border text-metro-text-secondary">
-                    Archived
+                    {t("common.archived")}
                   </span>
                 )}
               </div>
@@ -111,8 +114,8 @@ export default function CoursesClient({
               )}
               <div className="mt-3 flex items-center gap-4 text-xs text-metro-text-secondary">
                 {course.instructor && <span>👤 {course.instructor.name}</span>}
-                {course._count && <span>📚 {course._count.modules} modules</span>}
-                {course._count && <span>👥 {course._count.enrollments} students</span>}
+                {course._count && <span>📚 {format(t("courses.moduleCount"), { n: course._count.modules })}</span>}
+                {course._count && <span>👥 {format(t("courses.studentCount"), { n: course._count.enrollments })}</span>}
               </div>
               {course._studentNames && course._studentNames.length > 0 && (
                 <p className="mt-2 text-xs text-metro-blue">
@@ -127,14 +130,14 @@ export default function CoursesClient({
                     onClick={() => handleUnarchive(course.id)}
                     className="text-sm text-metro-green hover:text-metro-green-hover font-medium"
                   >
-                    Unarchive
+                    {t("courses.unarchive")}
                   </button>
                 ) : (
-                  <button
-                    onClick={() => handleArchive(course.id)}
+                <button
+                  onClick={() => handleArchive(course.id)}
                     className="text-sm text-metro-text-secondary hover:text-metro-text font-medium"
                   >
-                    Archive
+                    {t("courses.archive")}
                   </button>
                 )}
               </div>
@@ -143,7 +146,7 @@ export default function CoursesClient({
               <div className="mt-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-metro-text-secondary">
-                    {course._progress}/{course._totalLessons} lessons
+                    {course._progress}/{course._totalLessons} {t("student.lessons")}
                   </span>
                   <span className="font-medium">
                     {Math.round(((course._progress || 0) / course._totalLessons) * 100)}%
@@ -166,12 +169,12 @@ export default function CoursesClient({
       {displayCourses.length === 0 && (
         <p className="mt-8 text-center text-metro-text-secondary">
           {role === "STUDENT"
-            ? "You're not enrolled in any courses yet. Enter an invite code above to join one."
+            ? t("courses.noCoursesStudent")
             : role === "GUARDIAN"
-            ? "Your linked students are not enrolled in any courses yet."
+            ? t("courses.noCoursesGuardian")
             : showArchived
-            ? "No archived courses"
-            : "No courses yet. Create your first course!"}
+            ? t("courses.noArchivedCourses")
+            : t("courses.noCoursesAdmin")}
         </p>
       )}
     </div>

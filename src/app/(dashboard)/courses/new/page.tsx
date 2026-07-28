@@ -1,13 +1,15 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { createCourse } from "@/actions/courses";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { useT } from "@/lib/i18n/useT"
+import { createCourse } from "@/actions/courses"
 
 export default function NewCoursePage() {
-  const router = useRouter();
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const router = useRouter()
+  const t = useT()
+  const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -29,21 +31,21 @@ export default function NewCoursePage() {
   return (
     <div className="max-w-lg">
       <Link href="/courses" className="text-sm text-metro-text-secondary hover:text-metro-text">
-        ← Back to courses
+        {t("newCourse.back")}
       </Link>
-      <h1 className="metro-page-title mt-2">Create New Course</h1>
+      <h1 className="metro-page-title mt-2">{t("newCourse.title")}</h1>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-metro-text">
-            Course Title
+            {t("newCourse.courseTitle")}
           </label>
           <input
             id="title"
             name="title"
             required
             maxLength={120}
-            placeholder="e.g., English Basics"
+            placeholder={t("newCourse.courseTitlePlaceholder")}
             className="metro-input mt-1 block w-full px-3 py-2"
           />
           {errors.title && <p className="mt-1 text-sm text-metro-error">{errors.title[0]}</p>}
@@ -51,34 +53,34 @@ export default function NewCoursePage() {
 
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-metro-text">
-            Description (optional)
+            {t("newCourse.description")}
           </label>
           <textarea
             id="description"
             name="description"
             rows={3}
             maxLength={2000}
-            placeholder="What will students learn?"
+            placeholder={t("newCourse.descriptionPlaceholder")}
             className="metro-input mt-1 block w-full px-3 py-2"
           />
         </div>
 
         <div>
           <label htmlFor="coverImageUrl" className="block text-sm font-medium text-metro-text">
-            Cover Image URL (optional)
+            {t("newCourse.coverImage")}
           </label>
           <input
             id="coverImageUrl"
             name="coverImageUrl"
             type="url"
-            placeholder="https://..."
+            placeholder={t("newCourse.coverImagePlaceholder")}
             className="metro-input mt-1 block w-full px-3 py-2"
           />
         </div>
 
         <div>
           <label htmlFor="enrollmentMode" className="block text-sm font-medium text-metro-text">
-            Enrollment Mode
+            {t("newCourse.enrollmentMode")}
           </label>
           <select
             id="enrollmentMode"
@@ -86,9 +88,9 @@ export default function NewCoursePage() {
             defaultValue="INVITE_CODE"
             className="metro-input mt-1 block w-full px-3 py-2"
           >
-            <option value="OPEN">Open — anyone with the link</option>
-            <option value="INVITE_CODE">Invite Code — students enter a code</option>
-            <option value="MANUAL">Manual — you add students</option>
+            <option value="OPEN">{t("newCourse.enrollmentOpen")}</option>
+            <option value="INVITE_CODE">{t("newCourse.enrollmentInviteCode")}</option>
+            <option value="MANUAL">{t("newCourse.enrollmentManual")}</option>
           </select>
         </div>
 
@@ -97,7 +99,7 @@ export default function NewCoursePage() {
           disabled={loading}
           className="metro-btn disabled:opacity-50"
         >
-          {loading ? "Creating..." : "Create Course"}
+          {loading ? t("newCourse.creating") : t("newCourse.create")}
         </button>
       </form>
     </div>

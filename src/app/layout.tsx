@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="id">
       <body className={inter.variable + " font-sans bg-metro-bg text-metro-text"}>{children}</body>
     </html>
   );

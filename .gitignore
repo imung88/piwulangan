@@ -38,3 +38,4 @@ prisma/*.db
 next-env.d.ts
 MIGRATION.md
 MIGRATION_14_TO_15.md
+i18n-follow-up.md

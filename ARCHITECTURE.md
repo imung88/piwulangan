@@ -4,7 +4,7 @@
 
 | Layer | Choice | Why |
 |---|---|---|
-| **Framework** | Next.js 14+ (App Router) | Full-stack React, SSR, file-based routing, great DX |
+| **Framework** | Next.js 15.1 (App Router) | Full-stack React, SSR, file-based routing, great DX |
 | **Language** | TypeScript | Type safety, better DX, catches bugs early |
 | **Database** | Vercel Postgres (Neon) | Serverless PostgreSQL, free tier, works with Prisma |
 | **ORM** | Prisma | Type-safe queries, great migration tooling |
@@ -88,6 +88,12 @@ piwulangan/
 │   │   ├── db.ts              # Prisma client singleton
 │   │   ├── schedule.ts        # Scheduling engine (slot computation)
 │   │   ├── utils.ts           # General utilities
+│   │   ├── i18n/              # Client-side locale module (cookie-based, no URL prefix)
+│   │   │   ├── LocaleProvider.tsx  # React Context + cookie reader
+│   │   │   ├── useT.ts            # Client t("key.path") hook
+│   │   │   └── locales/
+│   │   │       ├── id.ts          # Bahasa Indonesia (default)
+│   │   │       └── en.ts          # English
 │   │   └── validations/       # Zod schemas
 │   │
 │   ├── actions/               # Server Actions

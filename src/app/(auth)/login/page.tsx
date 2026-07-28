@@ -3,10 +3,12 @@
 import { useState } from "react"
 import Link from "next/link"
 import { login } from "@/actions/auth"
+import { useT } from "@/lib/i18n/useT"
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const t = useT()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -15,23 +17,21 @@ export default function LoginPage() {
 
     const formData = new FormData(e.currentTarget)
     const result = await login(formData)
-
     if (result?.error) {
-      setError(typeof result.error === "string" ? result.error : "Login failed")
+      setError(typeof result.error === "string" ? result.error : t("auth.loginFailed"))
       setLoading(false)
     }
   }
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      {/* Brand strip */}
       <div className="bg-metro-blue px-6 py-4 md:flex md:h-screen md:w-1/2 md:flex-col md:justify-between md:p-12">
         <h1 className="text-xl font-bold tracking-tight text-white md:text-5xl">
           Piwulangan
         </h1>
         <div className="hidden md:block">
           <p className="text-lg text-white/80">
-            Learning made together.
+            {t("auth.brandTagline")}
           </p>
           <div className="mt-6 flex gap-2">
             <span className="block h-3 w-12 bg-white/40" />
@@ -41,58 +41,48 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Form area — fills remaining space */}
       <div className="flex flex-1 flex-col justify-center bg-metro-surface px-6 py-12 md:p-12">
         <div className="mx-auto w-full max-w-sm">
-          <h2 className="text-2xl font-bold text-metro-text md:text-3xl">Welcome back</h2>
-          <p className="mt-1 text-sm text-metro-text-secondary">Sign in to your account</p>
+          <h2 className="text-2xl font-bold text-metro-text md:text-3xl">{t("auth.welcomeBack")}</h2>
+          <p className="mt-1 text-sm text-metro-text-secondary">{t("auth.signInAccount")}</p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div>
               <label htmlFor="email" className="block text-sm font-bold text-metro-text">
-                Email
+                {t("auth.email")}
               </label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 required
-                placeholder="you@example.com"
+                placeholder={t("auth.emailPlaceholder")}
                 className="metro-input mt-2"
               />
             </div>
-
             <div>
               <label htmlFor="password" className="block text-sm font-bold text-metro-text">
-                Password
+                {t("auth.password")}
               </label>
               <input
                 id="password"
                 name="password"
                 type="password"
                 required
-                placeholder="Enter your password"
+                placeholder={t("auth.passwordPlaceholder")}
                 className="metro-input mt-2"
               />
             </div>
-
-            {error && (
-              <div className="metro-error">{error}</div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="metro-btn mt-2"
-            >
-              {loading ? "Signing in..." : "Sign In"}
+            {error && <div className="metro-error">{error}</div>}
+            <button type="submit" disabled={loading} className="metro-btn mt-2">
+              {loading ? t("auth.signingIn") : t("auth.signIn")}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-metro-text-secondary">
-            Don&apos;t have an account?{" "}
+            {t("auth.noAccount")}{" "}
             <Link href="/signup" className="font-semibold text-metro-blue hover:underline">
-              Sign up
+              {t("auth.signUp")}
             </Link>
           </p>
         </div>
