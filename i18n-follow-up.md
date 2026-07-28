@@ -128,7 +128,42 @@ npm run build
 ```
 Expect: ✅ 17 routes, no TypeScript errors.
 
-## Sanity checks after each batch
+---
+
+## Known issue: Hydration mismatch (non-blocking, do NOT fix yet)
+
+**Status:** Cosmetic warning in dev build. App runs normally. Leave for now — do not spend time chasing it.
+
+```
+Error: Hydration failed because the server rendered HTML didn't match the client.
+As a result this tree will be regenerated on the client.
+This can happen if a SSR-ed Client Component used:
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+https://react.dev/link/hydration-mismatch
+```
+
+**Where it manifests** (diff between server-rendered and client content, inside `<LayoutContent> → <LocaleProvider> → <LayoutBody>` → mobile `<header>`):
+
+| Element | Server rendered (expected +) | Client rendered (actual -) |
+|---|---|---|
+| Notification `<a>` | `aria-label="Notifikasi"` | `aria-label="nav.notifications"` |
+| Admin `<a>` | `aria-label="Kelola Pengguna"` | `aria-label="nav.userManagement"` |
+| Admin icon `<span>` | `👥` present | `👥` missing |
+| Logout `<button>` | `Keluar` | `nav.signOut` |
+
+**Likely root cause:** The `aria-label` values and logout button text are being passed *through* Next.js `<Link>` / `<button>` during SSR, where `useT()` hasn't resolved yet (the `LocaleProvider`'s `readCookieInitial()` runs at module load time on the server, before locale context is set). The client then re-renders with the correct translated string → mismatch.
+
+Specifically, `LayoutContent.tsx` wraps children in `<LocaleProvider initial={readCookieInitial()}>`, but `readCookieInitial()` runs at the **top level of the `LayoutContent` component function** on the client, and may see `document.cookie` differently on first SSR vs client render. This causes the header `<Link>` elements to hydrate with the fallback raw key (e.g. `nav.notifications`) rather than the resolved value.
+
+**When to revisit:** If the user decides to tackle SSR locale resolution properly (e.g. passing locale via headers → server component → props, or using middleware to rewrite locale), fix `LocaleProvider.tsx` + `LayoutContent.tsx` at that time. Until then, leave untouched.
+
+## Localization pattern to follow
 1. Log in as `admin@example.com` (password `password123`)
 2. 👤 Profile → switch language via 🇮🇩/🇺🇸 selector
 3. Verify **sidebar labels change** ("Beranda" ↔ "Dashboard") — the whole app switches as one unit.
