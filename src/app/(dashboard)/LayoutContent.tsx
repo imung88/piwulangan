@@ -3,14 +3,18 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { logout } from "@/actions/auth"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import LocaleProvider from "@/lib/i18n/LocaleProvider"
-import NotificationBell from "@/components/NotificationBell"
+import NotificationBell, { type NotificationItem } from "@/components/NotificationBell"
 import MobileNav from "@/components/MobileNav"
 import { getMyNotifications } from "@/actions/notifications"
 import { useT } from "@/lib/i18n/useT"
 
-type Props = { children: React.ReactNode }
+type Props = {
+  children: React.ReactNode
+  role: string | null
+  userName: string | null
+}
 
 function buildNavItems(t: (p: string) => string) {
   return [
@@ -39,39 +43,27 @@ function roleBadgeLabel(role: string | null, t: (p: string) => string) {
   return map[role] ?? ""
 }
 
-function LayoutBody({ children }: Props) {
+function LayoutBody({ children, role, userName }: Props) {
   const t = useT()
   const navItems = buildNavItems(t)
   const adminNavItems = buildAdminNavItems(t)
   const pathname = usePathname()
-  const [role, setRole] = useState<string | null>(null)
-  const [userName, setUserName] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const res = await fetch("/api/auth/session")
-        const session = await res.json()
-        if (session?.user?.role) setRole(session.user.role)
-        if (session?.user?.name) setUserName(session.user.name)
-      } catch {}
-    }
-    fetchSession()
+  const loadNotifications = useCallback(async () => {
+    try {
+      const data = await getMyNotifications()
+      setUnreadCount(data.unreadCount)
+      setNotifications(data.notifications)
+    } catch {}
   }, [])
 
   useEffect(() => {
-    let active = true
-    async function load() {
-      try {
-        const data = await getMyNotifications()
-        if (active) setUnreadCount(data.unreadCount)
-      } catch {}
-    }
-    load()
-    const interval = setInterval(load, 60000)
-    return () => { active = false; clearInterval(interval) }
-  }, [pathname])
+    loadNotifications()
+    const interval = setInterval(loadNotifications, 60000)
+    return () => clearInterval(interval)
+  }, [loadNotifications])
 
   const isAdmin = role === "ADMIN" || pathname.startsWith("/admin")
   const displayName = userName && userName.length > 12 ? userName.slice(0, 12) + "…" : userName
@@ -143,7 +135,11 @@ function LayoutBody({ children }: Props) {
                 {item.label}
               </Link>
             ))}
-            <NotificationBell />
+            <NotificationBell
+              unreadCount={unreadCount}
+              notifications={notifications}
+              onRefresh={loadNotifications}
+            />
             {isAdmin && (
               <>
                 <div className="pt-4 pb-2">
@@ -205,11 +201,13 @@ function LayoutBody({ children }: Props) {
 
 export default function LayoutContent({
   children,
+  role,
+  userName,
   initialLocale,
 }: Props & { initialLocale: "id" | "en" }) {
   return (
     <LocaleProvider initial={initialLocale}>
-      <LayoutBody>{children}</LayoutBody>
+      <LayoutBody role={role} userName={userName}>{children}</LayoutBody>
     </LocaleProvider>
   )
 }

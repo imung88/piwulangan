@@ -37,7 +37,3 @@ prisma/*.db
 *.tsbuildinfo
 next-env.d.ts
 MIGRATION.md
-MIGRATION_14_TO_15.md
-i18n-follow-up.md
-i18n-follow-up.md
-i18n-follow-up.md

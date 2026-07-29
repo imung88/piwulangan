@@ -2,13 +2,14 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function AnnouncementsPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -38,7 +39,7 @@ export default async function AnnouncementsPage({
 
   if (!isOwner && !isEnrolled && !isGuardianLinked) {
     if (course.visibility !== "PUBLISHED") {
-      const notAvailable = await serverT("courseDetail.notAvailable");
+      const notAvailable = t("courseDetail.notAvailable");
       return (
         <div className="text-center py-12">
           <p className="text-metro-text-secondary">{notAvailable}</p>
@@ -48,10 +49,10 @@ export default async function AnnouncementsPage({
   }
 
   const labels = {
-    back: await serverT("courseManage.back"),
-    title: await serverT("courseDetail.announcements"),
-    manageAnnouncements: await serverT("courseManage.manageAnnouncements"),
-    noAnnouncements: await serverT("courseManage.noAnnouncements"),
+    back: t("courseManage.back"),
+    title: t("courseDetail.announcements"),
+    manageAnnouncements: t("courseManage.manageAnnouncements"),
+    noAnnouncements: t("courseManage.noAnnouncements"),
   };
 
   const announcements = await db.announcement.findMany({

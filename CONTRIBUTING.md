@@ -6,7 +6,7 @@ Thanks for your interest in contributing! This document explains how to get invo
 
 1. **Fork** the repository
 2. **Clone** your fork locally
-3. **Read** [DEVELOPMENT.md](./DEVELOPMENT.md) for local setup
+3. **Read** [SETUP.md](./SETUP.md) for local setup
 4. **Pick** an issue from the issue tracker, or create one for your idea
 5. **Branch** off `main` with a descriptive name
 6. **Code** your changes

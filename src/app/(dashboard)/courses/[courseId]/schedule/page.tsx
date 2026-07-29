@@ -11,13 +11,14 @@ import {
 import { toSessionItem, todayStr } from "@/components/schedule/types";
 import ScheduleView from "@/components/schedule/ScheduleView";
 import AvailabilityDisplay from "@/components/schedule/AvailabilityDisplay";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function CourseSchedulePage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -52,12 +53,12 @@ export default async function CourseSchedulePage({
   const isGuardianViewer = guardianStudentIds.length > 0;
 
   const labels = {
-    back: await serverT("courseSchedule.back"),
-    title: await serverT("courseSchedule.title"),
-    instructor: await serverT("courseSchedule.instructor"),
-    manageSessions: await serverT("courseSchedule.manageSessions"),
-    instructorAvailability: await serverT("courseSchedule.instructorAvailability"),
-    noSessionsForStudents: await serverT("courseSchedule.noSessionsForStudents"),
+    back: t("courseSchedule.back"),
+    title: t("courseSchedule.title"),
+    instructor: t("courseSchedule.instructor"),
+    manageSessions: t("courseSchedule.manageSessions"),
+    instructorAvailability: t("courseSchedule.instructorAvailability"),
+    noSessionsForStudents: t("courseSchedule.noSessionsForStudents"),
   };
 
   if (!isOwner && !isEnrolled && !isGuardianViewer) {
@@ -127,7 +128,8 @@ async function GuardianView({
 }) {
   const sessions = await getSessionsForStudents(studentIds, { courseId });
   if (sessions.length === 0) {
-    const noSessions = await serverT("courseSchedule.noSessionsForStudents");
+    const t = await getServerT();
+    const noSessions = t("courseSchedule.noSessionsForStudents");
     return (
       <p className="text-sm text-metro-text-secondary">{noSessions}</p>
     );

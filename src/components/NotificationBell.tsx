@@ -1,16 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import {
-  getMyNotifications,
-  markRead,
-  markAllRead,
-} from "@/actions/notifications"
+import { markRead, markAllRead } from "@/actions/notifications"
 import { useT } from "@/lib/i18n/useT"
 
-interface NotificationItem {
+export interface NotificationItem {
   id: string
   type: string
   title: string
@@ -27,29 +23,19 @@ const TYPE_ICONS: Record<string, string> = {
   ATTENDANCE: "📋",
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({
+  unreadCount,
+  notifications,
+  onRefresh,
+}: {
+  unreadCount: number
+  notifications: NotificationItem[]
+  onRefresh: () => void
+}) {
   const t = useT()
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
-
-  const load = useCallback(async () => {
-    try {
-      const data = await getMyNotifications()
-      setUnreadCount(data.unreadCount)
-      setNotifications(data.notifications)
-    } catch {
-      // not logged in or transient error — ignore
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-    const interval = setInterval(load, 60000)
-    return () => clearInterval(interval)
-  }, [load])
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -65,14 +51,14 @@ export default function NotificationBell() {
     setOpen(false)
     if (!n.read) {
       await markRead(n.id)
-      load()
+      onRefresh()
     }
     if (n.link) router.push(n.link)
   }
 
   async function handleMarkAll() {
     await markAllRead()
-    load()
+    onRefresh()
   }
 
   return (

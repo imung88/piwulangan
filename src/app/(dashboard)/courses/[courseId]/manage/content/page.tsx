@@ -4,13 +4,14 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createModule, createLesson, deleteModule } from "@/actions/lessons";
 import { LessonEditForm } from "./LessonEditForm";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageContentPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -40,16 +41,16 @@ export default async function ManageContentPage({
   }
 
   const labels = {
-    back: await serverT("content.back"),
-    editContent: await serverT("content.editContent"),
-    newModuleTitle: await serverT("content.newModuleTitle"),
-    addModule: await serverT("content.addModule"),
-    module: await serverT("content.module"),
-    delete: await serverT("content.deleteModule"),
-    newLessonTitle: await serverT("content.newLessonTitle"),
-    duration: await serverT("content.duration"),
-    addLesson: await serverT("content.addLesson"),
-    noModules: await serverT("content.noModules"),
+    back: t("content.back"),
+    editContent: t("content.editContent"),
+    newModuleTitle: t("content.newModuleTitle"),
+    addModule: t("content.addModule"),
+    module: t("content.module"),
+    delete: t("content.deleteModule"),
+    newLessonTitle: t("content.newLessonTitle"),
+    duration: t("content.duration"),
+    addLesson: t("content.addLesson"),
+    noModules: t("content.noModules"),
   };
 
   return (

@@ -1,13 +1,14 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { serverT } from "@/lib/i18n/serverT";
+import { getServerT } from "@/lib/i18n/serverT";
 import NotificationsClient from "./NotificationsClient";
 
 export default async function NotificationsPage() {
+  const t = await getServerT();
   const labels = {
-    title: await serverT("notificationsPage.title"),
-    desc: await serverT("notificationsPage.desc"),
+    title: t("notificationsPage.title"),
+    desc: t("notificationsPage.desc"),
   };
 
   const session = await auth();

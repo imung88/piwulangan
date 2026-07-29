@@ -5,9 +5,10 @@ import Link from "next/link";
 import { getAllSessions } from "@/lib/schedule";
 import { toSessionItem } from "@/components/schedule/types";
 import ScheduleView from "@/components/schedule/ScheduleView";
-import { serverT } from "@/lib/i18n/serverT";
+import { getServerT } from "@/lib/i18n/serverT";
 
 export default async function AdminSchedulePage() {
+  const t = await getServerT();
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -15,11 +16,11 @@ export default async function AdminSchedulePage() {
   if (role !== "ADMIN") redirect("/dashboard");
 
   const labels = {
-    title: await serverT("adminSchedule.title"),
-    desc: await serverT("adminSchedule.desc"),
-    courses: await serverT("adminSchedule.courses"),
-    sessionsLast60Days: await serverT("adminSchedule.sessionsLast60Days"),
-    noCourses: await serverT("adminSchedule.noCourses"),
+    title: t("adminSchedule.title"),
+    desc: t("adminSchedule.desc"),
+    courses: t("adminSchedule.courses"),
+    sessionsLast60Days: t("adminSchedule.sessionsLast60Days"),
+    noCourses: t("adminSchedule.noCourses"),
   };
 
   const windowStart = new Date();

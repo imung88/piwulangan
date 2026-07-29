@@ -3,13 +3,14 @@ import { db } from "@/lib/db"
 import Link from "next/link"
 import { redirect, notFound } from "next/navigation"
 import UnenrollButton from "./UnenrollButton"
-import { serverT, formatT } from "@/lib/i18n/serverT"
+import { getServerT, formatT } from "@/lib/i18n/serverT"
 
 export default async function CoursePage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -64,34 +65,34 @@ export default async function CoursePage({
 
   // Server-side translations (async function — safe here)
   const labels = {
-    notAvailable: await serverT("courseDetail.notAvailable"),
-    schedule: await serverT("courseDetail.schedule"),
-    settings: await serverT("courseDetail.settings"),
-    code: await serverT("courseDetail.code"),
-    nextSession: await serverT("courseDetail.nextSession"),
-    lesson: await serverT("courseDetail.lesson"),
-    viewSchedule: await serverT("courseDetail.viewSchedule"),
-    announcements: await serverT("courseDetail.announcements"),
-    manage: await serverT("courseDetail.manage"),
-    viewAll: await serverT("courseDetail.viewAll"),
-    courseContent: await serverT("courseDetail.courseContent"),
-    editContent: await serverT("courseDetail.editContent"),
-    moduleLabel: await serverT("courseDetail.module"),
-    noLessons: await serverT("courseDetail.noLessons"),
-    noContent: await serverT("courseDetail.noContent"),
-    addModules: await serverT("courseDetail.addModulesAndLessons"),
-    viewMembers: await serverT("courseDetail.viewMembers"),
-    previewEnroll: await serverT("courseDetail.previewEnroll"),
-    previewOpen: await serverT("courseDetail.previewOpen"),
-    enrollNow: await serverT("courseDetail.enrollNow"),
-    previewInvite: await serverT("courseDetail.previewInvite"),
-    previewInvitePh: await serverT("courseDetail.previewInvitePlaceholder"),
-    previewManaged: await serverT("courseDetail.previewManaged"),
-    modulePlural: await serverT("common.modulePlural"),
-    lessonPlural: await serverT("common.lessonPlural"),
-    duration: await serverT("courseDetail.duration"),
-    lessonsCompleted: await serverT("courseDetail.lessonsCompleted"),
-    continueLabel: await serverT("courseDetail.continue"),
+    notAvailable: t("courseDetail.notAvailable"),
+    schedule: t("courseDetail.schedule"),
+    settings: t("courseDetail.settings"),
+    code: t("courseDetail.code"),
+    nextSession: t("courseDetail.nextSession"),
+    lesson: t("courseDetail.lesson"),
+    viewSchedule: t("courseDetail.viewSchedule"),
+    announcements: t("courseDetail.announcements"),
+    manage: t("courseDetail.manage"),
+    viewAll: t("courseDetail.viewAll"),
+    courseContent: t("courseDetail.courseContent"),
+    editContent: t("courseDetail.editContent"),
+    moduleLabel: t("courseDetail.module"),
+    noLessons: t("courseDetail.noLessons"),
+    noContent: t("courseDetail.noContent"),
+    addModules: t("courseDetail.addModulesAndLessons"),
+    viewMembers: t("courseDetail.viewMembers"),
+    previewEnroll: t("courseDetail.previewEnroll"),
+    previewOpen: t("courseDetail.previewOpen"),
+    enrollNow: t("courseDetail.enrollNow"),
+    previewInvite: t("courseDetail.previewInvite"),
+    previewInvitePh: t("courseDetail.previewInvitePlaceholder"),
+    previewManaged: t("courseDetail.previewManaged"),
+    modulePlural: t("common.modulePlural"),
+    lessonPlural: t("common.lessonPlural"),
+    duration: t("courseDetail.duration"),
+    lessonsCompleted: t("courseDetail.lessonsCompleted"),
+    continueLabel: t("courseDetail.continue"),
   }
 
   const moduleWord = labels.modulePlural

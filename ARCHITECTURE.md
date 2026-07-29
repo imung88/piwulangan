@@ -9,11 +9,9 @@
 | **Database** | Vercel Postgres (Neon) | Serverless PostgreSQL, free tier, works with Prisma |
 | **ORM** | Prisma | Type-safe queries, great migration tooling |
 | **Auth** | NextAuth.js v5 (Auth.js) | Built for Next.js, handles sessions + credentials |
-| **Styling** | Tailwind CSS | Utility-first, mobile-first, small bundle |
-| **UI Components** | shadcn/ui | Accessible, customizable, no vendor lock-in |
+| **Styling** | Tailwind CSS | Utility-first, mobile-first, small bundle ("Metro" design system, tokens in `globals.css`) |
 | **Deployment** | Vercel | Serverless, free tier, zero ops |
 | **Validation** | Zod | Runtime validation + TypeScript inference |
-| **Forms** | React Hook Form + Zod | Minimal re-renders, great validation |
 
 **Not included (by design):**
 
@@ -50,23 +48,24 @@ piwulangan/
 │   │   │   │       ├── page.tsx       # Course overview
 │   │   │   │       ├── lessons/
 │   │   │   │       │   └── [lessonId]/page.tsx
-│   │   │   │       ├── assignments/   # (if module enabled)
-│   │   │   │       │   └── [assignmentId]/
 │   │   │   │       ├── announcements/ # Per-course announcements
-│   │   │   │       ├── grades/        # (if module enabled)
 │   │   │   │       ├── members/
+│   │   │   │       ├── schedule/      # Per-course sessions
 │   │   │   │       └── manage/        # Instructor/admin
 │   │   │   │           ├── content/
 │   │   │   │           ├── students/
 │   │   │   │           ├── announcements/
+│   │   │   │           ├── schedule/
 │   │   │   │           └── settings/
 │   │   │   │
 │   │   │   ├── schedule/              # Core: always on
 │   │   │   │   ├── page.tsx           # Calendar view (role-aware, admin sees all)
-│   │   │   │   ├── availability/      # Instructor: set hours
-│   │   │   │   └── book/page.tsx      # Student: self-book (if enabled)
+│   │   │   │   └── availability/      # Instructor: set hours + blocked dates
+│   │   │   │
+│   │   │   ├── notifications/         # In-app notification list
 │   │   │   │
 │   │   │   ├── admin/
+│   │   │   │   ├── users/             # Admin: user management
 │   │   │   │   └── schedule/          # Admin: create/manage sessions
 │   │   │   │
 │   │   │   └── profile/
@@ -75,44 +74,42 @@ piwulangan/
 │   │   ├── page.tsx           # Landing / redirect
 │   │   └── globals.css
 │   │
-│   ├── components/
-│   │   ├── ui/                # shadcn/ui components
-│   │   ├── layout/            # Sidebar, header, nav
-│   │   ├── course/            # Course-specific components
-│   │   ├── schedule/          # Calendar, booking, availability
-│   │   ├── dashboard/         # Role-specific dashboard cards
-│   │   └── shared/            # Progress bar, resource link, etc.
+│   ├── components/            # Shared components (NotificationBell, MobileNav,
+│   │   │                      #   LanguageSelector, RoleBadge, schedule/*)
+│   │   └── schedule/          # Calendar, session list, availability display
 │   │
 │   ├── lib/
-│   │   ├── auth.ts            # NextAuth configuration
+│   │   ├── auth.ts            # NextAuth (Credentials provider + Prisma adapter)
+│   │   ├── auth.config.ts     # Edge-safe NextAuth config (used by middleware)
 │   │   ├── db.ts              # Prisma client singleton
-│   │   ├── schedule.ts        # Scheduling engine (slot computation)
-│   │   ├── utils.ts           # General utilities
-│   │   ├── i18n/              # Client-side locale module (cookie-based, no URL prefix)
+│   │   ├── schedule.ts        # Session queries (per role/course)
+│   │   ├── notifications.ts   # Notification helpers
+│   │   ├── i18n/              # Cookie-based locale module (no URL prefix)
 │   │   │   ├── LocaleProvider.tsx  # React Context + cookie reader
 │   │   │   ├── useT.ts            # Client t("key.path") hook
+│   │   │   ├── serverT.ts         # Server: getServerT() / serverT()
 │   │   │   └── locales/
 │   │   │       ├── id.ts          # Bahasa Indonesia (default)
 │   │   │       └── en.ts          # English
-│   │   └── validations/       # Zod schemas
 │   │
 │   ├── actions/               # Server Actions
 │   │   ├── auth.ts            # Login, signup
-│   │   ├── courses.ts         # Course CRUD
-│   │   ├── lessons.ts         # Lesson CRUD
-│   │   ├── schedule.ts        # Session CRUD, availability, booking
+│   │   ├── courses.ts         # Course CRUD, enrollment
+│   │   ├── lessons.ts         # Module/lesson CRUD
+│   │   ├── schedule.ts        # Session CRUD, availability, blocked dates
 │   │   ├── progress.ts        # Mark complete
-│   │   ├── assignments.ts     # Submission, grading
 │   │   ├── announcements.ts   # Announcement CRUD
+│   │   ├── notifications.ts   # Fetch/mark-read notifications
 │   │   ├── guardians.ts       # Guardian-student linking
 │   │   └── admin.ts           # Admin actions
 │   │
+│   ├── middleware.ts          # Auth gate + role-based route guards
 │   └── types/                 # Shared TypeScript types
-│       └── index.ts
+│       └── next-auth.d.ts
 │
 ├── .env.example
 ├── .env.local                 # (gitignored)
-├── next.config.ts
+├── next.config.mjs
 ├── tailwind.config.ts
 ├── tsconfig.json
 ├── package.json
@@ -137,9 +134,7 @@ Client Component ("use client") → handles user interaction
 No REST API routes for CRUD. Use Next.js Server Actions for:
 - Creating/editing courses and lessons
 - Creating/editing sessions and availability
-- Booking sessions
 - Marking lessons complete
-- Submitting assignments, grading
 - Managing users and guardian links
 
 This eliminates API boilerplate and keeps mutations co-located with their forms.
@@ -151,20 +146,10 @@ Credentials provider (email + password)
   → bcrypt for password hashing
   → JWT session strategy
   → Middleware for route protection
-  → Role stored in JWT token: admin | instructor | student | guardian
+  → Role stored in JWT token: ADMIN | INSTRUCTOR | STUDENT | GUARDIAN
 ```
 
-Role-based route protection via Next.js middleware:
-
-```typescript
-// src/middleware.ts
-const roleRoutes = {
-  admin: ['/admin'],
-  instructor: ['/courses/*/manage', '/schedule/manage', '/schedule/availability'],
-  student: ['/schedule/book'],
-  guardian: ['/dashboard'], // read-only
-}
-```
+Role-based route protection lives in `src/middleware.ts`: public routes (`/`, `/login`, `/signup`), admin-only `/admin/*`, and a read-only allowlist for guardians (no `/courses/*/manage`). The middleware uses `src/lib/auth.config.ts` — an edge-safe NextAuth config with no Prisma adapter or bcryptjs — so the middleware bundle stays small.
 
 ### 4. Database: Vercel Postgres + Prisma
 
@@ -185,95 +170,31 @@ All resources are external links. This eliminates:
 
 Instructors paste Google Drive links. Students submit text or URLs.
 
-### 6. Scheduling Engine (Core)
+### 6. Course-Centric Scheduling (Core)
 
-Scheduling is always on. The engine computes available slots for student self-booking.
-
-```typescript
-// src/lib/schedule.ts
-
-interface SlotRequest {
-  instructorId: string
-  courseId: string
-  date: Date // specific date to check
-}
-
-interface AvailableSlot {
-  startTime: string  // "09:00"
-  endTime: string    // "10:00"
-}
-
-async function getAvailableSlots(req: SlotRequest): Promise<AvailableSlot[]> {
-  // 1. Get instructor's availability for this day of week
-  const availability = await prisma.availability.findMany({
-    where: {
-      userId: req.instructorId,
-      dayOfWeek: req.date.getDay(),
-      active: true,
-    }
-  })
-
-  // 2. Check if date is blocked
-  const blocked = await prisma.blockedDate.findFirst({
-    where: { userId: req.instructorId, date: req.date }
-  })
-  if (blocked) return []
-
-  // 3. Get course config (slot duration, buffer)
-  const course = await prisma.course.findUnique({
-    where: { id: req.courseId },
-    select: { slotDuration: true, bufferTime: true }
-  })
-
-  // 4. Get existing bookings for this date + instructor
-  const bookings = await prisma.booking.findMany({
-    where: {
-      instructorId: req.instructorId,
-      date: req.date,
-      status: { not: 'CANCELLED' }
-    }
-  })
-
-  // 5. Generate all possible slots, subtract booked
-  return computeSlots(availability, course, bookings)
-}
-```
-
-**Multi-teacher support:** Each course has one instructor. The admin can schedule sessions across different instructors. The admin calendar view queries all instructors' sessions and displays them side by side.
-
-### 7. Module Extension System
-
-Optional modules are toggled per course via `enabledModules[]`. Each module is self-contained:
+Scheduling is always on. There is no slot-computation/booking engine — instructors and admins create `ClassSession` records directly (via `src/actions/schedule.ts`), and `src/lib/schedule.ts` provides role-aware read queries:
 
 ```
-Module structure:
-├── actions/          # Server Actions for this module
-├── components/       # UI components
-├── routes/           # Page routes (added conditionally)
-└── schema.prisma     # Data models (always in schema, but only used when enabled)
+getSessionsForCourse(courseId)
+getSessionsForStudent(studentId, opts)     // via session attendees
+getSessionsForStudents(studentIds, opts)   // guardian view
+getSessionsForInstructor(instructorId, opts)
+getAllSessions(opts)                       // admin calendar
+getCourseAvailability(courseId)            // instructor availability + blocked dates
 ```
 
-**How toggling works at the route level:**
+Instructor availability (`Availability`) and `BlockedDate` records are informational — shown when planning sessions, not enforced by a booking flow.
 
-```typescript
-// In course layout, check if module is enabled
-const course = await getCourse(courseId)
-const hasAssignments = course.enabledModules.includes('assignments')
+**Multi-teacher support:** Each course has one instructor. The admin can schedule sessions across different instructors; the admin calendar queries all instructors' sessions side by side.
 
-// Conditionally render navigation
-{hasAssignments && <NavLink href={`/courses/${courseId}/assignments`}>}
-```
+### 7. Internationalization (id/en)
 
-**Adding a new module (e.g., Quizzes):**
+Cookie-based locale (`lang`), no URL prefix. Bahasa Indonesia is the default.
 
-1. Add data models to `prisma/schema.prisma`
-2. Create `src/actions/quizzes.ts`
-3. Create `src/components/quizzes/`
-4. Create `src/app/(dashboard)/courses/[courseId]/quizzes/`
-5. Add `'quizzes'` to the module enum
-6. Register in course settings UI
-
-The core app doesn't reference quiz code unless the module is enabled.
+- **Client components:** `const t = useT()` (`src/lib/i18n/useT.ts`); interpolate with `format(t("key"), { n })`.
+- **Server components:** `const t = await getServerT()` **once per page**, then call `t("key.path")` synchronously (`src/lib/i18n/serverT.ts`). Avoid per-string `await serverT(...)` — it re-resolves the locale on every call.
+- **Server actions:** `await serverT("errors.key")` for error messages is fine (low volume).
+- All strings live in `src/lib/i18n/locales/{id,en}.ts` with a shared key structure.
 
 ---
 
@@ -294,25 +215,6 @@ Admin                     Server                     Database
   │◄─ Session created ───────┤                           │
   │                          │                           │
   │                          ├─ Notify students ────────►│ (in-app)
-```
-
-### Student Self-Booking Flow (if enabled)
-
-```
-Student                    Server                     Database
-  │                          │                           │
-  ├─ Select date ───────────►│                           │
-  │                          ├─ Query availability ──────►│
-  │                          │◄─ Return weekly slots ─────┤
-  │                          ├─ Query bookings ──────────►│
-  │                          │◄─ Return booked slots ─────┤
-  │                          ├─ Compute available ────────│
-  │◄─ Show available slots ──┤                           │
-  │                          │                           │
-  ├─ Select slot + confirm ─►│                           │
-  │                          ├─ Create booking ──────────►│
-  │                          │◄─ Confirmation ────────────┤
-  │◄─ Booking confirmed ─────┤                           │
 ```
 
 ### Progress Tracking Flow
@@ -377,45 +279,21 @@ Guardian                   Server                     Database
 
 # Database (auto-set by Vercel Postgres integration)
 DATABASE_URL=postgresql://...
-POSTGRES_URL=...
 
 # Auth
-NEXTAUTH_SECRET=generate-a-random-string-here
+AUTH_SECRET=generate-a-random-string-here
 NEXTAUTH_URL=http://localhost:3000  # set to your Vercel URL in production
 ```
 
 ### Local Development
 
-```bash
-# Clone
-git clone https://github.com/YOUR_USERNAME/piwulangan.git
-cd piwulangan
-
-# Install
-npm install
-
-# Set up local Postgres (or use Neon for local dev too)
-cp .env.example .env.local
-# Edit .env.local with your local Postgres URL
-
-# Migrate
-npx prisma migrate dev
-
-# Seed
-npx prisma db seed
-
-# Run
-npm run dev
-```
-
-For local Postgres, use Docker (dev only):
-```bash
-docker run --name piwulangan-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=piwulangan -p 5432:5432 -d postgres:16-alpine
-```
+See [SETUP.md](./SETUP.md) for the full local setup guide (Docker Postgres, migrations, seed data, test accounts).
 
 ---
 
-## Performance Targets
+## Performance
+
+**Targets:**
 
 | Metric | Target |
 |---|---|
@@ -424,6 +302,16 @@ docker run --name piwulangan-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=piw
 | Initial JS bundle | < 150KB (gzipped) |
 | Database queries per page | < 5 |
 | Lighthouse score | > 90 (Performance, Accessibility) |
+
+**Practices in place (2026-07):**
+
+- Server pages resolve translations once via `getServerT()` (no per-string await waterfalls).
+- Independent DB queries run in `Promise.all` (dashboard, courses pages).
+- Session (`role`, `userName`) is passed from the server layout to the client shell — no client-side `/api/auth/session` fetch.
+- Notifications are polled once per 60s in the layout and shared with `NotificationBell` via props.
+- Middleware uses the edge-safe `auth.config.ts` (no Prisma/bcryptjs in the middleware bundle).
+
+**Deferred:** Prisma query reshaping (`select`/`_count`) pending the Postgres-vs-SQLite decision; splitting large client components (`ManageScheduleClient`, `AdminUsersClient`, `DashboardClient`); locale-splitting the client i18n bundle (~38 KB for both dictionaries).
 
 ---
 

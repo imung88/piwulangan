@@ -1,14 +1,13 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { serverT } from "@/lib/i18n/serverT";
+import { getServerT } from "@/lib/i18n/serverT";
 import { getUsers } from "@/actions/admin";
 import AdminUsersClient from "./AdminUsersClient";
 
 export default async function AdminUsersPage() {
-  const [headerTitle, headerDesc] = await Promise.all([
-    serverT("adminUsers.headerTitle"),
-    serverT("adminUsers.headerDesc"),
-  ]);
+  const t = await getServerT();
+  const headerTitle = t("adminUsers.headerTitle");
+  const headerDesc = t("adminUsers.headerDesc");
 
   const session = await auth();
   if (!session?.user) redirect("/login");

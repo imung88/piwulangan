@@ -3,13 +3,14 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { toggleProgress } from "@/actions/progress";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function LessonPage({
   params,
 }: {
   params: Promise<{ courseId: string; lessonId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId, lessonId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -57,16 +58,16 @@ export default async function LessonPage({
   const isGuardianViewer = guardianStudentIds.length > 0;
 
   const labels = {
-    noAccess: await serverT("lesson.noAccess"),
-    back: await serverT("lesson.back"),
-    module: await serverT("lesson.module"),
-    duration: await serverT("lesson.readDuration"),
-    scheduled: await serverT("lesson.scheduled"),
-    noContent: await serverT("lesson.noContent"),
-    resources: await serverT("lesson.resources"),
-    completed: await serverT("lesson.completed"),
-    markComplete: await serverT("lesson.markComplete"),
-    backToCourse: await serverT("lesson.backToCourse"),
+    noAccess: t("lesson.noAccess"),
+    back: t("lesson.back"),
+    module: t("lesson.module"),
+    duration: t("lesson.readDuration"),
+    scheduled: t("lesson.scheduled"),
+    noContent: t("lesson.noContent"),
+    resources: t("lesson.resources"),
+    completed: t("lesson.completed"),
+    markComplete: t("lesson.markComplete"),
+    backToCourse: t("lesson.backToCourse"),
   };
 
   if (!isOwner && !isEnrolled && !isGuardianViewer) {

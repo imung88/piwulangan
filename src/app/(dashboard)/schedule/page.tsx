@@ -9,9 +9,10 @@ import {
 } from "@/lib/schedule";
 import { toSessionItem } from "@/components/schedule/types";
 import ScheduleView from "@/components/schedule/ScheduleView";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function SchedulePage() {
+  const t = await getServerT();
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -23,14 +24,14 @@ export default async function SchedulePage() {
   windowStart.setHours(0, 0, 0, 0);
 
   const labels = {
-    title: await serverT("dashboardSchedule.title"),
-    manageSessions: await serverT("dashboardSchedule.manageSessions"),
-    setAvailability: await serverT("dashboardSchedule.setAvailability"),
-    linkedStudents: await serverT("dashboardSchedule.linkedStudents"),
-    adminDesc: await serverT("dashboardSchedule.adminDesc"),
-    instructorDesc: await serverT("dashboardSchedule.instructorDesc"),
-    studentDesc: await serverT("dashboardSchedule.studentDesc"),
-    guardianDesc: await serverT("dashboardSchedule.guardianDesc"),
+    title: t("dashboardSchedule.title"),
+    manageSessions: t("dashboardSchedule.manageSessions"),
+    setAvailability: t("dashboardSchedule.setAvailability"),
+    linkedStudents: t("dashboardSchedule.linkedStudents"),
+    adminDesc: t("dashboardSchedule.adminDesc"),
+    instructorDesc: t("dashboardSchedule.instructorDesc"),
+    studentDesc: t("dashboardSchedule.studentDesc"),
+    guardianDesc: t("dashboardSchedule.guardianDesc"),
   };
 
   if (role === "ADMIN") {

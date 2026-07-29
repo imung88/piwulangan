@@ -3,13 +3,14 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { updateCourse, publishCourse, unpublishCourse, deleteCourse, archiveCourse, unarchiveCourse } from "@/actions/courses";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function CourseSettingsPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -28,30 +29,30 @@ export default async function CourseSettingsPage({
   }
 
   const labels = {
-    back: await serverT("settings.back"),
-    title: await serverT("settings.title"),
-    courseDetails: await serverT("settings.courseDetails"),
-    titleLbl: await serverT("settings.titleLbl"),
-    description: await serverT("settings.description"),
-    coverImage: await serverT("settings.coverImage"),
-    enrollmentMode: await serverT("settings.enrollmentMode"),
-    enrollmentOpen: await serverT("settings.enrollmentOpen"),
-    enrollmentInvite: await serverT("settings.enrollmentInvite"),
-    enrollmentManual: await serverT("settings.enrollmentManual"),
-    saveChanges: await serverT("settings.saveChanges"),
-    visibility: await serverT("settings.visibility"),
-    publishedDesc: await serverT("settings.publishedDesc"),
-    archivedDesc: await serverT("settings.archivedDesc"),
-    draftDesc: await serverT("settings.draftDesc"),
-    publish: await serverT("settings.publish"),
-    unpublish: await serverT("settings.unpublish"),
-    archive: await serverT("settings.archive"),
-    unarchive: await serverT("settings.unarchive"),
-    inviteCode: await serverT("settings.inviteCode"),
-    inviteDesc: await serverT("settings.inviteDesc"),
-    danger: await serverT("settings.danger"),
-    dangerDesc: await serverT("settings.dangerDesc"),
-    delete: await serverT("settings.delete"),
+    back: t("settings.back"),
+    title: t("settings.title"),
+    courseDetails: t("settings.courseDetails"),
+    titleLbl: t("settings.titleLbl"),
+    description: t("settings.description"),
+    coverImage: t("settings.coverImage"),
+    enrollmentMode: t("settings.enrollmentMode"),
+    enrollmentOpen: t("settings.enrollmentOpen"),
+    enrollmentInvite: t("settings.enrollmentInvite"),
+    enrollmentManual: t("settings.enrollmentManual"),
+    saveChanges: t("settings.saveChanges"),
+    visibility: t("settings.visibility"),
+    publishedDesc: t("settings.publishedDesc"),
+    archivedDesc: t("settings.archivedDesc"),
+    draftDesc: t("settings.draftDesc"),
+    publish: t("settings.publish"),
+    unpublish: t("settings.unpublish"),
+    archive: t("settings.archive"),
+    unarchive: t("settings.unarchive"),
+    inviteCode: t("settings.inviteCode"),
+    inviteDesc: t("settings.inviteDesc"),
+    danger: t("settings.danger"),
+    dangerDesc: t("settings.dangerDesc"),
+    delete: t("settings.delete"),
   };
 
   return (

@@ -190,6 +190,10 @@ npm run db:seed      # Re-seed the database
 npm run db:reset     # Reset database (drop + migrate + seed)
 ```
 
+**Schema changes:** edit `prisma/schema.prisma`, then `npm run db:migrate -- --name your-migration-name`.
+
+**Before a PR:** run `npm run build` (type check) and `npm run lint`.
+
 ---
 
 ## What to Try After Setup
@@ -199,7 +203,6 @@ npm run db:reset     # Reset database (drop + migrate + seed)
 3. **Log in as Alice** (`alice@example.com`) → see 2 courses, mark lessons complete, watch progress bar grow
 4. **Log in as guardian** (`guardian@example.com`) → see Alice's progress (read-only)
 5. **Visit Prisma Studio** (`npm run db:studio`) → browse the database directly
-password123
 
 ---
 
@@ -209,7 +212,7 @@ password123
 - **Deployment** — Vercel or other production deployment (Phase 6)
 - **Tests & audit** — automated tests, SEO audit, deployment config (not yet started)
 
-> Note: This is a local development setup guide. For project-level scope, status, and the Next.js 14 → 15 migration record, see `DEVELOPMENT_PLAN.md` and `MIGRATION_14_TO_15.md` in the repo root.
+> Note: This is a local development setup guide. For project-level scope and status, see `DEVELOPMENT_PLAN.md` in the parent folder.
 
 ---
 

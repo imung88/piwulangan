@@ -1,4 +1,5 @@
 import { cookies } from "next/headers"
+import { auth } from "@/lib/auth"
 import LayoutContent from "./LayoutContent"
 
 export default async function DashboardLayout({
@@ -6,6 +7,13 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const lang = (await cookies()).get("lang")?.value === "en" ? "en" : "id"
-  return <LayoutContent initialLocale={lang}>{children}</LayoutContent>
+  const [cookieStore, session] = await Promise.all([cookies(), auth()])
+  const lang = cookieStore.get("lang")?.value === "en" ? "en" : "id"
+  const role = (session?.user as { role?: string } | undefined)?.role ?? null
+  const userName = session?.user?.name ?? null
+  return (
+    <LayoutContent initialLocale={lang} role={role} userName={userName}>
+      {children}
+    </LayoutContent>
+  )
 }

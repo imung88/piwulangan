@@ -2,6 +2,10 @@
 // Reads the `lang` cookie from the request headers so a server component
 // can pick the correct dictionary for static labels.
 import { headers } from "next/headers"
+import id from "./locales/id"
+import en from "./locales/en"
+
+const DICTS = { id, en } as const
 const DEFAULT: "id" | "en" = "id"
 
 export async function resolveLocale(): Promise<"id" | "en"> {
@@ -11,7 +15,6 @@ export async function resolveLocale(): Promise<"id" | "en"> {
   return (m?.[1] ?? DEFAULT) as "id" | "en"
 }
 
-// Server-safe dictionary lookup — mirrors the shape of the dict files.
 // Fill `{key}` placeholders into a serverT string, mirroring the client `format()`.
 export function formatT(str: string, params: Record<string, unknown>): string {
   return str.replace(/\{(\w+)\}/g, (_match, key) => {
@@ -20,12 +23,7 @@ export function formatT(str: string, params: Record<string, unknown>): string {
   })
 }
 
-export async function serverT(path: string): Promise<string> {
-  const [locale] = [await resolveLocale()]
-  const { default: dict } =
-    locale === "id"
-      ? await import("./locales/id")
-      : await import("./locales/en")
+function deepGet(dict: unknown, path: string): string {
   const keys = path.split(".")
   let current: unknown = dict
   for (const k of keys) {
@@ -34,4 +32,17 @@ export async function serverT(path: string): Promise<string> {
     } else return path
   }
   return typeof current === "string" ? current : String(current ?? path)
+}
+
+// Resolve the locale once, then translate synchronously.
+// Preferred in pages: `const t = await getServerT()` then `t("nav.dashboard")`.
+export async function getServerT(): Promise<(path: string) => string> {
+  const locale = await resolveLocale()
+  const dict = DICTS[locale]
+  return (path: string) => deepGet(dict, path)
+}
+
+export async function serverT(path: string): Promise<string> {
+  const t = await getServerT()
+  return t(path)
 }

@@ -3,13 +3,14 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { AddStudentForm, RemoveStudentButton } from "./StudentActions";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageStudentsPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -55,16 +56,16 @@ export default async function ManageStudentsPage({
   );
 
   const labels = {
-    back: await serverT("courseManage.back"),
-    title: await serverT("courseManage.studentsTitle"),
-    enrolledAndLessons: await serverT("courseManage.enrolledAndLessons"),
-    addStudent: await serverT("courseManage.addStudent"),
-    student: await serverT("courseManage.student"),
-    email: await serverT("courseManage.email"),
-    progress: await serverT("courseManage.progress"),
-    completed: await serverT("courseManage.completed"),
-    enrolled: await serverT("courseManage.enrolled"),
-    noStudents: await serverT("courseManage.noStudents"),
+    back: t("courseManage.back"),
+    title: t("courseManage.studentsTitle"),
+    enrolledAndLessons: t("courseManage.enrolledAndLessons"),
+    addStudent: t("courseManage.addStudent"),
+    student: t("courseManage.student"),
+    email: t("courseManage.email"),
+    progress: t("courseManage.progress"),
+    completed: t("courseManage.completed"),
+    enrolled: t("courseManage.enrolled"),
+    noStudents: t("courseManage.noStudents"),
   };
 
   return (

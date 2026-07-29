@@ -7,13 +7,14 @@ import {
   deleteAnnouncement,
   togglePin,
 } from "@/actions/announcements";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageAnnouncementsPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -37,18 +38,18 @@ export default async function ManageAnnouncementsPage({
   });
 
   const labels = {
-    back: await serverT("courseManage.back"),
-    title: await serverT("courseManage.announceTitle"),
-    newAnnouncement: await serverT("courseManage.newAnnouncement"),
-    allAnnouncements: await serverT("courseManage.allAnnouncements"),
-    titleLbl: await serverT("courseManage.title"),
-    body: await serverT("courseManage.body"),
-    pinAnnouncement: await serverT("courseManage.pinAnnouncement"),
-    createAnnouncement: await serverT("courseManage.createAnnouncement"),
-    noAnnouncements: await serverT("courseManage.noAnnouncements"),
-    unpin: await serverT("courseManage.unpin"),
-    pin: await serverT("courseManage.pin"),
-    delete: await serverT("courseManage.delete"),
+    back: t("courseManage.back"),
+    title: t("courseManage.announceTitle"),
+    newAnnouncement: t("courseManage.newAnnouncement"),
+    allAnnouncements: t("courseManage.allAnnouncements"),
+    titleLbl: t("courseManage.title"),
+    body: t("courseManage.body"),
+    pinAnnouncement: t("courseManage.pinAnnouncement"),
+    createAnnouncement: t("courseManage.createAnnouncement"),
+    noAnnouncements: t("courseManage.noAnnouncements"),
+    unpin: t("courseManage.unpin"),
+    pin: t("courseManage.pin"),
+    delete: t("courseManage.delete"),
   };
 
   return (

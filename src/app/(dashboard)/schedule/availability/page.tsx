@@ -4,11 +4,12 @@ import { db } from "@/lib/db";
 import { DAY_NAMES } from "@/lib/schedule";
 import AvailabilityForm from "./AvailabilityForm";
 import BlockedDatesSection from "./BlockedDatesSection";
-import { serverT } from "@/lib/i18n/serverT";
+import { getServerT } from "@/lib/i18n/serverT";
 
 const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 
 export default async function AvailabilityPage() {
+  const t = await getServerT();
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -33,13 +34,13 @@ export default async function AvailabilityPage() {
   });
 
   const labels = {
-    title: await serverT("availability.title"),
-    description: await serverT("availability.description"),
-    weeklySchedule: await serverT("availability.weeklySchedule"),
-    addAvailability: await serverT("availability.addAvailability"),
-    noAvailability: await serverT("availability.noAvailability"),
-    courseFallback: await serverT("settings.inviteCode"),
-    days: await Promise.all(DAY_KEYS.map(async (k) => serverT(`days.${k}`))),
+    title: t("availability.title"),
+    description: t("availability.description"),
+    weeklySchedule: t("availability.weeklySchedule"),
+    addAvailability: t("availability.addAvailability"),
+    noAvailability: t("availability.noAvailability"),
+    courseFallback: t("settings.inviteCode"),
+    days: DAY_KEYS.map((k) => t(`days.${k}`)),
   };
 
   return (

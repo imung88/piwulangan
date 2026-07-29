@@ -2,13 +2,14 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function MembersPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -49,12 +50,12 @@ export default async function MembersPage({
   );
 
   const labels = {
-    back: await serverT("members.back"),
-    title: await serverT("members.title"),
-    instructor: await serverT("members.instructor"),
-    students: await serverT("members.students"),
-    noStudents: await serverT("members.noStudents"),
-    lessonsCompleted: await serverT("members.lessonsCompleted"),
+    back: t("members.back"),
+    title: t("members.title"),
+    instructor: t("members.instructor"),
+    students: t("members.students"),
+    noStudents: t("members.noStudents"),
+    lessonsCompleted: t("members.lessonsCompleted"),
   };
 
   return (

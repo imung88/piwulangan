@@ -4,9 +4,10 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import CoursesClient from "./CoursesClient"
 import BrowseCourses from "./BrowseCourses"
-import { serverT } from "@/lib/i18n/serverT"
+import { getServerT } from "@/lib/i18n/serverT"
 
 export default async function CoursesPage() {
+  const t = await getServerT();
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -33,23 +34,23 @@ export default async function CoursesPage() {
       orderBy: { createdAt: "desc" },
     });
   } else if (role === "STUDENT") {
-    const enrollments = await db.enrollment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          include: {
-            instructor: true,
-            modules: { include: { lessons: true } },
+    const [enrollments, completedProgress] = await Promise.all([
+      db.enrollment.findMany({
+        where: { userId },
+        include: {
+          course: {
+            include: {
+              instructor: true,
+              modules: { include: { lessons: true } },
+            },
           },
         },
-      },
-    });
-
-    // Get completed lesson IDs for this user
-    const completedProgress = await db.progress.findMany({
-      where: { userId, completed: true },
-      select: { lessonId: true },
-    });
+      }),
+      db.progress.findMany({
+        where: { userId, completed: true },
+        select: { lessonId: true },
+      }),
+    ]);
     const completedLessonIds = new Set(completedProgress.map((p) => p.lessonId));
 
     courses = enrollments.map((e) => {
@@ -130,10 +131,10 @@ export default async function CoursesPage() {
 
   // Server-side translations for page-header labels (already async function)
   const labels = {
-    allCourses: await serverT("courses.allCourses"),
-    newCourse: await serverT("courses.newCourse"),
-    myCourses: await serverT("courses.myCourses"),
-    guardianDesc: await serverT("courses.myCoursesGuardian"),
+    allCourses: t("courses.allCourses"),
+    newCourse: t("courses.newCourse"),
+    myCourses: t("courses.myCourses"),
+    guardianDesc: t("courses.myCoursesGuardian"),
   }
 
   return (

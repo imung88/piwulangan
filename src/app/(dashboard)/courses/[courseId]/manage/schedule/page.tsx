@@ -4,13 +4,14 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSessionsForCourse } from "@/lib/schedule";
 import ManageScheduleClient from "./ManageScheduleClient";
-import { serverT, formatT } from "@/lib/i18n/serverT";
+import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageSchedulePage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  const t = await getServerT();
   const { courseId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -47,9 +48,9 @@ export default async function ManageSchedulePage({
   );
 
   const labels = {
-    back: await serverT("schedule.back"),
-    manageTitle: await serverT("schedule.manageSessions"),
-    manageDesc: await serverT("schedule.manageDesc"),
+    back: t("schedule.back"),
+    manageTitle: t("schedule.manageSessions"),
+    manageDesc: t("schedule.manageDesc"),
   };
 
   return (

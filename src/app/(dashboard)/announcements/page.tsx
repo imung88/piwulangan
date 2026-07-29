@@ -2,17 +2,18 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { serverT } from "@/lib/i18n/serverT";
+import { getServerT } from "@/lib/i18n/serverT";
 
 export default async function AnnouncementsPage() {
+  const t = await getServerT();
   const labels = {
-    title: await serverT("announcementsPage.title"),
-    descAdmin: await serverT("announcementsPage.descAdmin"),
-    descInstructor: await serverT("announcementsPage.descInstructor"),
-    descStudent: await serverT("announcementsPage.descStudent"),
-    descGuardian: await serverT("announcementsPage.descGuardian"),
-    noAnnouncements: await serverT("announcementsPage.noAnnouncements"),
-    manage: await serverT("announcementsPage.manage"),
+    title: t("announcementsPage.title"),
+    descAdmin: t("announcementsPage.descAdmin"),
+    descInstructor: t("announcementsPage.descInstructor"),
+    descStudent: t("announcementsPage.descStudent"),
+    descGuardian: t("announcementsPage.descGuardian"),
+    noAnnouncements: t("announcementsPage.noAnnouncements"),
+    manage: t("announcementsPage.manage"),
   };
 
   const session = await auth();

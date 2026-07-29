@@ -15,31 +15,33 @@ export default async function DashboardPage() {
   // Fetch data based on role
   let dashboardData: any = {}
   if (role === "STUDENT") {
-    const enrollments = await db.enrollment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          include: {
-            modules: {
-              include: { lessons: true },
+    const [enrollments, progress, bookings] = await Promise.all([
+      db.enrollment.findMany({
+        where: { userId },
+        include: {
+          course: {
+            include: {
+              modules: {
+                include: { lessons: true },
+              },
             },
           },
         },
-      },
-    })
-    const progress = await db.progress.findMany({
-      where: { userId, completed: true },
-    })
-    const bookings = await db.classSession.findMany({
-      where: {
-        attendees: { some: { studentId: userId } },
-        status: "SCHEDULED",
-        date: { gte: new Date() },
-      },
-      include: { course: true },
-      orderBy: { date: "asc" },
-      take: 5,
-    })
+      }),
+      db.progress.findMany({
+        where: { userId, completed: true },
+      }),
+      db.classSession.findMany({
+        where: {
+          attendees: { some: { studentId: userId } },
+          status: "SCHEDULED",
+          date: { gte: new Date() },
+        },
+        include: { course: true },
+        orderBy: { date: "asc" },
+        take: 5,
+      }),
+    ])
 
     const enrolledCourseIds = enrollments.map((e: any) => e.courseId)
     const announcements = await db.announcement.findMany({
@@ -51,41 +53,41 @@ export default async function DashboardPage() {
 
     dashboardData = { enrollments, progress, bookings, announcements }
   } else if (role === "INSTRUCTOR") {
-    const courses = await db.course.findMany({
-      where: { instructorId: userId },
-      include: {
-        enrollments: { include: { user: true } },
-        modules: { include: { lessons: true } },
-      },
-    })
-
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
-
-    const todayBookings = await db.classSession.findMany({
-      where: {
-        instructorId: userId,
-        date: { gte: today, lt: tomorrow },
-        status: "SCHEDULED",
-      },
-      include: { attendees: { include: { student: true } }, course: true },
-      orderBy: { startTime: "asc" },
-    })
 
     const weekStart = new Date(today)
     weekStart.setDate(weekStart.getDate() - weekStart.getDay())
     const weekEnd = new Date(weekStart)
     weekEnd.setDate(weekEnd.getDate() + 7)
 
-    const weekBookingsCount = await db.classSession.count({
-      where: {
-        instructorId: userId,
-        date: { gte: weekStart, lt: weekEnd },
-        status: "SCHEDULED",
-      },
-    })
+    const [courses, todayBookings, weekBookingsCount] = await Promise.all([
+      db.course.findMany({
+        where: { instructorId: userId },
+        include: {
+          enrollments: { include: { user: true } },
+          modules: { include: { lessons: true } },
+        },
+      }),
+      db.classSession.findMany({
+        where: {
+          instructorId: userId,
+          date: { gte: today, lt: tomorrow },
+          status: "SCHEDULED",
+        },
+        include: { attendees: { include: { student: true } }, course: true },
+        orderBy: { startTime: "asc" },
+      }),
+      db.classSession.count({
+        where: {
+          instructorId: userId,
+          date: { gte: weekStart, lt: weekEnd },
+          status: "SCHEDULED",
+        },
+      }),
+    ])
 
     const courseIds = courses.map((c: any) => c.id)
     const allEnrollments = await db.enrollment.findMany({
@@ -165,27 +167,28 @@ export default async function DashboardPage() {
 
     dashboardData = { links, announcements }
   } else if (role === "ADMIN") {
-    const userCounts = await db.user.groupBy({
-      by: ["role"],
-      _count: true,
-    })
-    const totalUsers = userCounts.reduce(
-      (sum: number, g: any) => sum + g._count,
-      0,
-    )
-    const totalCourses = await db.course.count()
-
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
     const todayEnd = new Date(todayStart)
     todayEnd.setDate(todayEnd.getDate() + 1)
 
-    const sessionsToday = await db.classSession.count({
-      where: {
-        date: { gte: todayStart, lt: todayEnd },
-        status: "SCHEDULED",
-      },
-    })
+    const [userCounts, totalCourses, sessionsToday] = await Promise.all([
+      db.user.groupBy({
+        by: ["role"],
+        _count: true,
+      }),
+      db.course.count(),
+      db.classSession.count({
+        where: {
+          date: { gte: todayStart, lt: todayEnd },
+          status: "SCHEDULED",
+        },
+      }),
+    ])
+    const totalUsers = userCounts.reduce(
+      (sum: number, g: any) => sum + g._count,
+      0,
+    )
 
     dashboardData = { totalUsers, totalCourses, sessionsToday, userCounts }
   }
