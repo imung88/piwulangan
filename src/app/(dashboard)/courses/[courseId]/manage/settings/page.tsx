@@ -1,8 +1,15 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { updateCourse, publishCourse, unpublishCourse, deleteCourse, archiveCourse, unarchiveCourse } from "@/actions/courses";
+import { publishCourse, unpublishCourse, deleteCourse, archiveCourse, unarchiveCourse } from "@/actions/courses";
+import {
+  AddCoInstructorForm,
+  RemoveCoInstructorButton,
+  TransferOwnershipForm,
+} from "./TeacherActions";
+import { CourseDetailsForm } from "./CourseDetailsForm";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function CourseSettingsPage({
@@ -20,26 +27,40 @@ export default async function CourseSettingsPage({
 
   const course = await db.course.findUnique({
     where: { id: courseId },
+    include: {
+      instructor: { select: { id: true, name: true, email: true } },
+      coInstructors: {
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { addedAt: "asc" },
+      },
+    },
   });
 
   if (!course) notFound();
 
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     redirect("/courses");
   }
+
+  const isOwnerLevel = role === "ADMIN" || course.instructorId === userId;
+
+  const coInstructorIds = course.coInstructors.map((c) => c.userId);
+  const teacherCandidates = isOwnerLevel
+    ? await db.user.findMany({
+        where: {
+          role: "INSTRUCTOR",
+          active: true,
+          id: { notIn: [...coInstructorIds, course.instructorId] },
+        },
+        select: { id: true, name: true, email: true },
+        orderBy: { name: "asc" },
+      })
+    : [];
 
   const labels = {
     back: t("settings.back"),
     title: t("settings.title"),
     courseDetails: t("settings.courseDetails"),
-    titleLbl: t("settings.titleLbl"),
-    description: t("settings.description"),
-    coverImage: t("settings.coverImage"),
-    enrollmentMode: t("settings.enrollmentMode"),
-    enrollmentOpen: t("settings.enrollmentOpen"),
-    enrollmentInvite: t("settings.enrollmentInvite"),
-    enrollmentManual: t("settings.enrollmentManual"),
-    saveChanges: t("settings.saveChanges"),
     visibility: t("settings.visibility"),
     publishedDesc: t("settings.publishedDesc"),
     archivedDesc: t("settings.archivedDesc"),
@@ -53,6 +74,13 @@ export default async function CourseSettingsPage({
     danger: t("settings.danger"),
     dangerDesc: t("settings.dangerDesc"),
     delete: t("settings.delete"),
+    teachers: t("settings.teachers"),
+    ownerLbl: t("settings.ownerLbl"),
+    coTeachers: t("settings.coTeachers"),
+    noCoTeachers: t("settings.noCoTeachers"),
+    addCoTeacher: t("settings.addCoTeacher"),
+    transferOwnership: t("settings.transferOwnership"),
+    transferDesc: t("settings.transferDesc"),
   };
 
   return (
@@ -70,68 +98,78 @@ export default async function CourseSettingsPage({
       {/* Edit form */}
       <div className="mt-6 metro-card p-6">
         <h2 className="metro-section-title mb-4">{labels.courseDetails}</h2>
-        <form
-          action={async (formData: FormData) => {
-            "use server";
-            await updateCourse(courseId, formData);
+        <CourseDetailsForm
+          courseId={courseId}
+          initial={{
+            title: course.title,
+            description: course.description || "",
+            coverImageUrl: course.coverImageUrl || "",
+            enrollmentMode: course.enrollmentMode,
           }}
-          className="space-y-4"
-        >
+        />
+      </div>
+
+      {/* Teachers */}
+      <div className="mt-6 metro-card p-6">
+        <h2 className="metro-section-title mb-4">{labels.teachers}</h2>
+        <div className="flex items-center justify-between">
           <div>
-            <label className="block text-sm font-medium text-metro-text">{labels.titleLbl}</label>
-            <input
-              name="title"
-              defaultValue={course.title}
-              required
-              maxLength={120}
-              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
+            <p className="text-xs font-medium uppercase tracking-wide text-metro-text-secondary">
+              {labels.ownerLbl}
+            </p>
+            <p className="mt-1 font-medium">👤 {course.instructor.name}</p>
+            <p className="text-sm text-metro-text-secondary">{course.instructor.email}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-metro-border pt-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-metro-text-secondary">
+            {labels.coTeachers}
+          </p>
+          {course.coInstructors.length === 0 ? (
+            <p className="mt-2 text-sm text-metro-text-secondary">{labels.noCoTeachers}</p>
+          ) : (
+            <ul className="mt-2 space-y-2">
+              {course.coInstructors.map((ci) => (
+                <li key={ci.id} className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">👤 {ci.user.name}</p>
+                    <p className="text-xs text-metro-text-secondary">{ci.user.email}</p>
+                  </div>
+                  {isOwnerLevel && (
+                    <RemoveCoInstructorButton
+                      courseId={courseId}
+                      instructorId={ci.userId}
+                      instructorName={ci.user.name}
+                    />
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {isOwnerLevel && (
+            <div className="mt-3">
+              <p className="mb-2 text-sm font-medium text-metro-text">{labels.addCoTeacher}</p>
+              <AddCoInstructorForm courseId={courseId} candidates={teacherCandidates} />
+            </div>
+          )}
+        </div>
+
+        {isOwnerLevel && (
+          <div className="mt-4 border-t border-metro-border pt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-metro-text-secondary">
+              {labels.transferOwnership}
+            </p>
+            <p className="mt-1 mb-2 text-sm text-metro-text-secondary">{labels.transferDesc}</p>
+            <TransferOwnershipForm
+              courseId={courseId}
+              candidates={[
+                ...course.coInstructors.map((ci) => ci.user),
+                ...teacherCandidates,
+              ]}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-metro-text">
-              {labels.description}
-            </label>
-            <textarea
-              name="description"
-              defaultValue={course.description || ""}
-              rows={3}
-              maxLength={2000}
-              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-metro-text">
-              {labels.coverImage}
-            </label>
-            <input
-              name="coverImageUrl"
-              defaultValue={course.coverImageUrl || ""}
-              type="url"
-              placeholder="https://..."
-              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-metro-text">
-              {labels.enrollmentMode}
-            </label>
-            <select
-              name="enrollmentMode"
-              defaultValue={course.enrollmentMode}
-              className="metro-input mt-1 block w-full px-3 py-2 text-sm"
-            >
-              <option value="OPEN">{labels.enrollmentOpen}</option>
-              <option value="INVITE_CODE">{labels.enrollmentInvite}</option>
-              <option value="MANUAL">{labels.enrollmentManual}</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
-          >
-            {labels.saveChanges}
-          </button>
-        </form>
+        )}
       </div>
 
       {/* Publish/Unpublish */}
@@ -222,25 +260,27 @@ export default async function CourseSettingsPage({
       )}
 
       {/* Danger Zone */}
-      <div className="mt-6 metro-card p-6" style={{ borderLeftColor: "var(--metro-error)" }}>
-        <h2 className="metro-section-title mb-2 text-metro-error">{labels.danger}</h2>
-        <p className="text-sm text-metro-error mb-4">
-          {labels.dangerDesc}
-        </p>
-        <form
-          action={async () => {
-            "use server";
-            await deleteCourse(courseId);
-          }}
-        >
-          <button
-            type="submit"
-            className="bg-metro-error px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+      {isOwnerLevel && (
+        <div className="mt-6 metro-card p-6" style={{ borderLeftColor: "var(--metro-error)" }}>
+          <h2 className="metro-section-title mb-2 text-metro-error">{labels.danger}</h2>
+          <p className="text-sm text-metro-error mb-4">
+            {labels.dangerDesc}
+          </p>
+          <form
+            action={async () => {
+              "use server";
+              await deleteCourse(courseId);
+            }}
           >
-            {labels.delete}
-          </button>
-        </form>
-      </div>
+            <button
+              type="submit"
+              className="bg-metro-error px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            >
+              {labels.delete}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

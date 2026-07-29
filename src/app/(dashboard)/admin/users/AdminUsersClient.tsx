@@ -20,7 +20,11 @@ import {
 type User = {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  dateOfBirth: string | null;
+  notes: string | null;
   role: string;
   active: boolean;
   createdAt: Date;
@@ -33,7 +37,8 @@ type User = {
 type LinkedUser = {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
 };
 
 export default function AdminUsersClient({ users: initialUsers }: { users: User[] }) {
@@ -52,19 +57,41 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [selectedGuardianId, setSelectedGuardianId] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [menu, setMenu] = useState<{ user: User; x: number; y: number } | null>(null);
+  const [page, setPage] = useState(1);
+
+  const PAGE_SIZE = 10;
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase());
+      (user.email ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (user.phone ?? "").includes(search);
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
+  // Reset to first page whenever filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter]);
+
+  const errorText = (error: unknown) =>
+    typeof error === "string"
+      ? error
+      : Object.values(error as Record<string, string[]>).flat()[0] ?? "Validation error";
+
   const handleCreateUser = async (formData: FormData) => {
     const result = await createUser(formData);
     if (result?.error) {
-      setMessage({ type: "error", text: typeof result.error === "string" ? result.error : "Validation error" });
+      setMessage({ type: "error", text: errorText(result.error) });
     } else {
       setMessage({ type: "success", text: "User created successfully" });
       setShowCreateForm(false);
@@ -75,7 +102,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
   const handleUpdateUser = async (userId: string, formData: FormData) => {
     const result = await updateUser(userId, formData);
     if (result?.error) {
-      setMessage({ type: "error", text: typeof result.error === "string" ? result.error : "Validation error" });
+      setMessage({ type: "error", text: errorText(result.error) });
     } else {
       setMessage({ type: "success", text: "User updated successfully" });
       setEditingUser(null);
@@ -239,7 +266,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 {t("adminUsers.name")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
-                {t("adminUsers.email")}
+                {t("adminUsers.contact")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
                 {t("adminUsers.role")}
@@ -253,13 +280,17 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
             </tr>
           </thead>
           <tbody className="bg-metro-surface divide-y divide-metro-border">
-            {filteredUsers.map((user) => (
+            {paginatedUsers.map((user) => (
               <tr key={user.id} className={!user.active ? "bg-metro-bg" : ""}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-metro-text">{user.name}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-metro-text-secondary">{user.email}</div>
+                  <div className="text-sm text-metro-text-secondary">
+                    {user.email && <div>{user.email}</div>}
+                    {user.phone && <div>{user.phone}</div>}
+                    {!user.email && !user.phone && <div>—</div>}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
@@ -288,43 +319,20 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingUser(user)}
-                      className="text-metro-blue hover:text-metro-chrome-dark"
-                    >
-                      {t("adminUsers.edit")}
-                    </button>
-                    <button
-                      onClick={() => setResetPasswordUser(user)}
-                      className="text-metro-orange hover:text-metro-orange-hover"
-                    >
-                      {t("adminUsers.resetPassword")}
-                    </button>
-                    {(user.role === "GUARDIAN" || user.role === "STUDENT") && (
-                      <button
-                        onClick={() => setLinkingUser(user)}
-                        className="text-metro-chrome-dark hover:text-metro-blue"
-                      >
-                        {t("adminUsers.link")}
-                      </button>
-                    )}
-                    {user.active ? (
-                      <button
-                        onClick={() => handleDeactivate(user.id)}
-                        className="text-metro-error hover:text-metro-orange-hover"
-                      >
-                        {t("adminUsers.deactivate")}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleActivate(user.id)}
-                        className="text-metro-green hover:text-metro-green-hover"
-                      >
-                        {t("adminUsers.activate")}
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setMenu(
+                        menu?.user.id === user.id
+                          ? null
+                          : { user, x: rect.right, y: rect.bottom }
+                      );
+                    }}
+                    aria-label={t("adminUsers.actions")}
+                    className="border-2 border-metro-border px-3 py-1 font-bold text-metro-text hover:bg-metro-bg"
+                  >
+                    ⋯
+                  </button>
                 </td>
               </tr>
             ))}
@@ -335,12 +343,97 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
         )}
       </div>
 
+      {/* Pagination */}
+      {filteredUsers.length > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-metro-text-secondary">
+            {format(t("adminUsers.pageInfo"), {
+              from: (currentPage - 1) * PAGE_SIZE + 1,
+              to: Math.min(currentPage * PAGE_SIZE, filteredUsers.length),
+              total: filteredUsers.length,
+            })}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="border-2 border-metro-border px-3 py-1 text-sm font-medium text-metro-text hover:bg-metro-bg disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {t("adminUsers.prev")}
+            </button>
+            <span className="px-2 py-1 text-sm text-metro-text">
+              {format(t("adminUsers.pageOf"), { current: currentPage, total: totalPages })}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="border-2 border-metro-border px-3 py-1 text-sm font-medium text-metro-text hover:bg-metro-bg disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {t("adminUsers.next")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Actions Dropdown */}
+      {menu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenu(null)} />
+          <div
+            className="fixed z-50 w-44 border-2 border-metro-border bg-metro-surface shadow-lg"
+            style={{ top: menu.y + 4, left: Math.max(8, menu.x - 176) }}
+          >
+            <button
+              onClick={() => { setEditingUser(menu.user); setMenu(null); }}
+              className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
+            >
+              {t("adminUsers.edit")}
+            </button>
+            <button
+              onClick={() => { setResetPasswordUser(menu.user); setMenu(null); }}
+              className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
+            >
+              {t("adminUsers.resetPassword")}
+            </button>
+            {(menu.user.role === "GUARDIAN" || menu.user.role === "STUDENT") && (
+              <button
+                onClick={() => { setLinkingUser(menu.user); setMenu(null); }}
+                className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
+              >
+                {t("adminUsers.link")}
+              </button>
+            )}
+            {menu.user.active ? (
+              <button
+                onClick={() => { handleDeactivate(menu.user.id); setMenu(null); }}
+                className="block w-full px-4 py-2 text-left text-sm text-metro-error hover:bg-metro-bg"
+              >
+                {t("adminUsers.deactivate")}
+              </button>
+            ) : (
+              <button
+                onClick={() => { handleActivate(menu.user.id); setMenu(null); }}
+                className="block w-full px-4 py-2 text-left text-sm text-metro-green hover:bg-metro-bg"
+              >
+                {t("adminUsers.activate")}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
       {/* Create User Modal */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-metro-surface p-6 w-full max-w-md">
             <h2 className="metro-section-title mb-4">{t("adminUsers.createUser")}</h2>
-            <form action={handleCreateUser} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateUser(new FormData(e.currentTarget));
+              }}
+              className="space-y-4"
+            >
               <div>
                 <label className="block text-sm font-medium text-metro-text">{t("adminUsers.name")}</label>
                 <input
@@ -354,9 +447,18 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 <input
                   name="email"
                   type="email"
-                  required
                   className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.phone")}</label>
+                <input
+                  name="phone"
+                  type="tel"
+                  placeholder="0812xxxxxxx"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
+                />
+                <p className="mt-1 text-xs text-metro-text-secondary">{t("adminUsers.emailOrPhoneHint")}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-metro-text">{t("adminUsers.password")}</label>
@@ -404,10 +506,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
       {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-metro-surface p-6 w-full max-w-md">
+          <div className="bg-metro-surface p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="metro-section-title mb-4">{t("adminUsers.editUser")}</h2>
             <form
-              action={(formData) => handleUpdateUser(editingUser.id, formData)}
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleUpdateUser(editingUser.id, new FormData(e.currentTarget));
+              }}
               className="space-y-4"
             >
               <div>
@@ -424,8 +529,45 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 <input
                   name="email"
                   type="email"
-                  defaultValue={editingUser.email}
-                  required
+                  defaultValue={editingUser.email ?? ""}
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.phone")}</label>
+                <input
+                  name="phone"
+                  type="tel"
+                  defaultValue={editingUser.phone ?? ""}
+                  placeholder="0812xxxxxxx"
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
+                />
+                <p className="mt-1 text-xs text-metro-text-secondary">{t("adminUsers.emailOrPhoneHint")}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.address")}</label>
+                <textarea
+                  name="address"
+                  rows={2}
+                  defaultValue={editingUser.address ?? ""}
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.dateOfBirth")}</label>
+                <input
+                  name="dateOfBirth"
+                  type="date"
+                  defaultValue={editingUser.dateOfBirth ?? ""}
+                  className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.notes")}</label>
+                <textarea
+                  name="notes"
+                  rows={3}
+                  defaultValue={editingUser.notes ?? ""}
                   className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 />
               </div>
@@ -471,12 +613,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
               {format(t("adminUsers.resetPasswordTitle"), { name: resetPasswordUser.name })}
             </h2>
             <form
-              action={(formData) =>
+              onSubmit={(e) => {
+                e.preventDefault();
                 handleResetPassword(
                   resetPasswordUser.id,
-                  formData.get("newPassword") as string
-                )
-              }
+                  new FormData(e.currentTarget).get("newPassword") as string
+                );
+              }}
               className="space-y-4"
             >
               <div>
@@ -535,7 +678,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                     >
                       <div>
                         <p className="text-sm font-medium text-metro-text">{linked.name}</p>
-                        <p className="text-xs text-metro-text-secondary">{linked.email}</p>
+                        <p className="text-xs text-metro-text-secondary">{linked.email ?? linked.phone}</p>
                       </div>
                       <button
                         onClick={() =>
@@ -568,7 +711,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                       .filter((s) => !linkedUsers.some((l) => l.id === s.id))
                       .map((student) => (
                         <option key={student.id} value={student.id}>
-                          {student.name} ({student.email})
+                          {student.name} ({student.email ?? student.phone})
                         </option>
                       ))}
                   </select>
@@ -592,7 +735,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                       .filter((g) => !linkedUsers.some((l) => l.id === g.id))
                       .map((guardian) => (
                         <option key={guardian.id} value={guardian.id}>
-                          {guardian.name} ({guardian.email})
+                          {guardian.name} ({guardian.email ?? guardian.phone})
                         </option>
                       ))}
                   </select>

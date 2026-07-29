@@ -7,8 +7,9 @@ Step-by-step guide to get Piwulangan running on your machine.
 ## Prerequisites
 
 - **Node.js** 20+ (Next.js 15 requires it; v22 is fine)
-- **Docker** (for local PostgreSQL)
 - **npm** (you're using npm)
+
+The database is a local SQLite file (`prisma/dev.db`) — no Docker or database server needed.
 
 ---
 
@@ -29,36 +30,16 @@ npm install
 
 ---
 
-## Step 3: Start PostgreSQL (Docker)
-
-```bash
-docker run --name piwulangan-db \
-  -e POSTGRES_PASSWORD=*** \
-  -e POSTGRES_DB=piwulangan \
-  -p 5432:5432 \
-  -d postgres:16-alpine
-```
-
-Verify it's running:
-
-```bash
-docker ps
-```
-
-You should see `piwulangan-db` in the list.
-
----
-
-## Step 4: Configure Environment
+## Step 3: Configure Environment
 
 ```bash
 cp .env.example .env.local
 ```
 
-The default `.env.local` should work out of the box with the Docker database:
+The default `.env.local` works out of the box:
 
 ```
-DATABASE_URL="postgresql://postgres:password@localhost:5432/piwulangan"
+DATABASE_URL="file:./dev.db"
 AUTH_SECRET="replac…ring"
 NEXTAUTH_URL="http://localhost:3000"
 ```
@@ -71,19 +52,21 @@ openssl rand -base64 32
 
 Paste the output as the value of `AUTH_SECRET` in `.env.local`.
 
+> Note: Prisma also reads `.env` (not just `.env.local`), so keep `DATABASE_URL` in both if you customize it.
+
 ---
 
-## Step 5: Run Database Migrations
+## Step 4: Run Database Migrations
 
 ```bash
 npm run db:migrate
 ```
 
-This creates all the tables in the database. When prompted for a migration name, type `init`.
+This creates `prisma/dev.db` with all tables.
 
 ---
 
-## Step 6: Seed Test Data
+## Step 5: Seed Test Data
 
 ```bash
 npm run db:seed
@@ -104,7 +87,7 @@ This creates sample users, courses, lessons, and enrollments.
 
 ---
 
-## Step 7: Start the Dev Server
+## Step 6: Start the Dev Server
 
 ```bash
 npm run dev
@@ -218,22 +201,12 @@ npm run db:reset     # Reset database (drop + migrate + seed)
 
 ## Troubleshooting
 
-**"Can't reach database server"**
-- Make sure Docker is running: `docker ps`
-- Restart the container: `docker restart piwulangan-db`
-
 **"Environment variable not found: DATABASE_URL"**
 - Make sure `.env.local` exists and has `DATABASE_URL`
 
 **"Module not found" after pulling changes**
 - Run `npm install` again
 
-**Migrations fail**
+**Migrations fail or database is in a weird state**
 - Nuclear option: `npm run db:reset` (deletes all data, re-seeds)
-
-**Port 5432 already in use**
-- Stop the conflicting process, or use a different port:
-  ```bash
-  docker run --name piwulangan-db -e POSTGRES_PASSWORD=*** -e POSTGRES_DB=piwulangan -p 5433:5432 -d postgres:16-alpine
-  ```
-  Then update `.env.local`: `DATABASE_URL="postgresql://postgres:password@localhost:5433/piwulangan"`
+- Truly nuclear: delete `prisma/dev.db`, then `npm run db:migrate && npm run db:seed`

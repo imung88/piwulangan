@@ -14,6 +14,7 @@ export default async function AnnouncementsPage() {
     descGuardian: t("announcementsPage.descGuardian"),
     noAnnouncements: t("announcementsPage.noAnnouncements"),
     manage: t("announcementsPage.manage"),
+    pinned: t("announcementsPage.pinned"),
   };
 
   const session = await auth();
@@ -32,9 +33,13 @@ export default async function AnnouncementsPage() {
       take: 50,
     });
   } else if (role === "INSTRUCTOR") {
-    // Instructor sees announcements from their courses
+    // Instructor sees announcements from their courses (owned or co-taught)
     announcements = await db.announcement.findMany({
-      where: { course: { instructorId: userId } },
+      where: {
+        course: {
+          OR: [{ instructorId: userId }, { coInstructors: { some: { userId } } }],
+        },
+      },
       include: { author: true, course: true },
       orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
       take: 50,
@@ -112,7 +117,7 @@ export default async function AnnouncementsPage() {
                     <div className="flex items-center gap-2">
                       {a.pinned && (
                         <span className="metro-badge bg-metro-blue text-white">
-                          Pinned
+                          {labels.pinned}
                         </span>
                       )}
                       <h3 className="font-medium text-metro-text">{a.title}</h3>
@@ -134,7 +139,7 @@ export default async function AnnouncementsPage() {
                   </div>
                   {isOwner && (
                     <Link
-                      href={`/courses/${a.courseId}/manage/announcements`}
+                      href={`/courses/${a.courseId}/announcements`}
                       className="text-xs text-metro-text-secondary hover:text-metro-blue ml-4 whitespace-nowrap"
                     >
                       {labels.manage}

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
@@ -21,6 +22,10 @@ export default async function MembersPage({
     where: { id: courseId },
     include: {
       instructor: true,
+      coInstructors: {
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { addedAt: "asc" },
+      },
       enrollments: {
         include: {
           user: {
@@ -37,7 +42,7 @@ export default async function MembersPage({
   });
   if (!course) notFound();
 
-  const isOwner = course.instructorId === userId || role === "ADMIN";
+  const isOwner = await canManageCourse(userId, role, course);
   const isEnrolled = course.enrollments.some((e) => e.userId === userId);
 
   if (!isOwner && !isEnrolled) {
@@ -53,6 +58,7 @@ export default async function MembersPage({
     back: t("members.back"),
     title: t("members.title"),
     instructor: t("members.instructor"),
+    coTeacher: t("members.coTeacher"),
     students: t("members.students"),
     noStudents: t("members.noStudents"),
     lessonsCompleted: t("members.lessonsCompleted"),
@@ -76,6 +82,14 @@ export default async function MembersPage({
           <p className="font-medium">👤 {course.instructor.name}</p>
           <p className="text-sm text-metro-text-secondary">{course.instructor.email}</p>
         </div>
+        {course.coInstructors.map((ci) => (
+          <div key={ci.id} className="mt-2 metro-card">
+            <p className="font-medium">👤 {ci.user.name}</p>
+            <p className="text-sm text-metro-text-secondary">
+              {ci.user.email} · {labels.coTeacher}
+            </p>
+          </div>
+        ))}
       </div>
 
       <div className="mt-6">

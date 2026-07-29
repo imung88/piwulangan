@@ -63,7 +63,7 @@ export async function getLinkedStudents(guardianId: string) {
     where: { guardianId },
     include: {
       student: {
-        select: { id: true, name: true, email: true },
+        select: { id: true, name: true, email: true, phone: true },
       },
     },
   });
@@ -80,7 +80,7 @@ export async function getLinkedGuardians(studentId: string) {
     where: { studentId },
     include: {
       guardian: {
-        select: { id: true, name: true, email: true },
+        select: { id: true, name: true, email: true, phone: true },
       },
     },
   });

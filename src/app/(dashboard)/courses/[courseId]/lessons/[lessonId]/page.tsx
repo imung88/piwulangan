@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { toggleProgress } from "@/actions/progress";
@@ -40,7 +41,7 @@ export default async function LessonPage({
 
   if (!course) notFound();
 
-  const isOwner = course.instructorId === userId || role === "ADMIN";
+  const isOwner = await canManageCourse(userId, role, course);
   const isEnrolled = course.enrollments.length > 0;
 
   // Guardian: read-only view if a linked student is enrolled here

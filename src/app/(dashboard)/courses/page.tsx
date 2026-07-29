@@ -27,7 +27,9 @@ export default async function CoursesPage() {
     });
   } else if (role === "INSTRUCTOR") {
     courses = await db.course.findMany({
-      where: { instructorId: userId },
+      where: {
+        OR: [{ instructorId: userId }, { coInstructors: { some: { userId } } }],
+      },
       include: {
         _count: { select: { enrollments: true, modules: true } },
       },

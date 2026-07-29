@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare } from "bcryptjs";
 import { db } from "@/lib/db";
 import { authConfig } from "@/lib/auth.config";
+import { isEmail, normalizePhone } from "@/lib/phone";
 
 export const {
   handlers,
@@ -17,20 +18,27 @@ export const {
     Credentials({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        identifier: { label: "Email or Phone", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.identifier || !credentials?.password) {
           return null;
         }
 
-        const email = credentials.email as string;
+        const identifier = (credentials.identifier as string).trim();
         const password = credentials.password as string;
 
-        const user = await db.user.findUnique({
-          where: { email },
-        });
+        let user;
+        if (isEmail(identifier)) {
+          user = await db.user.findUnique({
+            where: { email: identifier.toLowerCase() },
+          });
+        } else {
+          const phone = normalizePhone(identifier);
+          if (!phone) return null;
+          user = await db.user.findUnique({ where: { phone } });
+        }
 
         if (!user || !user.active) {
           return null;

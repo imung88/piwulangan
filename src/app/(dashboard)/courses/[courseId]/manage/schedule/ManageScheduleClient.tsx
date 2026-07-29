@@ -20,7 +20,7 @@ import {
 interface Student {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
 }
 
 interface LessonOption {

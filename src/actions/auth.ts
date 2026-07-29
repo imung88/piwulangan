@@ -5,18 +5,19 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
+import { isEmail, normalizePhone } from "@/lib/phone";
 import { AuthError } from "next-auth";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  identifier: z.string().min(3, "Enter an email or phone number"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export async function signup(formData: FormData) {
   const parsed = signupSchema.safeParse({
     name: formData.get("name"),
-    email: formData.get("email"),
+    identifier: formData.get("identifier"),
     password: formData.get("password"),
   });
 
@@ -24,24 +25,41 @@ export async function signup(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors };
   }
 
-  const { name, email, password } = parsed.data;
+  const { name, password } = parsed.data;
+  const identifier = parsed.data.identifier.trim();
 
-  // Check if user already exists
+  let email: string | null = null;
+  let phone: string | null = null;
+
+  if (isEmail(identifier)) {
+    const emailCheck = z.string().email().safeParse(identifier.toLowerCase());
+    if (!emailCheck.success) {
+      return { error: { identifier: [await serverT("errors.invalidIdentifier")] } };
+    }
+    email = emailCheck.data;
+  } else {
+    phone = normalizePhone(identifier);
+    if (!phone) {
+      return { error: { identifier: [await serverT("errors.invalidIdentifier")] } };
+    }
+  }
+
   const existingUser = await db.user.findUnique({
-    where: { email },
+    where: email ? { email } : { phone: phone! },
   });
 
   if (existingUser) {
-    return { error: { email: [await serverT("errors.emailExists")] } };
+    const key = email ? "errors.emailExists" : "errors.phoneExists";
+    return { error: { identifier: [await serverT(key)] } };
   }
 
-  // Hash password and create user
   const passwordHash = await hash(password, 12);
 
   await db.user.create({
     data: {
       name,
       email,
+      phone,
       passwordHash,
       role: "STUDENT", // Default role
     },
@@ -50,7 +68,7 @@ export async function signup(formData: FormData) {
   // Auto-login after signup
   try {
     await signIn("credentials", {
-      email,
+      identifier,
       password,
       redirectTo: "/dashboard",
     });
@@ -65,7 +83,7 @@ export async function signup(formData: FormData) {
 export async function login(formData: FormData) {
   try {
     await signIn("credentials", {
-      email: formData.get("email"),
+      identifier: formData.get("identifier"),
       password: formData.get("password"),
       redirectTo: "/dashboard",
     });

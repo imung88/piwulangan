@@ -1,8 +1,11 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
+import { CreateAnnouncementForm } from "./CreateAnnouncementForm";
+import { AnnouncementItem } from "./AnnouncementItem";
 
 export default async function AnnouncementsPage({
   params,
@@ -23,7 +26,7 @@ export default async function AnnouncementsPage({
   });
   if (!course) notFound();
 
-  const isOwner = course.instructorId === userId || role === "ADMIN";
+  const isOwner = await canManageCourse(userId, role, course);
   const isEnrolled = course.enrollments.some((e) => e.userId === userId);
 
   let isGuardianLinked = false;
@@ -38,20 +41,18 @@ export default async function AnnouncementsPage({
   }
 
   if (!isOwner && !isEnrolled && !isGuardianLinked) {
-    if (course.visibility !== "PUBLISHED") {
-      const notAvailable = t("courseDetail.notAvailable");
-      return (
-        <div className="text-center py-12">
-          <p className="text-metro-text-secondary">{notAvailable}</p>
-        </div>
-      );
-    }
+    return (
+      <div className="text-center py-12">
+        <p className="text-metro-text-secondary">{t("courseDetail.notAvailable")}</p>
+      </div>
+    );
   }
 
   const labels = {
     back: t("courseManage.back"),
-    title: t("courseDetail.announcements"),
-    manageAnnouncements: t("courseManage.manageAnnouncements"),
+    title: t("courseDetail.announcementsTitle"),
+    newAnnouncement: t("courseManage.newAnnouncement"),
+    allAnnouncements: t("courseManage.allAnnouncements"),
     noAnnouncements: t("courseManage.noAnnouncements"),
   };
 
@@ -74,35 +75,33 @@ export default async function AnnouncementsPage({
       </h1>
 
       {isOwner && (
-        <Link
-          href={`/courses/${courseId}/manage/announcements`}
-          className="mt-3 inline-block text-sm text-metro-blue hover:underline"
-        >
-          {labels.manageAnnouncements}
-        </Link>
+        <div className="mt-6 metro-card p-6">
+          <h2 className="metro-section-title mb-4">{labels.newAnnouncement}</h2>
+          <CreateAnnouncementForm courseId={courseId} />
+        </div>
       )}
 
       <div className="mt-6">
+        {isOwner && (
+          <h2 className="metro-section-title mb-4">
+            {formatT(labels.allAnnouncements, { n: announcements.length })}
+          </h2>
+        )}
         {announcements.length === 0 ? (
           <p className="text-sm text-metro-text-secondary">{labels.noAnnouncements}</p>
         ) : (
           <div className="space-y-3">
             {announcements.map((a) => (
-              <div
+              <AnnouncementItem
                 key={a.id}
-                className={`metro-card ${a.pinned ? "metro-card-accent" : ""}`}
-              >
-                <div className="flex items-center gap-2">
-                  {a.pinned && <span className="text-xs text-metro-blue">📌</span>}
-                  <h3 className="font-medium">{a.title}</h3>
-                </div>
-                <p className="mt-2 text-sm text-metro-text-secondary whitespace-pre-wrap">
-                  {a.body}
-                </p>
-                <p className="mt-2 text-xs text-metro-text-secondary">
-                  {a.author.name} · {new Date(a.createdAt).toLocaleDateString()}
-                </p>
-              </div>
+                id={a.id}
+                title={a.title}
+                body={a.body}
+                pinned={a.pinned}
+                authorName={a.author.name}
+                dateLabel={new Date(a.createdAt).toLocaleDateString()}
+                canManage={isOwner}
+              />
             ))}
           </div>
         )}

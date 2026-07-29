@@ -15,6 +15,8 @@ export default async function DashboardPage() {
   // Fetch data based on role
   let dashboardData: any = {}
   if (role === "STUDENT") {
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
     const [enrollments, progress, bookings] = await Promise.all([
       db.enrollment.findMany({
         where: { userId },
@@ -35,7 +37,7 @@ export default async function DashboardPage() {
         where: {
           attendees: { some: { studentId: userId } },
           status: "SCHEDULED",
-          date: { gte: new Date() },
+          date: { gte: todayStart },
         },
         include: { course: true },
         orderBy: { date: "asc" },

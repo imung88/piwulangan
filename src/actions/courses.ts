@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
 import { notify } from "@/lib/notifications";
+import { canManageCourse, isCourseOwner } from "@/lib/coursePerms";
 import { revalidatePath } from "next/cache";
 
 const courseSchema = z.object({
@@ -42,6 +43,16 @@ export async function createCourse(formData: FormData) {
 
   const { title, description, coverImageUrl, enrollmentMode } = parsed.data;
 
+  let instructorId = (session.user as any).id;
+  const requestedInstructorId = formData.get("instructorId") as string | null;
+  if (role === "ADMIN" && requestedInstructorId) {
+    const target = await db.user.findUnique({ where: { id: requestedInstructorId } });
+    if (!target || (target.role !== "INSTRUCTOR" && target.role !== "ADMIN")) {
+      return { error: { instructorId: ["Invalid instructor"] } };
+    }
+    instructorId = target.id;
+  }
+
   const course = await db.course.create({
     data: {
       title,
@@ -49,7 +60,7 @@ export async function createCourse(formData: FormData) {
       coverImageUrl: coverImageUrl || null,
       enrollmentMode,
       inviteCode: enrollmentMode === "INVITE_CODE" ? generateInviteCode() : null,
-      instructorId: (session.user as any).id,
+      instructorId,
     },
   });
 
@@ -66,7 +77,7 @@ export async function updateCourse(courseId: string, formData: FormData) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     throw new Error("Not authorized");
   }
 
@@ -111,7 +122,7 @@ export async function publishCourse(courseId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     throw new Error("Not authorized");
   }
 
@@ -133,7 +144,7 @@ export async function unpublishCourse(courseId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     throw new Error("Not authorized");
   }
 
@@ -155,7 +166,7 @@ export async function deleteCourse(courseId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!isCourseOwner(userId, role, course)) {
     throw new Error("Not authorized");
   }
 
@@ -259,7 +270,7 @@ export async function enrollStudent(courseId: string, studentId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     throw new Error("Not authorized");
   }
 
@@ -291,7 +302,7 @@ export async function removeEnrollment(courseId: string, studentId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     throw new Error("Not authorized");
   }
 
@@ -312,7 +323,7 @@ export async function archiveCourse(courseId: string): Promise<{ success?: boole
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!isCourseOwner(userId, role, course)) {
     throw new Error("Not authorized");
   }
 
@@ -335,7 +346,7 @@ export async function unarchiveCourse(courseId: string): Promise<{ success?: boo
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!isCourseOwner(userId, role, course)) {
     throw new Error("Not authorized");
   }
 
@@ -346,5 +357,106 @@ export async function unarchiveCourse(courseId: string): Promise<{ success?: boo
 
   revalidatePath("/courses");
   revalidatePath(`/courses/${courseId}`);
+  return { success: true };
+}
+
+export async function addCoInstructor(courseId: string, instructorUserId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const course = await db.course.findUnique({ where: { id: courseId } });
+  if (!course) throw new Error("Course not found");
+
+  const userId = (session.user as any).id;
+  const role = (session.user as any).role;
+  if (!isCourseOwner(userId, role, course)) {
+    throw new Error("Not authorized");
+  }
+
+  const target = await db.user.findUnique({ where: { id: instructorUserId } });
+  if (!target || target.role !== "INSTRUCTOR") {
+    return { error: await serverT("errors.notAnInstructor") };
+  }
+  if (target.id === course.instructorId) {
+    return { error: await serverT("errors.alreadyOwner") };
+  }
+
+  const existing = await db.courseInstructor.findUnique({
+    where: { courseId_userId: { courseId, userId: instructorUserId } },
+  });
+  if (existing) return { error: await serverT("errors.alreadyCoInstructor") };
+
+  await db.courseInstructor.create({
+    data: { courseId, userId: instructorUserId },
+  });
+
+  await notify([instructorUserId], "ENROLLMENT", `You were added as a teacher of ${course.title}`, {
+    link: `/courses/${courseId}`,
+  });
+
+  revalidatePath(`/courses/${courseId}`);
+  revalidatePath(`/courses/${courseId}/members`);
+  revalidatePath(`/courses/${courseId}/manage/settings`);
+  return { success: true };
+}
+
+export async function removeCoInstructor(courseId: string, instructorUserId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const course = await db.course.findUnique({ where: { id: courseId } });
+  if (!course) throw new Error("Course not found");
+
+  const userId = (session.user as any).id;
+  const role = (session.user as any).role;
+  if (!isCourseOwner(userId, role, course)) {
+    throw new Error("Not authorized");
+  }
+
+  await db.courseInstructor.deleteMany({
+    where: { courseId, userId: instructorUserId },
+  });
+
+  revalidatePath(`/courses/${courseId}`);
+  revalidatePath(`/courses/${courseId}/members`);
+  revalidatePath(`/courses/${courseId}/manage/settings`);
+  return { success: true };
+}
+
+export async function transferOwnership(courseId: string, newInstructorId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+
+  const course = await db.course.findUnique({ where: { id: courseId } });
+  if (!course) throw new Error("Course not found");
+
+  const userId = (session.user as any).id;
+  const role = (session.user as any).role;
+  if (!isCourseOwner(userId, role, course)) {
+    throw new Error("Not authorized");
+  }
+
+  const target = await db.user.findUnique({ where: { id: newInstructorId } });
+  if (!target || (target.role !== "INSTRUCTOR" && target.role !== "ADMIN")) {
+    return { error: await serverT("errors.notAnInstructor") };
+  }
+  if (target.id === course.instructorId) {
+    return { error: await serverT("errors.alreadyOwner") };
+  }
+
+  await db.$transaction([
+    // The new owner no longer needs a co-instructor row
+    db.courseInstructor.deleteMany({ where: { courseId, userId: newInstructorId } }),
+    db.course.update({ where: { id: courseId }, data: { instructorId: newInstructorId } }),
+  ]);
+
+  await notify([newInstructorId], "ENROLLMENT", `You are now the owner of ${course.title}`, {
+    link: `/courses/${courseId}`,
+  });
+
+  revalidatePath("/courses");
+  revalidatePath(`/courses/${courseId}`);
+  revalidatePath(`/courses/${courseId}/members`);
+  revalidatePath(`/courses/${courseId}/manage/settings`);
   return { success: true };
 }

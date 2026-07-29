@@ -52,6 +52,12 @@ export function LessonEditForm({
 
   // Resource state
   const [resources, setResources] = useState(initialResources);
+
+  // router.refresh() re-renders with fresh props but does not remount this
+  // component, so the list must be re-synced manually.
+  useEffect(() => {
+    setResources(initialResources);
+  }, [initialResources]);
   const [newResTitle, setNewResTitle] = useState("");
   const [newResUrl, setNewResUrl] = useState("");
   const [newResType, setNewResType] = useState<"LINK" | "VIDEO" | "DOCUMENT">("LINK");
@@ -237,29 +243,43 @@ export function LessonEditForm({
                     {editingResId === res.id ? (
                       /* Inline edit form */
                       <div className="border border-metro-blue bg-metro-surface p-3 space-y-2">
-                        <div className="flex gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-metro-text-secondary mb-1">
+                            {t("lesson.title")}
+                          </label>
                           <input
                             value={editResTitle}
                             onChange={(e) => setEditResTitle(e.target.value)}
                             placeholder={t("lesson.title")}
-                            className="metro-input flex-1 px-2 py-1 text-sm"
+                            className="metro-input w-full px-2 py-1 text-sm"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-metro-text-secondary mb-1">
+                            {t("lesson.resourceType")}
+                          </label>
                           <select
                             value={editResType}
                             onChange={(e) => setEditResType(e.target.value as any)}
-                            className="metro-input px-2 py-1 text-sm"
+                            className="metro-input w-full px-2 py-1 text-sm"
                           >
                             <option value="LINK">{t("lesson.link")}</option>
                             <option value="VIDEO">{t("lesson.video")}</option>
                             <option value="DOCUMENT">{t("lesson.document")}</option>
                           </select>
                         </div>
-                        <input
-                          value={editResUrl}
-                          onChange={(e) => setEditResUrl(e.target.value)}
-                          placeholder={t("lesson.url")}
-                          className="metro-input w-full px-2 py-1 text-sm"
-                        />
+                        <div>
+                          <label className="block text-xs font-medium text-metro-text-secondary mb-1">
+                            {t("lesson.url")}
+                          </label>
+                          <input
+                            value={editResUrl}
+                            onChange={(e) => setEditResUrl(e.target.value)}
+                            placeholder="https://..."
+                            inputMode="url"
+                            className="metro-input w-full px-2 py-1 text-sm"
+                          />
+                        </div>
                         <div className="flex gap-2">
                           <button
                             onClick={handleSaveResource}
@@ -310,38 +330,50 @@ export function LessonEditForm({
             {/* Add resource form */}
             {resources.length < 5 ? (
               <div className="border border-dashed border-metro-border p-3 space-y-2">
-                <div className="flex gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-metro-text-secondary mb-1">
+                    {t("lesson.resourceTitle")}
+                  </label>
                   <input
                     value={newResTitle}
                     onChange={(e) => setNewResTitle(e.target.value)}
                     placeholder={t("lesson.resourceTitle")}
-                    className="metro-input flex-1 px-2 py-1 text-sm"
+                    className="metro-input w-full px-2 py-1 text-sm"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-metro-text-secondary mb-1">
+                    {t("lesson.resourceType")}
+                  </label>
                   <select
                     value={newResType}
                     onChange={(e) => setNewResType(e.target.value as any)}
-                    className="metro-input px-2 py-1 text-sm"
+                    className="metro-input w-full px-2 py-1 text-sm"
                   >
                     <option value="LINK">{t("lesson.link")}</option>
                     <option value="VIDEO">{t("lesson.video")}</option>
                     <option value="DOCUMENT">{t("lesson.document")}</option>
                   </select>
                 </div>
-                <div className="flex gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-metro-text-secondary mb-1">
+                    {t("lesson.url")}
+                  </label>
                   <input
                     value={newResUrl}
                     onChange={(e) => setNewResUrl(e.target.value)}
                     placeholder="https://..."
-                    className="metro-input flex-1 px-2 py-1 text-sm"
+                    inputMode="url"
+                    className="metro-input w-full px-2 py-1 text-sm"
                   />
-                  <button
-                    onClick={handleAddResource}
-                    disabled={!newResTitle.trim() || !newResUrl.trim()}
-                    className="bg-metro-border px-3 py-1 text-xs font-medium text-metro-text hover:bg-metro-blue-light disabled:opacity-50"
-                  >
-                    {t("lesson.addResource")}
-                  </button>
                 </div>
+                <button
+                  onClick={handleAddResource}
+                  disabled={!newResTitle.trim() || !newResUrl.trim()}
+                  className="bg-metro-border px-3 py-1 text-xs font-medium text-metro-text hover:bg-metro-blue-light disabled:opacity-50"
+                >
+                  {t("lesson.addResource")}
+                </button>
               </div>
             ) : (
               <p className="text-xs text-metro-text-secondary italic">{t("lesson.maxResources")}</p>

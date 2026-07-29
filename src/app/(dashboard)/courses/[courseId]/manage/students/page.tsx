@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { AddStudentForm, RemoveStudentButton } from "./StudentActions";
@@ -39,7 +40,7 @@ export default async function ManageStudentsPage({
 
   if (!course) notFound();
 
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     redirect("/courses");
   }
 

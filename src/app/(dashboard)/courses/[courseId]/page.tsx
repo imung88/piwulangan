@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { canManageCourse } from "@/lib/coursePerms"
 import Link from "next/link"
 import { redirect, notFound } from "next/navigation"
 import UnenrollButton from "./UnenrollButton"
+import { PreviewEnroll } from "./PreviewEnroll"
 import { getServerT, formatT } from "@/lib/i18n/serverT"
 
 export default async function CoursePage({
@@ -45,7 +47,7 @@ export default async function CoursePage({
 
   if (!course) notFound();
 
-  const isOwner = course.instructorId === userId || role === "ADMIN";
+  const isOwner = await canManageCourse(userId, role, course);
   const isEnrolled = course.enrollments.length > 0;
 
   // Guardian: read-only view if a linked student is enrolled here
@@ -73,7 +75,6 @@ export default async function CoursePage({
     lesson: t("courseDetail.lesson"),
     viewSchedule: t("courseDetail.viewSchedule"),
     announcements: t("courseDetail.announcements"),
-    manage: t("courseDetail.manage"),
     viewAll: t("courseDetail.viewAll"),
     courseContent: t("courseDetail.courseContent"),
     editContent: t("courseDetail.editContent"),
@@ -82,12 +83,8 @@ export default async function CoursePage({
     noContent: t("courseDetail.noContent"),
     addModules: t("courseDetail.addModulesAndLessons"),
     viewMembers: t("courseDetail.viewMembers"),
+    manageStudents: t("courseDetail.manageStudents"),
     previewEnroll: t("courseDetail.previewEnroll"),
-    previewOpen: t("courseDetail.previewOpen"),
-    enrollNow: t("courseDetail.enrollNow"),
-    previewInvite: t("courseDetail.previewInvite"),
-    previewInvitePh: t("courseDetail.previewInvitePlaceholder"),
-    previewManaged: t("courseDetail.previewManaged"),
     modulePlural: t("common.modulePlural"),
     lessonPlural: t("common.lessonPlural"),
     duration: t("courseDetail.duration"),
@@ -154,51 +151,8 @@ export default async function CoursePage({
             <p className="text-sm text-metro-text-secondary">
               {labels.previewEnroll}
             </p>
-          ) : course.enrollmentMode === "OPEN" ? (
-            <form
-              action={async () => {
-                "use server"
-                const { enrollOpen } = await import("@/actions/courses")
-                await enrollOpen(course.id)
-              }}
-            >
-              <p className="mb-3 text-sm text-metro-text-secondary">
-                {labels.previewOpen}
-              </p>
-              <button
-                type="submit"
-                className="bg-metro-green px-6 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
-              >
-                {labels.enrollNow}
-              </button>
-            </form>
-          ) : course.enrollmentMode === "INVITE_CODE" ? (
-            <form
-              action={async (formData: FormData) => {
-                "use server"
-                const code = formData.get("code") as string
-                if (!code) return
-                const { enrollByCode } = await import("@/actions/courses")
-                await enrollByCode(code)
-              }}
-              className="flex justify-center gap-2"
-            >
-              <input
-                name="code"
-                placeholder={labels.previewInvitePh}
-                className="metro-input px-3 py-2 text-sm"
-              />
-              <button
-                type="submit"
-                className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
-              >
-                {labels.previewInvite}
-              </button>
-            </form>
           ) : (
-            <p className="text-sm text-metro-text-secondary">
-              {labels.previewManaged}
-            </p>
+            <PreviewEnroll courseId={course.id} enrollmentMode={course.enrollmentMode} />
           )}
         </div>
       </div>
@@ -267,12 +221,26 @@ export default async function CoursePage({
             📅 {labels.schedule}
           </Link>
           {isOwner && (
-            <Link
-              href={`/courses/${course.id}/manage/settings`}
-              className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
-            >
-              ⚙️ {labels.settings}
-            </Link>
+            <>
+              <Link
+                href={`/courses/${course.id}/manage/students`}
+                className="bg-metro-blue px-3 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
+              >
+                👥 {labels.manageStudents}
+              </Link>
+              <Link
+                href={`/courses/${course.id}/announcements`}
+                className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
+              >
+                📣 {labels.announcements}
+              </Link>
+              <Link
+                href={`/courses/${course.id}/manage/settings`}
+                className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
+              >
+                ⚙️ {labels.settings}
+              </Link>
+            </>
           )}
         </div>
       </div>
@@ -375,22 +343,12 @@ export default async function CoursePage({
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="metro-section-title">{labels.announcements}</h2>
-            <div className="flex items-center gap-3">
-              {isOwner && (
-                <Link
-                  href={`/courses/${course.id}/manage/announcements`}
-                  className="text-sm text-metro-text-secondary hover:text-metro-text"
-                >
-                  {labels.manage}
-                </Link>
-              )}
-              <Link
-                href={`/courses/${course.id}/announcements`}
-                className="text-sm text-metro-blue hover:text-metro-blue-hover font-medium"
-              >
-                {labels.viewAll}
-              </Link>
-            </div>
+            <Link
+              href={`/courses/${course.id}/announcements`}
+              className="text-sm text-metro-blue hover:text-metro-blue-hover font-medium"
+            >
+              {labels.viewAll}
+            </Link>
           </div>
           <div className="space-y-2">
             {course.announcements.map((a) => (

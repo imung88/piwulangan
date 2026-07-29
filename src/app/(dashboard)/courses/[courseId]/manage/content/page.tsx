@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { createModule, createLesson, deleteModule } from "@/actions/lessons";
+import { deleteModule } from "@/actions/lessons";
 import { LessonEditForm } from "./LessonEditForm";
+import { AddModuleForm, AddLessonForm } from "./AddContentForms";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageContentPage({
@@ -36,20 +38,15 @@ export default async function ManageContentPage({
 
   if (!course) notFound();
 
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     redirect("/courses");
   }
 
   const labels = {
     back: t("content.back"),
     editContent: t("content.editContent"),
-    newModuleTitle: t("content.newModuleTitle"),
-    addModule: t("content.addModule"),
     module: t("content.module"),
     delete: t("content.deleteModule"),
-    newLessonTitle: t("content.newLessonTitle"),
-    duration: t("content.duration"),
-    addLesson: t("content.addLesson"),
     noModules: t("content.noModules"),
   };
 
@@ -71,27 +68,7 @@ export default async function ManageContentPage({
 
       {/* Add Module */}
       <div className="mt-6">
-        <form
-          action={async (formData: FormData) => {
-            "use server";
-            const title = formData.get("moduleTitle") as string;
-            if (title) await createModule(courseId, title);
-          }}
-          className="flex gap-2"
-        >
-          <input
-            name="moduleTitle"
-            placeholder={labels.newModuleTitle}
-            required
-            className="metro-input flex-1 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
-          >
-            {labels.addModule}
-          </button>
-        </form>
+        <AddModuleForm courseId={courseId} />
       </div>
 
       {/* Modules */}
@@ -133,7 +110,7 @@ export default async function ManageContentPage({
             </div>
             {/* Add Lesson */}
             <div className="border-t border-metro-border px-4 py-3">
-              <AddLessonForm moduleId={mod.id} courseId={courseId} labels={labels} />
+              <AddLessonForm moduleId={mod.id} />
             </div>
           </div>
         ))}
@@ -145,39 +122,5 @@ export default async function ManageContentPage({
         </p>
       )}
     </div>
-  );
-}
-
-function AddLessonForm({ moduleId, labels }: { moduleId: string; courseId: string; labels: Record<string, string> }) {
-  return (
-    <form
-      action={async (formData: FormData) => {
-        "use server";
-        const title = formData.get("title") as string;
-        if (title) {
-          await createLesson(moduleId, formData);
-        }
-      }}
-      className="flex gap-2 w-full"
-    >
-      <input
-        name="title"
-        placeholder={labels.newLessonTitle}
-        required
-        className="metro-input flex-1 px-3 py-1.5 text-sm"
-      />
-      <input
-        name="duration"
-        type="number"
-        placeholder={labels.duration}
-        className="metro-input w-20 px-3 py-1.5 text-sm"
-      />
-      <button
-        type="submit"
-        className="bg-metro-border px-3 py-1.5 text-sm font-medium text-metro-text hover:bg-metro-blue-light"
-      >
-        {labels.addLesson}
-      </button>
-    </form>
   );
 }

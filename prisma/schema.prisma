@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -15,10 +15,14 @@ datasource db {
 model User {
   id           String    @id @default(cuid())
   name         String
-  email        String    @unique
+  email        String?   @unique
+  phone        String?   @unique
   passwordHash String
   role         Role      @default(STUDENT)
   active       Boolean   @default(true)
+  address      String?
+  dateOfBirth  DateTime?
+  notes        String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -27,6 +31,7 @@ model User {
   submissions           Submission[]
   announcements         Announcement[]     @relation("Author")
   coursesCreated        Course[]           @relation("Instructor")
+  coInstructorOf        CourseInstructor[] @relation("CoInstructor")
   sessionsAsInstructor  ClassSession[]     @relation("SessionInstructor")
   sessionAttendances    SessionAttendee[]  @relation("SessionStudent")
   availability          Availability[]
@@ -59,7 +64,7 @@ model GuardianStudent {
 model Course {
   id             String         @id @default(cuid())
   title          String
-  description    String?        @db.Text
+  description    String?
   coverImageUrl  String?
   visibility     Visibility     @default(DRAFT)
   enrollmentMode EnrollmentMode @default(OPEN)
@@ -67,6 +72,8 @@ model Course {
 
   instructorId String
   instructor   User   @relation("Instructor", fields: [instructorId], references: [id])
+
+  coInstructors CourseInstructor[]
 
   modules       Module[]
   enrollments   Enrollment[]
@@ -76,6 +83,18 @@ model Course {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Additional teachers who can manage a course alongside the owner
+model CourseInstructor {
+  id       String   @id @default(cuid())
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation("CoInstructor", fields: [userId], references: [id], onDelete: Cascade)
+  addedAt  DateTime @default(now())
+
+  @@unique([courseId, userId])
 }
 
 enum Visibility {
@@ -102,7 +121,7 @@ model Module {
 model Lesson {
   id       String     @id @default(cuid())
   title    String
-  content  String?    @db.Text
+  content  String?
   type     LessonType @default(TEXT)
   order    Int
   duration Int?
@@ -184,7 +203,7 @@ model BlockedDate {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      DateTime @db.Date
+  date      DateTime
   reason    String?
   createdAt DateTime @default(now())
 }
@@ -198,8 +217,8 @@ model ClassSession {
   lessonId     String?
   lesson       Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
   title        String
-  description  String?       @db.Text
-  date         DateTime      @db.Date
+  description  String?
+  date         DateTime
   startTime    String
   endTime      String
   location     String?
@@ -244,7 +263,7 @@ model Notification {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String
   title     String
-  body      String?   @db.Text
+  body      String?
   link      String?
   readAt    DateTime?
   createdAt DateTime  @default(now())
@@ -259,7 +278,7 @@ model Assignment {
   lessonId    String    @unique
   lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   title       String
-  description String?   @db.Text
+  description String?
   dueDate     DateTime?
 
   submissions Submission[]
@@ -271,11 +290,11 @@ model Submission {
   assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   userId       String
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  textContent  String?          @db.Text
+  textContent  String?
   linkUrl      String?
   status       SubmissionStatus @default(SUBMITTED)
   grade        Float?
-  feedback     String?          @db.Text
+  feedback     String?
   submittedAt  DateTime         @default(now())
   reviewedAt   DateTime?
   isLate       Boolean          @default(false)
@@ -298,7 +317,7 @@ model Announcement {
   authorId  String
   author    User     @relation("Author", fields: [authorId], references: [id])
   title     String
-  body      String   @db.Text
+  body      String
   pinned    Boolean  @default(false)
   createdAt DateTime @default(now())
 }

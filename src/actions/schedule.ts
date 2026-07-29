@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
 import { revalidatePath } from "next/cache";
 import { notify, withGuardians } from "@/lib/notifications";
+import { canManageCourse } from "@/lib/coursePerms";
 
 type ActionResult = { success?: boolean; error?: any };
 
@@ -32,7 +33,7 @@ function isPastDate(date: Date) {
   return date.getTime() < today.getTime();
 }
 
-/** ADMIN can manage any course; INSTRUCTOR only their own. */
+/** ADMIN can manage any course; INSTRUCTOR their own or co-taught. */
 async function requireCourseManager(courseId: string) {
   const { userId, role } = await requireUser();
   if (role !== "ADMIN" && role !== "INSTRUCTOR") {
@@ -40,7 +41,7 @@ async function requireCourseManager(courseId: string) {
   }
   const course = await db.course.findUnique({ where: { id: courseId } });
   if (!course) throw new Error("Course not found");
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     throw new Error("Not authorized");
   }
   return { userId, role, course };

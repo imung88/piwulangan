@@ -6,7 +6,7 @@
 |---|---|---|
 | **Framework** | Next.js 15.1 (App Router) | Full-stack React, SSR, file-based routing, great DX |
 | **Language** | TypeScript | Type safety, better DX, catches bugs early |
-| **Database** | Vercel Postgres (Neon) | Serverless PostgreSQL, free tier, works with Prisma |
+| **Database** | SQLite (local file) → Turso (libSQL) in production | Zero-setup local dev, serverless-friendly hosted SQLite, free tier, works with Prisma |
 | **ORM** | Prisma | Type-safe queries, great migration tooling |
 | **Auth** | NextAuth.js v5 (Auth.js) | Built for Next.js, handles sessions + credentials |
 | **Styling** | Tailwind CSS | Utility-first, mobile-first, small bundle ("Metro" design system, tokens in `globals.css`) |
@@ -151,14 +151,14 @@ Credentials provider (email + password)
 
 Role-based route protection lives in `src/middleware.ts`: public routes (`/`, `/login`, `/signup`), admin-only `/admin/*`, and a read-only allowlist for guardians (no `/courses/*/manage`). The middleware uses `src/lib/auth.config.ts` — an edge-safe NextAuth config with no Prisma adapter or bcryptjs — so the middleware bundle stays small.
 
-### 4. Database: Vercel Postgres + Prisma
+### 4. Database: SQLite + Prisma (Turso in production)
 
-Vercel Postgres is Neon under the hood — serverless PostgreSQL that scales to zero.
+Local development uses a plain SQLite file (`prisma/dev.db`) — no database server. Production (Vercel) will use Turso, a hosted libSQL/SQLite service, since Vercel's filesystem is ephemeral.
 
-- Free tier: 512MB storage, 1M rows
-- Works with Prisma via `@prisma/adapter-neon`
-- Connection pooling built in
-- No connection string management needed on Vercel
+- Free tier: generous storage/reads, far beyond this app's needs
+- Same SQLite dialect locally and in production — schema and migrations are shared
+- Production connects via `@prisma/adapter-libsql` (driver adapter); local uses Prisma's built-in SQLite connector
+- See `MIGRATION.md` for the Postgres → SQLite migration details and the Turso deployment plan
 
 ### 5. No File Storage
 
@@ -257,8 +257,8 @@ Guardian                   Server                     Database
 
 1. Fork/clone the repo on GitHub
 2. Connect to Vercel
-3. Add Vercel Postgres integration (free tier)
-4. Set environment variables
+3. Create a Turso database (free tier) and auth token
+4. Set environment variables (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `AUTH_SECRET`, `NEXTAUTH_URL`)
 5. Deploy
 
 **Vercel free tier limits:**
@@ -269,16 +269,16 @@ Guardian                   Server                     Database
 | Function execution | 10s max | Sufficient for all operations |
 | Function memory | 1024MB | More than enough |
 | Bandwidth | 100GB/month | Text-heavy LMS uses very little |
-| Postgres storage | 512MB | ~200 users with progress data |
-| Postgres rows | 1M rows | More than enough |
+
+**Turso free tier:** hosted SQLite with storage and read/write quotas far beyond ~200 users of a text-based LMS.
 
 ### Environment Variables
 
 ```env
 # .env.example
 
-# Database (auto-set by Vercel Postgres integration)
-DATABASE_URL=postgresql://...
+# Database (local SQLite file; production uses Turso env vars instead)
+DATABASE_URL=file:./dev.db
 
 # Auth
 AUTH_SECRET=generate-a-random-string-here
@@ -287,7 +287,7 @@ NEXTAUTH_URL=http://localhost:3000  # set to your Vercel URL in production
 
 ### Local Development
 
-See [SETUP.md](./SETUP.md) for the full local setup guide (Docker Postgres, migrations, seed data, test accounts).
+See [SETUP.md](./SETUP.md) for the full local setup guide (migrations, seed data, test accounts). No Docker or database server needed — the DB is a local SQLite file.
 
 ---
 
@@ -311,7 +311,7 @@ See [SETUP.md](./SETUP.md) for the full local setup guide (Docker Postgres, migr
 - Notifications are polled once per 60s in the layout and shared with `NotificationBell` via props.
 - Middleware uses the edge-safe `auth.config.ts` (no Prisma/bcryptjs in the middleware bundle).
 
-**Deferred:** Prisma query reshaping (`select`/`_count`) pending the Postgres-vs-SQLite decision; splitting large client components (`ManageScheduleClient`, `AdminUsersClient`, `DashboardClient`); locale-splitting the client i18n bundle (~38 KB for both dictionaries).
+**Deferred:** Prisma query reshaping (`select`/`_count`); splitting large client components (`ManageScheduleClient`, `AdminUsersClient`, `DashboardClient`); locale-splitting the client i18n bundle (~38 KB for both dictionaries).
 
 ---
 

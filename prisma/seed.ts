@@ -90,6 +90,59 @@ async function main() {
     },
   });
 
+  // ─── Bulk Indonesian users (load testing) ───
+
+  const bulkUsers: {
+    name: string;
+    email?: string;
+    phone?: string;
+    role: Role;
+    address?: string;
+    dateOfBirth?: Date;
+    notes?: string;
+  }[] = [
+    // Phone-only students
+    { name: "Budi Santoso", phone: "+6281234567001", role: Role.STUDENT, address: "Jl. Merdeka No. 12, Yogyakarta", dateOfBirth: new Date("2010-03-14"), notes: "Alergi kacang" },
+    { name: "Siti Rahayu", phone: "+6281234567002", role: Role.STUDENT, address: "Jl. Malioboro No. 45, Yogyakarta" },
+    { name: "Agus Wibowo", phone: "+6281234567003", role: Role.STUDENT, dateOfBirth: new Date("2011-07-22") },
+    { name: "Dewi Lestari", phone: "+6281234567004", role: Role.STUDENT, notes: "Asma, bawa inhaler" },
+    { name: "Eko Prasetyo", phone: "+6281234567005", role: Role.STUDENT },
+    { name: "Rina Kusuma", phone: "+6281234567006", role: Role.STUDENT, address: "Jl. Kaliurang KM 5, Sleman" },
+    { name: "Joko Susilo", phone: "+6281234567007", role: Role.STUDENT },
+    { name: "Sri Wahyuni", phone: "+6281234567008", role: Role.STUDENT, dateOfBirth: new Date("2009-11-02") },
+    // Email-only students
+    { name: "Ahmad Fauzi", email: "ahmad.fauzi@example.com", role: Role.STUDENT },
+    { name: "Nur Aini", email: "nur.aini@example.com", role: Role.STUDENT, notes: "Alergi seafood" },
+    { name: "Bambang Hartono", email: "bambang.h@example.com", role: Role.STUDENT },
+    { name: "Fitri Handayani", email: "fitri.h@example.com", role: Role.STUDENT, address: "Jl. Godean No. 8, Sleman" },
+    // Both email and phone
+    { name: "Hendra Gunawan", email: "hendra.g@example.com", phone: "+6281234567013", role: Role.STUDENT },
+    { name: "Indah Permatasari", email: "indah.p@example.com", phone: "+6281234567014", role: Role.STUDENT, dateOfBirth: new Date("2012-01-30") },
+    { name: "Rudi Hermawan", email: "rudi.h@example.com", phone: "+6281234567015", role: Role.STUDENT },
+    { name: "Yuli Astuti", email: "yuli.a@example.com", phone: "+6281234567016", role: Role.STUDENT },
+    // Instructors
+    { name: "Pak Slamet Riyadi", email: "slamet@example.com", phone: "+6281234567017", role: Role.INSTRUCTOR },
+    { name: "Bu Endang Susanti", phone: "+6281234567018", role: Role.INSTRUCTOR },
+    // Guardians
+    { name: "Wati Suharti", phone: "+6281234567019", role: Role.GUARDIAN, address: "Jl. Merdeka No. 12, Yogyakarta" },
+    { name: "Darmawan Putra", email: "darmawan@example.com", phone: "+6281234567020", role: Role.GUARDIAN },
+  ];
+
+  const bulkCreated: { id: string; role: Role }[] = [];
+  for (const u of bulkUsers) {
+    const created = await prisma.user.create({
+      data: { ...u, passwordHash: password },
+    });
+    bulkCreated.push({ id: created.id, role: created.role });
+  }
+
+  // Link first bulk guardian (Wati) to first bulk student (Budi)
+  const bulkGuardian = bulkCreated.find((u) => u.role === Role.GUARDIAN)!;
+  const bulkStudent = bulkCreated.find((u) => u.role === Role.STUDENT)!;
+  await prisma.guardianStudent.create({
+    data: { guardianId: bulkGuardian.id, studentId: bulkStudent.id },
+  });
+
   // ─── Course 1: English Basics (Teacher A) ───
 
   const englishCourse = await prisma.course.create({
@@ -378,6 +431,8 @@ async function main() {
   console.log("  Student:  alice@example.com");
   console.log("  Student:  bob@example.com");
   console.log("  Guardian: guardian@example.com");
+  console.log("  Phone-only student: 081234567001 (Budi Santoso)");
+  console.log(`  + ${bulkUsers.length} bulk Indonesian users`);
 }
 
 main()

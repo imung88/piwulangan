@@ -2,11 +2,11 @@
 
 A lightweight learning-community management app: courses, lessons, progress tracking, scheduling, announcements, and notifications for four roles (Admin, Instructor, Student, Guardian). Bilingual UI (Indonesian/English).
 
-**Stack:** Next.js 15 (App Router, RSC + Server Actions) · NextAuth v5 (JWT) · Prisma + PostgreSQL · Tailwind CSS (Metro design system)
+**Stack:** Next.js 15 (App Router, RSC + Server Actions) · NextAuth v5 (JWT) · Prisma + SQLite (Turso in production) · Tailwind CSS (Metro design system)
 
 ## Getting Started
 
-See **[SETUP.md](./SETUP.md)** for the full local setup (Docker Postgres, migrations, seed data, test accounts).
+See **[SETUP.md](./SETUP.md)** for the full local setup (migrations, seed data, test accounts). No Docker needed — the local DB is a SQLite file.
 
 Quick version:
 

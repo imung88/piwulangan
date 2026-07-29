@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { canManageCourse } from "@/lib/coursePerms";
 import { revalidatePath } from "next/cache";
 
 export async function toggleProgress(lessonId: string) {
@@ -30,7 +31,7 @@ export async function toggleProgress(lessonId: string) {
 
   // Only enrolled students, instructors, and admins can mark progress
   const role = (session.user as any).role;
-  const isInstructor = lesson.module.course.instructorId === userId;
+  const isInstructor = await canManageCourse(userId, role, lesson.module.course);
   const isAdmin = role === "ADMIN";
   const isEnrolled = lesson.module.course.enrollments.length > 0;
 

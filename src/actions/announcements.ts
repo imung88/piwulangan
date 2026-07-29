@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notify, withGuardians } from "@/lib/notifications";
+import { canManageCourse } from "@/lib/coursePerms";
 import { revalidatePath } from "next/cache";
 
 const announcementSchema = z.object({
@@ -21,7 +22,7 @@ export async function createAnnouncement(courseId: string, formData: FormData) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     throw new Error("Not authorized");
   }
 
@@ -57,8 +58,8 @@ export async function createAnnouncement(courseId: string, formData: FormData) {
   );
 
   revalidatePath(`/courses/${courseId}`);
-  revalidatePath(`/courses/${courseId}/manage/announcements`);
   revalidatePath(`/courses/${courseId}/announcements`);
+  revalidatePath("/announcements");
   revalidatePath("/dashboard");
   return { success: true };
 }
@@ -78,7 +79,7 @@ export async function updateAnnouncement(
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && announcement.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, announcement.course))) {
     throw new Error("Not authorized");
   }
 
@@ -102,8 +103,8 @@ export async function updateAnnouncement(
   });
 
   revalidatePath(`/courses/${announcement.courseId}`);
-  revalidatePath(`/courses/${announcement.courseId}/manage/announcements`);
   revalidatePath(`/courses/${announcement.courseId}/announcements`);
+  revalidatePath("/announcements");
   revalidatePath("/dashboard");
   return { success: true };
 }
@@ -120,15 +121,15 @@ export async function deleteAnnouncement(announcementId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && announcement.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, announcement.course))) {
     throw new Error("Not authorized");
   }
 
   await db.announcement.delete({ where: { id: announcementId } });
 
   revalidatePath(`/courses/${announcement.courseId}`);
-  revalidatePath(`/courses/${announcement.courseId}/manage/announcements`);
   revalidatePath(`/courses/${announcement.courseId}/announcements`);
+  revalidatePath("/announcements");
   revalidatePath("/dashboard");
   return { success: true };
 }
@@ -145,7 +146,7 @@ export async function togglePin(announcementId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && announcement.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, announcement.course))) {
     throw new Error("Not authorized");
   }
 
@@ -155,8 +156,8 @@ export async function togglePin(announcementId: string) {
   });
 
   revalidatePath(`/courses/${announcement.courseId}`);
-  revalidatePath(`/courses/${announcement.courseId}/manage/announcements`);
   revalidatePath(`/courses/${announcement.courseId}/announcements`);
+  revalidatePath("/announcements");
   revalidatePath("/dashboard");
   return { success: true };
 }

@@ -4,7 +4,26 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
+import { canManageCourse } from "@/lib/coursePerms";
 import { revalidatePath } from "next/cache";
+
+// Resource URLs must be absolute web links; a bare "example.com/file" would
+// otherwise render as a relative link pointing into the app itself.
+function normalizeResourceUrl(raw: string): string | null {
+  let url = raw.trim();
+  if (!url) return null;
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url)) {
+    url = `https://${url.replace(/^\/+/, "")}`;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (!parsed.hostname.includes(".")) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
 
 // ─── Modules ───
 
@@ -17,7 +36,7 @@ export async function createModule(courseId: string, title: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, course))) {
     throw new Error("Not authorized");
   }
 
@@ -50,7 +69,7 @@ export async function updateModule(moduleId: string, title: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && mod.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, mod.course))) {
     throw new Error("Not authorized");
   }
 
@@ -75,7 +94,7 @@ export async function deleteModule(moduleId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && mod.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, mod.course))) {
     throw new Error("Not authorized");
   }
 
@@ -105,7 +124,7 @@ export async function createLesson(moduleId: string, formData: FormData) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && mod.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, mod.course))) {
     throw new Error("Not authorized");
   }
 
@@ -150,7 +169,7 @@ export async function updateLesson(lessonId: string, formData: FormData) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && lesson.module.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, lesson.module.course))) {
     throw new Error("Not authorized");
   }
 
@@ -191,7 +210,7 @@ export async function deleteLesson(lessonId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && lesson.module.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, lesson.module.course))) {
     throw new Error("Not authorized");
   }
 
@@ -221,7 +240,7 @@ export async function addResource(
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && lesson.module.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, lesson.module.course))) {
     throw new Error("Not authorized");
   }
 
@@ -230,8 +249,13 @@ export async function addResource(
     return { error: await serverT("errors.maxResources") };
   }
 
+  const normalizedUrl = normalizeResourceUrl(url);
+  if (!normalizedUrl) {
+    return { error: await serverT("errors.invalidUrl") };
+  }
+
   await db.resource.create({
-    data: { title, url, type: type || "LINK", lessonId },
+    data: { title, url: normalizedUrl, type: type || "LINK", lessonId },
   });
 
   const courseId = lesson.module.courseId;
@@ -252,7 +276,7 @@ export async function deleteResource(resourceId: string) {
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && resource.lesson.module.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, resource.lesson.module.course))) {
     throw new Error("Not authorized");
   }
 
@@ -279,15 +303,20 @@ export async function updateResource(
 
   const userId = (session.user as any).id;
   const role = (session.user as any).role;
-  if (role !== "ADMIN" && resource.lesson.module.course.instructorId !== userId) {
+  if (!(await canManageCourse(userId, role, resource.lesson.module.course))) {
     throw new Error("Not authorized");
+  }
+
+  const normalizedUrl = normalizeResourceUrl(data.url);
+  if (!normalizedUrl) {
+    return { error: await serverT("errors.invalidUrl") };
   }
 
   await db.resource.update({
     where: { id: resourceId },
     data: {
       title: data.title,
-      url: data.url,
+      url: normalizedUrl,
       type: data.type || "LINK",
     },
   });

@@ -64,19 +64,20 @@ export default function SignupPage() {
               )}
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-bold text-metro-text">
-                {t("auth.email")}
+              <label htmlFor="identifier" className="block text-sm font-bold text-metro-text">
+                {t("auth.identifier")}
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
+                id="identifier"
+                name="identifier"
+                type="text"
+                autoComplete="username"
                 required
-                placeholder={t("auth.emailPlaceholder")}
+                placeholder={t("auth.identifierPlaceholder")}
                 className="metro-input mt-2"
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-metro-error">{errors.email[0]}</p>
+              {errors.identifier && (
+                <p className="mt-1 text-sm text-metro-error">{errors.identifier[0]}</p>
               )}
             </div>
             <div>

@@ -15,7 +15,10 @@ export default async function AdminUsersPage() {
   const role = (session.user as any).role;
   if (role !== "ADMIN") redirect("/dashboard");
 
-  const users = await getUsers();
+  const users = (await getUsers()).map((u) => ({
+    ...u,
+    dateOfBirth: u.dateOfBirth ? u.dateOfBirth.toISOString().slice(0, 10) : null,
+  }));
 
   return (
     <div>
