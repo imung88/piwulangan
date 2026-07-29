@@ -1,4 +1,7 @@
+"use client";
+
 import { DAY_NAMES } from "@/lib/schedule";
+import { useT, useDayNames, format } from "@/lib/i18n/useT";
 
 interface Window {
   id: string;
@@ -14,10 +17,13 @@ export default function AvailabilityDisplay({
   windows: Window[];
   instructorName: string;
 }) {
+  const t = useT();
+  const dayNames = useDayNames();
+
   if (windows.length === 0) {
     return (
       <p className="text-sm text-metro-text-secondary">
-        {instructorName} has not published availability yet.
+        {format(t("availability.hasNoAvailability"), { name: instructorName })}
       </p>
     );
   }
@@ -31,9 +37,7 @@ export default function AvailabilityDisplay({
   return (
     <div className="metro-card">
       <p className="text-sm text-metro-text-secondary mb-3">
-        No sessions have been assigned to you yet. {instructorName} is
-        generally available at these times — sessions are scheduled by the
-        instructor:
+        {format(t("availability.noAssignedSessions"), { name: instructorName })}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {Array.from(byDay.entries())
@@ -44,7 +48,7 @@ export default function AvailabilityDisplay({
               className="flex items-center justify-between bg-metro-bg px-3 py-2 text-sm"
             >
               <span className="font-medium text-metro-text">
-                {DAY_NAMES[day]}
+                {dayNames[day] ?? DAY_NAMES[day]}
               </span>
               <span className="text-metro-text-secondary">
                 {wins.map((w) => `${w.startTime}–${w.endTime}`).join(", ")}

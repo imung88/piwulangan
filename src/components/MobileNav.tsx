@@ -2,16 +2,18 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useT } from "@/lib/i18n/useT"
 
 const items = [
-  { href: "/dashboard", label: "Home", icon: "🏠" },
-  { href: "/courses", label: "Courses", icon: "📚" },
-  { href: "/schedule", label: "Schedule", icon: "📅" },
-  { href: "/announcements", label: "News", icon: "📢" },
-  { href: "/profile", label: "Profile", icon: "👤" },
+  { href: "/dashboard", key: "nav.dashboard", icon: "🏠" },
+  { href: "/courses", key: "nav.courses", icon: "📚" },
+  { href: "/schedule", key: "nav.schedule", icon: "📅" },
+  { href: "/announcements", key: "nav.announcements", icon: "📢" },
+  { href: "/profile", key: "nav.profile", icon: "👤" },
 ]
 
 export default function MobileNav() {
+  const t = useT()
   const pathname = usePathname()
 
   return (
@@ -37,7 +39,7 @@ export default function MobileNav() {
                   active ? "font-semibold" : "font-medium"
                 }`}
               >
-                {item.label}
+                {t(item.key)}
               </span>
             </Link>
           )

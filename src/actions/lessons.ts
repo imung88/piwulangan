@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { serverT } from "@/lib/i18n/serverT";
 import { revalidatePath } from "next/cache";
 
 // ─── Modules ───
@@ -226,7 +227,7 @@ export async function addResource(
 
   const count = await db.resource.count({ where: { lessonId } });
   if (count >= 5) {
-    return { error: "Maximum 5 resources per lesson" };
+    return { error: await serverT("errors.maxResources") };
   }
 
   await db.resource.create({

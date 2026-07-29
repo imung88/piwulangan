@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { serverT } from "@/lib/i18n/serverT";
 import { notify } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 
@@ -168,17 +169,17 @@ export async function enrollByCode(code: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Not authenticated");
   if ((session.user as any).role !== "STUDENT") {
-    return { error: "Only students can enroll" };
+    return { error: await serverT("errors.onlyStudentsEnroll") };
   }
 
   const course = await db.course.findUnique({
     where: { inviteCode: code.toUpperCase() },
   });
 
-  if (!course) return { error: "Invalid invite code" };
-  if (course.visibility !== "PUBLISHED") return { error: "Course is not available" };
+  if (!course) return { error: await serverT("errors.invalidInviteCode") };
+  if (course.visibility !== "PUBLISHED") return { error: await serverT("errors.courseNotAvailable") };
   if (course.enrollmentMode !== "INVITE_CODE") {
-    return { error: "This course does not accept invite codes" };
+    return { error: await serverT("errors.noInviteCodes") };
   }
 
   const userId = (session.user as any).id;
@@ -188,7 +189,7 @@ export async function enrollByCode(code: string) {
     where: { userId_courseId: { userId, courseId: course.id } },
   });
 
-  if (existing) return { error: "Already enrolled" };
+  if (existing) return { error: await serverT("errors.alreadyEnrolled") };
 
   await db.enrollment.create({
     data: { userId, courseId: course.id },
@@ -202,14 +203,14 @@ export async function enrollOpen(courseId: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Not authenticated");
   if ((session.user as any).role !== "STUDENT") {
-    return { error: "Only students can enroll" };
+    return { error: await serverT("errors.onlyStudentsEnroll") };
   }
 
   const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) return { error: "Course not found" };
-  if (course.visibility !== "PUBLISHED") return { error: "Course is not available" };
+  if (!course) return { error: await serverT("errors.courseNotFound") };
+  if (course.visibility !== "PUBLISHED") return { error: await serverT("errors.courseNotAvailable") };
   if (course.enrollmentMode !== "OPEN") {
-    return { error: "This course does not allow open enrollment" };
+    return { error: await serverT("errors.noOpenEnrollment") };
   }
 
   const userId = (session.user as any).id;
@@ -218,7 +219,7 @@ export async function enrollOpen(courseId: string) {
     where: { userId_courseId: { userId, courseId } },
   });
 
-  if (existing) return { error: "Already enrolled" };
+  if (existing) return { error: await serverT("errors.alreadyEnrolled") };
 
   await db.enrollment.create({
     data: { userId, courseId },
@@ -238,7 +239,7 @@ export async function unenrollSelf(courseId: string) {
   const enrollment = await db.enrollment.findUnique({
     where: { userId_courseId: { userId, courseId } },
   });
-  if (!enrollment) return { error: "Not enrolled" };
+  if (!enrollment) return { error: await serverT("errors.notEnrolled") };
 
   await db.enrollment.delete({
     where: { userId_courseId: { userId, courseId } },
@@ -266,7 +267,7 @@ export async function enrollStudent(courseId: string, studentId: string) {
     where: { userId_courseId: { userId: studentId, courseId } },
   });
 
-  if (existing) return { error: "Already enrolled" };
+  if (existing) return { error: await serverT("errors.alreadyEnrolled") };
 
   await db.enrollment.create({
     data: { userId: studentId, courseId },

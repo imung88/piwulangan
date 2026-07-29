@@ -3,16 +3,7 @@
 import { useState } from "react";
 import { setAvailability } from "@/actions/schedule";
 import { useRouter } from "next/navigation";
-
-const DAYS = [
-  { value: 0, label: "Sunday" },
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
-];
+import { useT, useDayNames } from "@/lib/i18n/useT";
 
 interface Course {
   id: string;
@@ -21,6 +12,8 @@ interface Course {
 
 export default function AvailabilityForm({ courses }: { courses: Course[] }) {
   const router = useRouter();
+  const t = useT();
+  const dayNames = useDayNames();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dayOfWeek, setDayOfWeek] = useState(1);
@@ -42,7 +35,7 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
     const result = await setAvailability(formData) as any;
 
     if (result?.error) {
-      setError(typeof result.error === "string" ? result.error : "Invalid input");
+      setError(typeof result.error === "string" ? result.error : t("availability.adding"));
       setLoading(false);
       return;
     }
@@ -59,25 +52,23 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
       {error && (
         <div className="bg-metro-error text-white p-3 text-sm">{error}</div>
       )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-metro-text mb-1">Day</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">{t("availability.day")}</label>
           <select
             value={dayOfWeek}
             onChange={(e) => setDayOfWeek(Number(e.target.value))}
             className="w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
           >
-            {DAYS.map((day) => (
-              <option key={day.value} value={day.value}>
-                {day.label}
+            {dayNames.map((label, index) => (
+              <option key={index} value={index}>
+                {label}
               </option>
             ))}
           </select>
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-metro-text mb-1">Start Time</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">{t("availability.startTime")}</label>
           <input
             type="time"
             value={startTime}
@@ -86,9 +77,8 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
             required
           />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-metro-text mb-1">End Time</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">{t("availability.endTime")}</label>
           <input
             type="time"
             value={endTime}
@@ -97,17 +87,14 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
             required
           />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-metro-text mb-1">
-            Course (optional)
-          </label>
+          <label className="block text-sm font-medium text-metro-text mb-1">{t("availability.courseOptional")}</label>
           <select
             value={courseId}
             onChange={(e) => setCourseId(e.target.value)}
             className="w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
           >
-            <option value="">All courses</option>
+            <option value="">{t("availability.allCourses")}</option>
             {courses.map((course) => (
               <option key={course.id} value={course.id}>
                 {course.title}
@@ -116,13 +103,12 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
           </select>
         </div>
       </div>
-
       <button
         type="submit"
         disabled={loading}
         className="bg-metro-blue text-white px-4 py-2 text-sm font-medium hover:bg-metro-blue-hover disabled:opacity-50"
       >
-        {loading ? "Adding..." : "Add Availability"}
+        {loading ? t("availability.adding") : t("availability.addBtn")}
       </button>
     </form>
   );

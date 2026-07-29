@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useT, format } from "@/lib/i18n/useT";
 import {
   createUser,
   updateUser,
@@ -36,6 +37,7 @@ type LinkedUser = {
 };
 
 export default function AdminUsersClient({ users: initialUsers }: { users: User[] }) {
+  const t = useT();
   const router = useRouter();
   const [users] = useState(initialUsers);
   const [search, setSearch] = useState("");
@@ -195,7 +197,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
             onClick={() => setMessage(null)}
             className="ml-2 underline text-sm"
           >
-            Dismiss
+            {t("adminUsers.dismiss")}
           </button>
         </div>
       )}
@@ -204,7 +206,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
       <div className="flex gap-4">
         <input
           type="text"
-          placeholder="Search by name or email..."
+          placeholder={t("adminUsers.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
@@ -214,17 +216,17 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
           onChange={(e) => setRoleFilter(e.target.value)}
           className="border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
         >
-          <option value="ALL">All Roles</option>
-          <option value="ADMIN">Admin</option>
-          <option value="INSTRUCTOR">Instructor</option>
-          <option value="STUDENT">Student</option>
-          <option value="GUARDIAN">Guardian</option>
+          <option value="ALL">{t("adminUsers.allRoles")}</option>
+          <option value="ADMIN">{t("adminUsers.admin")}</option>
+          <option value="INSTRUCTOR">{t("adminUsers.instructor")}</option>
+          <option value="STUDENT">{t("adminUsers.student")}</option>
+          <option value="GUARDIAN">{t("adminUsers.guardian")}</option>
         </select>
         <button
           onClick={() => setShowCreateForm(true)}
           className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
         >
-          + Create User
+          {t("adminUsers.createUser")}
         </button>
       </div>
 
@@ -234,19 +236,19 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
           <thead className="bg-metro-bg">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
-                Name
+                {t("adminUsers.name")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
-                Email
+                {t("adminUsers.email")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
-                Role
+                {t("adminUsers.role")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
-                Status
+                {t("adminUsers.status")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-metro-text-secondary uppercase tracking-wider">
-                Actions
+                {t("adminUsers.actions")}
               </th>
             </tr>
           </thead>
@@ -282,7 +284,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                         : "bg-metro-error text-white"
                     }`}
                   >
-                    {user.active ? "Active" : "Inactive"}
+                    {user.active ? t("adminUsers.active") : t("adminUsers.inactive")}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -291,20 +293,20 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                       onClick={() => setEditingUser(user)}
                       className="text-metro-blue hover:text-metro-chrome-dark"
                     >
-                      Edit
+                      {t("adminUsers.edit")}
                     </button>
                     <button
                       onClick={() => setResetPasswordUser(user)}
                       className="text-metro-orange hover:text-metro-orange-hover"
                     >
-                      Reset Password
+                      {t("adminUsers.resetPassword")}
                     </button>
                     {(user.role === "GUARDIAN" || user.role === "STUDENT") && (
                       <button
                         onClick={() => setLinkingUser(user)}
                         className="text-metro-chrome-dark hover:text-metro-blue"
                       >
-                        Link
+                        {t("adminUsers.link")}
                       </button>
                     )}
                     {user.active ? (
@@ -312,14 +314,14 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                         onClick={() => handleDeactivate(user.id)}
                         className="text-metro-error hover:text-metro-orange-hover"
                       >
-                        Deactivate
+                        {t("adminUsers.deactivate")}
                       </button>
                     ) : (
                       <button
                         onClick={() => handleActivate(user.id)}
                         className="text-metro-green hover:text-metro-green-hover"
                       >
-                        Activate
+                        {t("adminUsers.activate")}
                       </button>
                     )}
                   </div>
@@ -329,7 +331,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
           </tbody>
         </table>
         {filteredUsers.length === 0 && (
-          <div className="p-6 text-center text-metro-text-secondary">No users found</div>
+          <div className="p-6 text-center text-metro-text-secondary">{t("adminUsers.noUsersFound")}</div>
         )}
       </div>
 
@@ -337,10 +339,10 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
       {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-metro-surface p-6 w-full max-w-md">
-            <h2 className="metro-section-title mb-4">Create User</h2>
+            <h2 className="metro-section-title mb-4">{t("adminUsers.createUser")}</h2>
             <form action={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-metro-text">Name</label>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.name")}</label>
                 <input
                   name="name"
                   required
@@ -348,7 +350,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-metro-text">Email</label>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.email")}</label>
                 <input
                   name="email"
                   type="email"
@@ -357,7 +359,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-metro-text">Password</label>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.password")}</label>
                 <input
                   name="password"
                   type="password"
@@ -367,16 +369,16 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-metro-text">Role</label>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.role")}</label>
                 <select
                   name="role"
                   required
                   className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 >
-                  <option value="STUDENT">Student</option>
-                  <option value="INSTRUCTOR">Instructor</option>
-                  <option value="GUARDIAN">Guardian</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="STUDENT">{t("adminUsers.student")}</option>
+                  <option value="INSTRUCTOR">{t("adminUsers.instructor")}</option>
+                  <option value="GUARDIAN">{t("adminUsers.guardian")}</option>
+                  <option value="ADMIN">{t("adminUsers.admin")}</option>
                 </select>
               </div>
               <div className="flex gap-2 justify-end">
@@ -385,13 +387,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   onClick={() => setShowCreateForm(false)}
                   className="border-2 border-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-bg"
                 >
-                  Cancel
+                  {t("adminUsers.cancel")}
                 </button>
                 <button
                   type="submit"
                   className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
                 >
-                  Create
+                  {t("adminUsers.create")}
                 </button>
               </div>
             </form>
@@ -403,13 +405,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-metro-surface p-6 w-full max-w-md">
-            <h2 className="metro-section-title mb-4">Edit User</h2>
+            <h2 className="metro-section-title mb-4">{t("adminUsers.editUser")}</h2>
             <form
               action={(formData) => handleUpdateUser(editingUser.id, formData)}
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium text-metro-text">Name</label>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.name")}</label>
                 <input
                   name="name"
                   defaultValue={editingUser.name}
@@ -418,7 +420,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-metro-text">Email</label>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.email")}</label>
                 <input
                   name="email"
                   type="email"
@@ -428,17 +430,17 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-metro-text">Role</label>
+                <label className="block text-sm font-medium text-metro-text">{t("adminUsers.role")}</label>
                 <select
                   name="role"
                   defaultValue={editingUser.role}
                   required
                   className="mt-1 block w-full border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                 >
-                  <option value="STUDENT">Student</option>
-                  <option value="INSTRUCTOR">Instructor</option>
-                  <option value="GUARDIAN">Guardian</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="STUDENT">{t("adminUsers.student")}</option>
+                  <option value="INSTRUCTOR">{t("adminUsers.instructor")}</option>
+                  <option value="GUARDIAN">{t("adminUsers.guardian")}</option>
+                  <option value="ADMIN">{t("adminUsers.admin")}</option>
                 </select>
               </div>
               <div className="flex gap-2 justify-end">
@@ -447,13 +449,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   onClick={() => setEditingUser(null)}
                   className="border-2 border-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-bg"
                 >
-                  Cancel
+                  {t("adminUsers.cancel")}
                 </button>
                 <button
                   type="submit"
                   className="bg-metro-blue px-4 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
                 >
-                  Save Changes
+                  {t("adminUsers.saveChanges")}
                 </button>
               </div>
             </form>
@@ -466,7 +468,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-metro-surface p-6 w-full max-w-md">
             <h2 className="metro-section-title mb-4">
-              Reset Password for {resetPasswordUser.name}
+              {format(t("adminUsers.resetPasswordTitle"), { name: resetPasswordUser.name })}
             </h2>
             <form
               action={(formData) =>
@@ -479,7 +481,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
             >
               <div>
                 <label className="block text-sm font-medium text-metro-text">
-                  New Password
+                  {t("adminUsers.newPassword")}
                 </label>
                 <input
                   name="newPassword"
@@ -495,13 +497,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   onClick={() => setResetPasswordUser(null)}
                   className="border-2 border-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-bg"
                 >
-                  Cancel
+                  {t("adminUsers.cancel")}
                 </button>
                 <button
                   type="submit"
                   className="bg-metro-orange px-4 py-2 text-sm font-medium text-white hover:bg-metro-orange-hover"
                 >
-                  Reset Password
+                  {t("adminUsers.resetPassword")}
                 </button>
               </div>
             </form>
@@ -515,15 +517,15 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
           <div className="bg-metro-surface p-6 w-full max-w-md">
             <h2 className="metro-section-title mb-4">
               {linkingUser.role === "GUARDIAN"
-                ? `Link Students to ${linkingUser.name}`
-                : `Link Guardians to ${linkingUser.name}`}
+                ? format(t("adminUsers.linkStudentsTo"), { name: linkingUser.name })
+                : format(t("adminUsers.linkGuardiansTo"), { name: linkingUser.name })}
             </h2>
 
             {/* Current Links */}
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-metro-text mb-2">Current Links</h3>
+              <h3 className="text-sm font-medium text-metro-text mb-2">{t("adminUsers.currentLinks")}</h3>
               {linkedUsers.length === 0 ? (
-                <p className="text-sm text-metro-text-secondary">No links yet</p>
+                <p className="text-sm text-metro-text-secondary">{t("adminUsers.noLinksYet")}</p>
               ) : (
                 <div className="space-y-2">
                   {linkedUsers.map((linked) => (
@@ -543,7 +545,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                         }
                         className="text-metro-error hover:text-metro-orange-hover text-sm"
                       >
-                        Remove
+                        {t("blocked.remove")}
                       </button>
                     </div>
                   ))}
@@ -553,7 +555,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
 
             {/* Add New Link */}
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-metro-text mb-2">Add New Link</h3>
+              <h3 className="text-sm font-medium text-metro-text mb-2">{t("adminUsers.addNewLink")}</h3>
               {linkingUser.role === "GUARDIAN" ? (
                 <div className="flex gap-2">
                   <select
@@ -561,7 +563,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                     onChange={(e) => setSelectedStudentId(e.target.value)}
                     className="flex-1 border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                   >
-                    <option value="">Select a student</option>
+                    <option value="">{t("adminUsers.selectStudent")}</option>
                     {allStudents
                       .filter((s) => !linkedUsers.some((l) => l.id === s.id))
                       .map((student) => (
@@ -585,7 +587,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                     onChange={(e) => setSelectedGuardianId(e.target.value)}
                     className="flex-1 border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
                   >
-                    <option value="">Select a guardian</option>
+                    <option value="">{t("adminUsers.selectGuardian")}</option>
                     {allGuardians
                       .filter((g) => !linkedUsers.some((l) => l.id === g.id))
                       .map((guardian) => (

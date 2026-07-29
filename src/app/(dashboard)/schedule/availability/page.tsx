@@ -1,10 +1,12 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { DAY_NAMES } from "@/lib/schedule";
 import AvailabilityForm from "./AvailabilityForm";
 import BlockedDatesSection from "./BlockedDatesSection";
+import { serverT } from "@/lib/i18n/serverT";
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 
 export default async function AvailabilityPage() {
   const session = await auth();
@@ -21,33 +23,38 @@ export default async function AvailabilityPage() {
     where: { userId },
     orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
   });
-
   const blockedDates = await db.blockedDate.findMany({
     where: { userId },
     orderBy: { date: "asc" },
   });
-
   const courses = await db.course.findMany({
     where: { instructorId: userId },
     select: { id: true, title: true },
   });
 
+  const labels = {
+    title: await serverT("availability.title"),
+    description: await serverT("availability.description"),
+    weeklySchedule: await serverT("availability.weeklySchedule"),
+    addAvailability: await serverT("availability.addAvailability"),
+    noAvailability: await serverT("availability.noAvailability"),
+    courseFallback: await serverT("settings.inviteCode"),
+    days: await Promise.all(DAY_KEYS.map(async (k) => serverT(`days.${k}`))),
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="metro-page-title mb-6">Availability Settings</h1>
-      <p className="text-metro-text-secondary mb-8">
-        Set your weekly availability hours. Students can book sessions during these times.
-      </p>
+      <h1 className="metro-page-title mb-6">{labels.title}</h1>
+      <p className="text-metro-text-secondary mb-8">{labels.description}</p>
 
       {/* Current Availability */}
       <div className="metro-card p-6 mb-8">
-        <h2 className="metro-section-title mb-4">weekly schedule</h2>
-
+        <h2 className="metro-section-title mb-4">{labels.weeklySchedule.toLowerCase()}</h2>
         {availability.length === 0 ? (
-          <p className="text-metro-text-secondary">No availability set yet. Use the form below to add your hours.</p>
+          <p className="text-metro-text-secondary">{labels.noAvailability}</p>
         ) : (
           <div className="space-y-3">
-            {DAYS.map((day, index) => {
+            {labels.days.map((day, index) => {
               const daySlots = availability.filter((a) => a.dayOfWeek === index);
               if (daySlots.length === 0) return null;
 
@@ -63,7 +70,7 @@ export default async function AvailabilityPage() {
                         {slot.startTime} - {slot.endTime}
                         {slot.courseId && (
                           <span className="text-metro-chrome-dark text-xs">
-                            ({courses.find((c) => c.id === slot.courseId)?.title || "Course"})
+                            ({courses.find((c) => c.id === slot.courseId)?.title || DAY_NAMES[index]})
                           </span>
                         )}
                       </span>
@@ -78,7 +85,7 @@ export default async function AvailabilityPage() {
 
       {/* Add Availability Form */}
       <div className="metro-card p-6 mb-8">
-        <h2 className="metro-section-title mb-4">add availability</h2>
+        <h2 className="metro-section-title mb-4">{labels.addAvailability.toLowerCase()}</h2>
         <AvailabilityForm courses={courses} />
       </div>
 

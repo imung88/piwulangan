@@ -1,9 +1,15 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { serverT } from "@/lib/i18n/serverT";
 import { getUsers } from "@/actions/admin";
 import AdminUsersClient from "./AdminUsersClient";
 
 export default async function AdminUsersPage() {
+  const [headerTitle, headerDesc] = await Promise.all([
+    serverT("adminUsers.headerTitle"),
+    serverT("adminUsers.headerDesc"),
+  ]);
+
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -16,8 +22,8 @@ export default async function AdminUsersPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="metro-page-title">User Management</h1>
-          <p className="text-metro-text-secondary">Manage all users in the system.</p>
+          <h1 className="metro-page-title">{headerTitle}</h1>
+          <p className="text-metro-text-secondary">{headerDesc}</p>
         </div>
       </div>
 

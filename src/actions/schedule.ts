@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { serverT } from "@/lib/i18n/serverT";
 import { revalidatePath } from "next/cache";
 import { notify, withGuardians } from "@/lib/notifications";
 
@@ -82,7 +83,7 @@ export async function setAvailability(formData: FormData): Promise<ActionResult>
   const { dayOfWeek, startTime, endTime, courseId } = parsed.data;
 
   if (startTime >= endTime) {
-    return { error: { endTime: ["End time must be after start time"] } };
+    return { error: { endTime: [await serverT("errors.endTimeAfterStart")] } };
   }
 
   const existing = await db.availability.findFirst({
@@ -151,7 +152,7 @@ export async function addBlockedDate(formData: FormData): Promise<ActionResult> 
   const date = parseDateOnly(parsed.data.date);
 
   const existing = await db.blockedDate.findFirst({ where: { userId, date } });
-  if (existing) return { error: "Date is already blocked" };
+  if (existing) return { error: await serverT("errors.dateAlreadyBlocked") };
 
   await db.blockedDate.create({
     data: { userId, date, reason: parsed.data.reason },
@@ -222,12 +223,12 @@ export async function createSession(formData: FormData): Promise<ActionResult> {
   const { course } = await requireCourseManager(data.courseId);
 
   if (data.startTime >= data.endTime) {
-    return { error: "End time must be after start time" };
+    return { error: await serverT("errors.endTimeAfterStart") };
   }
 
   const firstDate = parseDateOnly(data.date);
-  if (isNaN(firstDate.getTime())) return { error: "Invalid date" };
-  if (isPastDate(firstDate)) return { error: "Cannot schedule a session in the past" };
+  if (isNaN(firstDate.getTime())) return { error: await serverT("errors.invalidDate") };
+  if (isPastDate(firstDate)) return { error: await serverT("errors.sessionInPast") };
 
   if (data.lessonId) {
     const lesson = await db.lesson.findUnique({
@@ -235,7 +236,7 @@ export async function createSession(formData: FormData): Promise<ActionResult> {
       include: { module: { select: { courseId: true } } },
     });
     if (!lesson || lesson.module.courseId !== data.courseId) {
-      return { error: "Lesson does not belong to this course" };
+      return { error: await serverT("errors.lessonNotInCourse") };
     }
   }
 
@@ -250,7 +251,7 @@ export async function createSession(formData: FormData): Promise<ActionResult> {
     : data.studentIds.filter((id) => enrolledIds.has(id));
 
   if (attendeeIds.length === 0) {
-    return { error: "Select at least one enrolled student" };
+    return { error: await serverT("errors.selectStudent") };
   }
 
   const dates: Date[] = [];
@@ -314,12 +315,12 @@ export async function updateSession(
     where: { id: sessionId },
     include: { attendees: true, course: { select: { title: true } } },
   });
-  if (!existing) return { error: "Session not found" };
+  if (!existing) return { error: await serverT("errors.sessionNotFound") };
 
   await requireCourseManager(existing.courseId);
 
   if (existing.status === "CANCELLED") {
-    return { error: "Cannot edit a cancelled session" };
+    return { error: await serverT("errors.cannotEditCancelled") };
   }
 
   const parsed = sessionUpdateSchema.safeParse({
@@ -339,12 +340,12 @@ export async function updateSession(
   const data = parsed.data;
 
   if (data.startTime >= data.endTime) {
-    return { error: "End time must be after start time" };
+    return { error: await serverT("errors.endTimeAfterStart") };
   }
 
   const date = parseDateOnly(data.date);
-  if (isNaN(date.getTime())) return { error: "Invalid date" };
-  if (isPastDate(date)) return { error: "Cannot move a session to the past" };
+  if (isNaN(date.getTime())) return { error: await serverT("errors.invalidDate") };
+  if (isPastDate(date)) return { error: await serverT("errors.cannotMovePast") };
 
   if (data.lessonId) {
     const lesson = await db.lesson.findUnique({
@@ -352,7 +353,7 @@ export async function updateSession(
       include: { module: { select: { courseId: true } } },
     });
     if (!lesson || lesson.module.courseId !== existing.courseId) {
-      return { error: "Lesson does not belong to this course" };
+      return { error: await serverT("errors.lessonNotInCourse") };
     }
   }
 
@@ -391,12 +392,12 @@ export async function cancelSession(
     where: { id: sessionId },
     include: { attendees: true, course: { select: { title: true } } },
   });
-  if (!existing) return { error: "Session not found" };
+  if (!existing) return { error: await serverT("errors.sessionNotFound") };
 
   await requireCourseManager(existing.courseId);
 
   if (existing.status === "CANCELLED") {
-    return { error: "Session is already cancelled" };
+    return { error: await serverT("errors.alreadyCancelled") };
   }
 
   await db.classSession.update({
@@ -426,7 +427,7 @@ export async function setSessionAttendees(
     where: { id: sessionId },
     include: { attendees: true, course: { select: { title: true } } },
   });
-  if (!existing) return { error: "Session not found" };
+  if (!existing) return { error: await serverT("errors.sessionNotFound") };
 
   await requireCourseManager(existing.courseId);
 
@@ -438,7 +439,7 @@ export async function setSessionAttendees(
   const targetIds = studentIds.filter((id) => enrolledIds.has(id));
 
   if (targetIds.length === 0) {
-    return { error: "Select at least one enrolled student" };
+    return { error: await serverT("errors.selectStudent") };
   }
 
   const currentIds = existing.attendees.map((a) => a.studentId);
@@ -497,14 +498,14 @@ export async function markAttendance(formData: FormData): Promise<ActionResult> 
     where: { id: sessionId },
     include: { course: { select: { title: true } } },
   });
-  if (!classSession) return { error: "Session not found" };
+  if (!classSession) return { error: await serverT("errors.sessionNotFound") };
 
   await requireCourseManager(classSession.courseId);
 
   const attendee = await db.sessionAttendee.findUnique({
     where: { sessionId_studentId: { sessionId, studentId } },
   });
-  if (!attendee) return { error: "Student is not assigned to this session" };
+  if (!attendee) return { error: await serverT("errors.studentNotAssigned") };
 
   await db.sessionAttendee.update({
     where: { id: attendee.id },

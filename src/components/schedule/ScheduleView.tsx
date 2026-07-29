@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SessionItem } from "./types";
+import { useT } from "@/lib/i18n/useT";
 import SessionList from "./SessionList";
 import WeekCalendar from "./WeekCalendar";
 
@@ -19,6 +20,7 @@ export default function ScheduleView({
   showInstructor,
 }: Props) {
   const [view, setView] = useState<"list" | "calendar">("list");
+  const t = useT();
 
   return (
     <div>
@@ -33,11 +35,10 @@ export default function ScheduleView({
                 : "text-metro-text-secondary hover:text-metro-text"
             }`}
           >
-            {v === "list" ? "list" : "calendar"}
+            {t(`scheduleView.${v}`)}
           </button>
         ))}
       </div>
-
       {view === "list" ? (
         <SessionList
           sessions={sessions}

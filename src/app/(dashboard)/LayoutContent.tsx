@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { logout } from "@/actions/auth"
 import { useEffect, useState } from "react"
-import LocaleProvider, { readCookieInitial } from "@/lib/i18n/LocaleProvider"
+import LocaleProvider from "@/lib/i18n/LocaleProvider"
 import NotificationBell from "@/components/NotificationBell"
 import MobileNav from "@/components/MobileNav"
 import { getMyNotifications } from "@/actions/notifications"
@@ -203,9 +203,12 @@ function LayoutBody({ children }: Props) {
   )
 }
 
-export default function LayoutContent({ children }: Props) {
+export default function LayoutContent({
+  children,
+  initialLocale,
+}: Props & { initialLocale: "id" | "en" }) {
   return (
-    <LocaleProvider initial={readCookieInitial()}>
+    <LocaleProvider initial={initialLocale}>
       <LayoutBody>{children}</LayoutBody>
     </LocaleProvider>
   )

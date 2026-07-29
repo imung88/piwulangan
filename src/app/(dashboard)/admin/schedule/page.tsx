@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getAllSessions } from "@/lib/schedule";
 import { toSessionItem } from "@/components/schedule/types";
 import ScheduleView from "@/components/schedule/ScheduleView";
+import { serverT } from "@/lib/i18n/serverT";
 
 export default async function AdminSchedulePage() {
   const session = await auth();
@@ -12,6 +13,14 @@ export default async function AdminSchedulePage() {
 
   const role = (session.user as any).role;
   if (role !== "ADMIN") redirect("/dashboard");
+
+  const labels = {
+    title: await serverT("adminSchedule.title"),
+    desc: await serverT("adminSchedule.desc"),
+    courses: await serverT("adminSchedule.courses"),
+    sessionsLast60Days: await serverT("adminSchedule.sessionsLast60Days"),
+    noCourses: await serverT("adminSchedule.noCourses"),
+  };
 
   const windowStart = new Date();
   windowStart.setDate(windowStart.getDate() - 60);
@@ -22,7 +31,7 @@ export default async function AdminSchedulePage() {
       where: { visibility: { not: "ARCHIVED" } },
       include: {
         instructor: { select: { id: true, name: true } },
-        _count: { select: { sessions: true, enrollments: true } },
+        _count: { select: { sessions: true, enrollments: true} },
       },
       orderBy: { title: "asc" },
     }),
@@ -33,16 +42,14 @@ export default async function AdminSchedulePage() {
     <div>
       <div className="mb-6">
         <h1 className="metro-page-title">
-          Schedule Management
+          {labels.title}
         </h1>
         <p className="text-metro-text-secondary">
-          Sessions are managed per course. Open a course to create, edit, or
-          cancel sessions.
+          {labels.desc}
         </p>
       </div>
-
       <section className="mb-8">
-        <h2 className="metro-section-title mb-3">courses</h2>
+        <h2 className="metro-section-title mb-3">{labels.courses}</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((c) => (
             <Link
@@ -58,14 +65,14 @@ export default async function AdminSchedulePage() {
             </Link>
           ))}
           {courses.length === 0 && (
-            <p className="text-sm text-metro-text-secondary">No courses.</p>
+            <p className="text-sm text-metro-text-secondary">{labels.noCourses}</p>
           )}
         </div>
       </section>
 
       <section>
         <h2 className="metro-section-title mb-3">
-          all sessions (last 60 days onward)
+          {labels.sessionsLast60Days}
         </h2>
         <ScheduleView
           sessions={sessions.map((s) => toSessionItem(s))}

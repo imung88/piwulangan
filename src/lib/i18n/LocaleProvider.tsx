@@ -6,12 +6,10 @@ const DEFAULT: Locale = "id"
 const SUPPORTED: Locale[] = ["id", "en"]
 
 function readCookie(): Locale {
-  const m = typeof document === "undefined"
-    ? DEFAULT
-    : document.cookie.match(/(?:^|;\s*)lang=([^;]+)/)
+  if (typeof document === "undefined") return DEFAULT
+  const m = document.cookie.match(/(?:^|;\s*)lang=([^;]+)/)
   return (m?.[1] ?? DEFAULT) as Locale
 }
-export const readCookieInitial = readCookie
 
 type SetLocale = (l: Locale) => void
 const Ctx = createContext<[Locale, SetLocale]>(["id", () => {}])

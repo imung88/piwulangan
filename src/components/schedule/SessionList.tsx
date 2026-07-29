@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { format as i18nFormat } from "@/lib/i18n/useT";
+import { useT } from "@/lib/i18n/useT";
 import {
   SessionItem,
   STATUS_COLORS,
@@ -17,6 +19,12 @@ interface Props {
   showInstructor?: boolean;
 }
 
+const FILTER_LABELS: Record<"upcoming" | "past" | "all", string> = {
+  upcoming: "schedule.upcoming",
+  past: "schedule.past",
+  all: "schedule.all",
+};
+
 export default function SessionList({
   sessions,
   showCourse = true,
@@ -25,6 +33,7 @@ export default function SessionList({
 }: Props) {
   const [filter, setFilter] = useState<"upcoming" | "past" | "all">("upcoming");
   const today = todayStr();
+  const t = useT();
 
   const filtered = sessions.filter((s) => {
     if (filter === "upcoming") return s.date >= today;
@@ -35,7 +44,7 @@ export default function SessionList({
   if (sessions.length === 0) {
     return (
       <div className="metro-card p-8 text-center">
-        <p className="text-metro-text-secondary">No sessions scheduled yet.</p>
+        <p className="text-metro-text-secondary">{t("scheduleView.noSessionsYet")}</p>
       </div>
     );
   }
@@ -53,15 +62,14 @@ export default function SessionList({
                 : "text-metro-text-secondary hover:text-metro-text"
             }`}
           >
-            {f}
+            {t(FILTER_LABELS[f])}
           </button>
         ))}
       </div>
-
       <div className="space-y-3">
         {filtered.length === 0 && (
           <div className="metro-card p-6 text-center text-sm text-metro-text-secondary">
-            No {filter} sessions.
+            {i18nFormat(t("scheduleView.noSessionsFiltered"), { filter: t(FILTER_LABELS[filter]) })}
           </div>
         )}
         {filtered.map((s) => (
@@ -82,11 +90,10 @@ export default function SessionList({
               </span>
               {s.date === today && s.status !== "CANCELLED" && (
                 <span className="metro-badge bg-metro-blue text-white">
-                  Today
+                  {t("scheduleView.today")}
                 </span>
               )}
             </div>
-
             <div className="text-sm text-metro-text-secondary">
               <span>{formatDateStr(s.date)}</span>
               <span className="mx-2">·</span>
@@ -103,7 +110,7 @@ export default function SessionList({
                       rel="noopener noreferrer"
                       className="text-metro-blue hover:underline"
                     >
-                      Join link
+                      {t("scheduleView.joinLink")}
                     </a>
                   ) : (
                     <span>{s.location}</span>
@@ -111,7 +118,6 @@ export default function SessionList({
                 </>
               )}
             </div>
-
             {showCourse && (
               <div className="text-sm text-metro-text-secondary mt-1">
                 <Link
@@ -125,7 +131,6 @@ export default function SessionList({
                 )}
               </div>
             )}
-
             {s.lesson && (
               <div className="text-sm mt-1">
                 <Link
@@ -136,13 +141,11 @@ export default function SessionList({
                 </Link>
               </div>
             )}
-
             {showAttendees && s.attendeeNames.length > 0 && (
               <div className="text-sm text-metro-text-secondary mt-1">
                 {s.attendeeNames.join(", ")}
               </div>
             )}
-
             {s.myAttendance && (
               <div className="text-sm mt-1">
                 <span className={ATTENDANCE_COLORS[s.myAttendance] || ""}>
@@ -151,10 +154,9 @@ export default function SessionList({
                 </span>
               </div>
             )}
-
             {s.status === "CANCELLED" && s.cancelReason && (
               <div className="text-sm text-metro-text-secondary mt-1">
-                Reason: {s.cancelReason}
+                {t("scheduleView.reason")} {s.cancelReason}
               </div>
             )}
           </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { markRead, markAllRead } from "@/actions/notifications";
+import { useT, format } from "@/lib/i18n/useT";
 
 interface NotificationItem {
   id: string;
@@ -26,6 +27,7 @@ export default function NotificationsClient({
 }: {
   notifications: NotificationItem[];
 }) {
+  const t = useT();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -49,24 +51,29 @@ export default function NotificationsClient({
   if (notifications.length === 0) {
     return (
       <div className="metro-card p-8 text-center">
-        <p className="text-metro-text-secondary">No notifications yet.</p>
+        <p className="text-metro-text-secondary">{t("notificationsPage.noNotifications")}</p>
       </div>
     );
   }
+
+  const unreadLabel =
+    unread === 1
+      ? t("notificationsPage.unreadSingle")
+      : t("notificationsPage.unread");
 
   return (
     <div>
       {unread > 0 && (
         <div className="mb-4 flex items-center justify-between">
           <span className="text-sm text-metro-text-secondary">
-            {unread} unread notification{unread !== 1 ? "s" : ""}
+            {format(unreadLabel, { n: unread })}
           </span>
           <button
             onClick={handleMarkAll}
             disabled={loading}
             className="text-sm font-medium text-metro-blue hover:underline disabled:opacity-50"
           >
-            Mark all as read
+            {t("notificationsPage.markAllRead")}
           </button>
         </div>
       )}

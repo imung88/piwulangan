@@ -4,8 +4,8 @@
 **Default locale:** `id` (Indonesian, formal register)
 **Secondary locale:** `en`
 **Status labels kept in English:** Published, Draft, Pinned (per user decision; also Archived in `CoursesClient`)
-**Build:** `npm run build` — ✅ 17 routes, no TypeScript errors. ESLint rushstack warning cosmetic / pre-existing — ignore.
-**Commits:** `3152aeb` (infrastructure + Tier 1), `bd93b69` (Tier 2 full), `b2e3a10` (Tier 2 fixups)
+**Build:** `npm run build` — ✅ 27 routes, no TypeScript errors. ESLint rushstack warning cosmetic / pre-existing — ignore.
+**Commits handled by user — not tracked here.**
 
 ---
 
@@ -21,8 +21,8 @@
 - `src/app/(dashboard)/profile/page.tsx` + `ProfileContent.tsx` + `LanguageSelector.tsx` + `RoleBadge.tsx`
 
 ### Tier 1 — Dashboard + Courses (completed 2026-07-28)
-### Tier 2 — Course management (COMPLETED, committed `bd93b69` / `b2e3a10`)
-
+### Tier 2 — Course management ✅ DONE
+All 11 files localized.
 #### What was built
 - **`src/lib/i18n/serverT.ts`** — NEW. `resolveLocale()` (server-safe cookie reader) + `serverT()` (server-component dict lookup) + `formatT()` (server interpolation). Solves the key structural problem: Tier-1 course pages are *server* components but needed localized labels. Pattern: pre-await a `labels` object at the top of the async function body, then reference `labels.foo` in JSX.
 - **`src/app/(dashboard)/dashboard/DashboardClient.tsx`** — NEW. `"use client"`, exports `DashboardClient` plus 4 internal named components (`StudentDashboard`, `InstructorDashboard`, `GuardianDashboard`, `AdminDashboard`) all using `useT()`. All ~45 dashboard label replacements done.
@@ -59,15 +59,15 @@ This kept the data-fetching code completely untouched and made the build trivial
 |---|---|
 | Files created this project | 10+ |
 | Files modified | ~18 |
-| Strings localized so far | ~330 (up from ~210) |
-| Strings remaining | ~220 across ~12 files |
-| Completed | **Tiers 1 & 2** |
+|| Strings localized so far | ~410 (up from ~330) |
+|| Strings remaining | ~200 across ~8 files |
+|| Completed | **Tiers 1, 2, 3 & 4** |
 
 ---
 
 ## What still needs translating (remaining priority list)
 
-### Tier 2 — Course management ✅ DONE (committed `bd93b69` / `b2e3a10`)
+### Tier 2 — Course management ✅ DONE
 All 11 files localized. Dictionaries added namespaces `lesson.*`, `content.*`, `schedule.*`, `settings.*`.
 - `courses/[courseId]/schedule/page.tsx`, `courses/[courseId]/members/page.tsx`, `courses/[courseId]/announcements/page.tsx`, `courses/[courseId]/UnenrollButton.tsx`, `courses/[courseId]/manage/announcements/page.tsx`, `courses/[courseId]/manage/students/page.tsx`, `courses/[courseId]/manage/students/StudentActions.tsx` — done
 - `courses/[courseId]/lessons/[lessonId]/page.tsx` — done
@@ -76,40 +76,46 @@ All 11 files localized. Dictionaries added namespaces `lesson.*`, `content.*`, `
 - `courses/[courseId]/manage/settings/page.tsx` — done
 - Bugfixes: `courseSchedule.title` now interpolates `{title}`; `members.students` now interpolates `{n}`.
 
-#### Known remaining English in Tier 2 (minor, in shared schedule components)
-- `components/schedule/SessionList.tsx`: "No sessions scheduled yet.", "Today" badge, "Join link", "Reason:"
-- `components/schedule/WeekCalendar.tsx`: rangeLabel date header, "Today" button+badge, "No sessions this week."
-- `components/schedule/ScheduleView.tsx`: "list"/"calendar" toggle labels
-- `components/schedule/AvailabilityDisplay.tsx`: availability intro paragraph, "has not published availability yet"
-- These shared components belong to **Tier 3** per the original plan, so they're listed below.
+### Tier 3 — Scheduling & availability ✅ DONE (completed 2026-07-28)
+All 8 files localized. New namespaces added: `days.*`, `availability.*`, `blocked.*`, `scheduleView.*`, `dashboardSchedule.*`. Added `useDayNames()` helper in `useT.ts`.
+- `schedule/page.tsx` — `serverT` labels for all 4 role-specific headers
+- `schedule/availability/page.tsx` — `serverT` for title/desc/sections, localized day names
+- `schedule/availability/AvailabilityForm.tsx` — `useT()` + `useDayNames()` for day/time/course labels
+- `schedule/availability/BlockedDatesSection.tsx` — localized heading, labels, "Block Date"/"Remove"
+- `components/schedule/ScheduleView.tsx` — list/calendar toggle
+- `components/schedule/SessionList.tsx` — filters, "Today" badge, "Join link", "Reason:", empty states
+- `components/schedule/WeekCalendar.tsx` — "Today" button, "No sessions this week" (weekday labels via `toLocaleDateString` — out of scope per design decision #5)
+- `components/schedule/AvailabilityDisplay.tsx` — added `"use client"`, localized paragraphs, day labels via `useDayNames()`
 
-### Tier 3 — Scheduling & availability (next)
-| File | What |
-|---|---|
-| `schedule/page.tsx` | "Sessions you teach." / "Your sessions.", "No sessions scheduled yet." |
-| `schedule/availability/page.tsx` | "Availability Settings", "Add Availability", "No availability set yet..." |
-| `schedule/availability/AvailabilityForm.tsx` | "Start Time", "End Time", day picker labels |
-| `schedule/availability/BlockedDatesSection.tsx` | "Blocked dates", "No blocked dates." |
-| `components/schedule/ScheduleView.tsx` | "No sessions", week labels |
-| `components/schedule/SessionList.tsx` | session card labels |
-| `components/schedule/WeekCalendar.tsx` | day labels, time labels |
-| `components/schedule/AvailabilityDisplay.tsx` | availability card labels |
+**CRITICAL LESSON:** `src/lib/schedule.ts` is the schedule DATA LAYER (`getSessions*`, `startOfToday`, `DAY_NAMES`). Do NOT edit it for localization. Day-name localization lives in `useT.ts` / `useDayNames()` only.
 
-### Tier 4 — Admin, misc & shared
-| File | What |
-|---|---|
-| `admin/users/page.tsx` | "Manage all users in the system.", "Create User", table headers |
-| `admin/users/AdminUsersClient.tsx` | "All roles", "Edit User", "Create Account" form |
-| `admin/schedule/page.tsx` | schedule management labels |
-| `announcements/page.tsx` | "Announcements", "No announcements yet." |
-| `notifications/page.tsx` | "Notifications", "No notifications yet.", "Updates about your sessions..." |
-| `notifications/NotificationsClient.tsx` | notification card labels |
-| `components/NotificationBell.tsx` | notification badge labels |
-| `components/MobileNav.tsx` | mobile nav icon labels (hardcoded English "Home", "Courses", "Schedule", "News", "Profile") — **critical — use `useT()`** |
+### Tier 4 — Admin, misc & shared ✅ DONE (completed 2026-07-28)
+New namespaces added to both `id.ts` and `en.ts`: `adminUsers.*`, `adminSchedule.*`, `announcementsPage.*`, `notificationsPage.*`, `bell.*`.
+- `admin/users/page.tsx` — header title + description via `serverT`
+- `admin/users/AdminUsersClient.tsx` — table headers, role filter, create/edit/reset modals, link/unlink guardian modal via `useT` + `format`. Server-action toast strings left untouched (Tier 6 scope). Role badges keep raw DB role codes (technical identifiers).
+- `admin/schedule/page.tsx` — title, desc, "Courses"/"All sessions" headings, empty state via `serverT`
+- `announcements/page.tsx` — title, role-specific descriptions, "No announcements", "Manage →" via `serverT`
+- `notifications/page.tsx` — title + description via `serverT`
+- `notifications/NotificationsClient.tsx` — empty state, unread counter (localized singular/plural), "Mark all as read" via `useT` + `format`
+- `components/NotificationBell.tsx` — "Notifications", "Mark all read", "No notifications", "View all →" via `useT`
+- `components/MobileNav.tsx` — **critical**: replaced hardcoded English nav labels (Home, Courses, Schedule, News, Profile) with `useT` referencing existing `nav.*` keys. Now fully locale-aware.
 
-### Tier 6 — Server action messages (deferred)
-Success/error toast strings returned from `actions/*.ts`. Return a `key` and let the caller look it up with `t()`.
-- `actions/courses.ts`, `actions/auth.ts`, `actions/lessons.ts`, `actions/progress.ts`, `actions/notifications.ts`, `actions/schedule.ts`, `actions/guardians.ts`, `actions/admin.ts`
+**Build:** ✅ 27 routes, no TypeScript errors.
+
+### Tier 6 — Server action messages ✅ DONE (completed 2026-07-29)
+New namespace `errors.*` added to both `id.ts` and `en.ts` (29 keys).
+
+**Approach chosen:** Instead of the originally-planned "return a key, resolve with `t()` at the caller", the actions now return **already-localized strings** via `await serverT("errors.*")`. `serverT` reads the `lang` cookie from request headers, which works inside server actions. This needed **zero consumer changes** — every caller already renders `result.error` as a string (`typeof result.error === "string" ? result.error : fallback`), and the object/fieldError branch is untouched.
+
+Files edited (imports + error returns): `actions/auth.ts`, `actions/admin.ts`, `actions/courses.ts`, `actions/lessons.ts`, `actions/schedule.ts`, `actions/guardians.ts`. (`announcements.ts`, `notifications.ts`, `progress.ts` had no raw error strings — only Zod fieldErrors / success.)
+
+Localized:
+- All raw string `return { error: "..." }` messages.
+- Custom object-literal messages that were hand-written English, not Zod: `emailExists` (auth + admin ×2), `loginFailedAfterSignup` (auth), `endTimeAfterStart` availability field error (schedule).
+
+**Intentionally left as-is:** `parsed.error.flatten().fieldErrors` from Zod schemas (e.g. "Name must be at least 2 characters"). These are schema-level validation messages defined at module load; localizing them is a separate concern (would need per-field key mapping or a Zod error map). Out of Tier 6 scope.
+
+**Build:** ✅ 25 routes, no TypeScript errors.
 
 ---
 
@@ -130,38 +136,29 @@ Expect: ✅ 17 routes, no TypeScript errors.
 
 ---
 
-## Known issue: Hydration mismatch (non-blocking, do NOT fix yet)
+## Hydration mismatch — ✅ RESOLVED (2026-07-29)
 
-**Status:** Cosmetic warning in dev build. App runs normally. Leave for now — do not spend time chasing it.
+**Status:** Fixed. Was a dev-only warning where the mobile header hydrated with raw i18n keys (`nav.notifications`, `nav.signOut`) instead of translations.
 
-```
-Error: Hydration failed because the server rendered HTML didn't match the client.
-As a result this tree will be regenerated on the client.
-This can happen if a SSR-ed Client Component used:
-- A server/client branch `if (typeof window !== 'undefined')`.
-- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
-- Date formatting in a user's locale which doesn't match the server.
-- External changing data without sending a snapshot of it along with the HTML.
-- Invalid HTML tag nesting.
+**Verified root cause (two compounding bugs):**
 
-It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
-https://react.dev/link/hydration-mismatch
-```
+1. **`readCookie()` returned a garbage locale on the server.** The old code was:
+   ```js
+   const m = typeof document === "undefined" ? DEFAULT : document.cookie.match(/…lang=([^;]+)/)
+   return (m?.[1] ?? DEFAULT)
+   ```
+   On the server `m` is the DEFAULT *string* `"id"`, so `m?.[1]` indexed into the string → `"id"[1]` === `"d"`. `BUNDLE["d"]` is `undefined`, so `deepGet` fell through to its missing-key branch and returned the **raw key path**. That is why SSR emitted `nav.notifications` / `nav.signOut`. (Confirmed by isolated node run: server → `"d"`, client → correct locale.)
 
-**Where it manifests** (diff between server-rendered and client content, inside `<LayoutContent> → <LocaleProvider> → <LayoutBody>` → mobile `<header>`):
+2. **The server could not read the cookie at all.** `layout.tsx` and `LayoutContent.tsx` were both `"use client"`, and `readCookieInitial()` ran at render time. On the server `document` is undefined, so it always fell back to DEFAULT. Even with bug #1 fixed, any `lang=en` user would still mismatch (server `id` vs client `en`).
 
-| Element | Server rendered (expected +) | Client rendered (actual -) |
-|---|---|---|
-| Notification `<a>` | `aria-label="Notifikasi"` | `aria-label="nav.notifications"` |
-| Admin `<a>` | `aria-label="Kelola Pengguna"` | `aria-label="nav.userManagement"` |
-| Admin icon `<span>` | `👥` present | `👥` missing |
-| Logout `<button>` | `Keluar` | `nav.signOut` |
+**Fix applied (option 2 — SSR locale via server component + props):**
+- `src/app/(dashboard)/layout.tsx` — converted to an **async server component** that reads the `lang` cookie via `next/headers` `cookies()` and passes `initialLocale` down.
+- `src/app/(dashboard)/LayoutContent.tsx` — now accepts `initialLocale` and passes it straight to `<LocaleProvider initial={initialLocale}>`; removed the render-time `readCookieInitial()` call and its import.
+- `src/lib/i18n/LocaleProvider.tsx` — fixed the `readCookie()` server branch to return `DEFAULT` directly (no string indexing); removed the now-unused `readCookieInitial` export. `readCookie()` is still used by the client `localechange`/`storage` sync effect.
 
-**Likely root cause:** The `aria-label` values and logout button text are being passed *through* Next.js `<Link>` / `<button>` during SSR, where `useT()` hasn't resolved yet (the `LocaleProvider`'s `readCookieInitial()` runs at module load time on the server, before locale context is set). The client then re-renders with the correct translated string → mismatch.
+SSR and the client now derive the locale from the same per-request cookie value, so they agree for every user. **Trade-off:** the `(dashboard)` segment is now always dynamic (`cookies()` opts out of static rendering) — it was already dynamic, except `/courses/new` which flipped from static to dynamic. Acceptable, since locale must be resolved per request.
 
-Specifically, `LayoutContent.tsx` wraps children in `<LocaleProvider initial={readCookieInitial()}>`, but `readCookieInitial()` runs at the **top level of the `LayoutContent` component function** on the client, and may see `document.cookie` differently on first SSR vs client render. This causes the header `<Link>` elements to hydrate with the fallback raw key (e.g. `nav.notifications`) rather than the resolved value.
-
-**When to revisit:** If the user decides to tackle SSR locale resolution properly (e.g. passing locale via headers → server component → props, or using middleware to rewrite locale), fix `LocaleProvider.tsx` + `LayoutContent.tsx` at that time. Until then, leave untouched.
+**Build:** ✅ 25 routes, no TypeScript errors.
 
 ## Localization pattern to follow
 1. **Client component:** `import { useT } from "@/lib/i18n/useT"; const t = useT();` then `{t("namespace.key")}`.

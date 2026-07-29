@@ -2,8 +2,19 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { serverT } from "@/lib/i18n/serverT";
 
 export default async function AnnouncementsPage() {
+  const labels = {
+    title: await serverT("announcementsPage.title"),
+    descAdmin: await serverT("announcementsPage.descAdmin"),
+    descInstructor: await serverT("announcementsPage.descInstructor"),
+    descStudent: await serverT("announcementsPage.descStudent"),
+    descGuardian: await serverT("announcementsPage.descGuardian"),
+    noAnnouncements: await serverT("announcementsPage.noAnnouncements"),
+    manage: await serverT("announcementsPage.manage"),
+  };
+
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -75,17 +86,17 @@ export default async function AnnouncementsPage() {
 
   return (
     <div>
-      <h1 className="metro-page-title">Announcements</h1>
+      <h1 className="metro-page-title">{labels.title}</h1>
       <p className="mt-1 text-sm text-metro-text-secondary">
-        {role === "ADMIN" && "All announcements across all courses."}
-        {role === "INSTRUCTOR" && "Announcements from your courses."}
-        {role === "STUDENT" && "Announcements from your enrolled courses."}
-        {role === "GUARDIAN" && "Announcements from your linked students' courses."}
+        {role === "ADMIN" && labels.descAdmin}
+        {role === "INSTRUCTOR" && labels.descInstructor}
+        {role === "STUDENT" && labels.descStudent}
+        {role === "GUARDIAN" && labels.descGuardian}
       </p>
 
       <div className="mt-6">
         {announcements.length === 0 ? (
-          <p className="text-sm text-metro-text-secondary">No announcements yet.</p>
+          <p className="text-sm text-metro-text-secondary">{labels.noAnnouncements}</p>
         ) : (
           <div className="space-y-3">
             {announcements.map((a) => (
@@ -125,7 +136,7 @@ export default async function AnnouncementsPage() {
                       href={`/courses/${a.courseId}/manage/announcements`}
                       className="text-xs text-metro-text-secondary hover:text-metro-blue ml-4 whitespace-nowrap"
                     >
-                      Manage →
+                      {labels.manage}
                     </Link>
                   )}
                 </div>

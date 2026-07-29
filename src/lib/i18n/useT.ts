@@ -35,3 +35,20 @@ export function useT() {
   const [locale] = useLocale()
   return useMemo(() => (path: string) => deepGet(BUNDLE[locale], path), [locale])
 }
+
+// Returns 7 localized day names indexed 0..6 (Sunday..Saturday).
+export function useDayNames(): string[] {
+  const t = useT()
+  return useMemo(
+    () => [
+      t("days.sunday"),
+      t("days.monday"),
+      t("days.tuesday"),
+      t("days.wednesday"),
+      t("days.thursday"),
+      t("days.friday"),
+      t("days.saturday"),
+    ],
+    [t],
+  )
+}

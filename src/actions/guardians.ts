@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { serverT } from "@/lib/i18n/serverT";
 import { revalidatePath } from "next/cache";
 
 export async function linkGuardian(guardianId: string, studentId: string): Promise<{ success?: boolean; error?: string }> {
@@ -14,13 +15,13 @@ export async function linkGuardian(guardianId: string, studentId: string): Promi
   const student = await db.user.findUnique({ where: { id: studentId } });
 
   if (!guardian || !student) {
-    return { error: "User not found" };
+    return { error: await serverT("errors.userNotFound") };
   }
   if (guardian.role !== "GUARDIAN") {
-    return { error: "Selected user is not a guardian" };
+    return { error: await serverT("errors.notGuardian") };
   }
   if (student.role !== "STUDENT") {
-    return { error: "Selected user is not a student" };
+    return { error: await serverT("errors.notStudent") };
   }
 
   // Check if link already exists
@@ -29,7 +30,7 @@ export async function linkGuardian(guardianId: string, studentId: string): Promi
   });
 
   if (existing) {
-    return { error: "This guardian is already linked to this student" };
+    return { error: await serverT("errors.guardianAlreadyLinked") };
   }
 
   await db.guardianStudent.create({

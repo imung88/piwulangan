@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/useT";
 import { addBlockedDate, removeBlockedDate } from "@/actions/schedule";
 import { useRouter } from "next/navigation";
 
@@ -12,6 +13,7 @@ interface BlockedDate {
 
 export default function BlockedDatesSection({ blockedDates }: { blockedDates: BlockedDate[] }) {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState("");
   const [reason, setReason] = useState("");
@@ -25,7 +27,6 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
     if (reason) formData.set("reason", reason);
 
     await addBlockedDate(formData);
-
     setDate("");
     setReason("");
     setLoading(false);
@@ -33,7 +34,7 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
   }
 
   async function handleRemove(id: string) {
-    if (!confirm("Remove this blocked date?")) return;
+    if (!confirm(t("blocked.confirmRemove"))) return;
     setLoading(true);
     await removeBlockedDate(id);
     setLoading(false);
@@ -42,14 +43,14 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
 
   return (
     <div className="metro-card p-6">
-      <h2 className="metro-section-title mb-4">blocked dates</h2>
+      <h2 className="metro-section-title mb-4">{t("blocked.title")}</h2>
       <p className="text-metro-text-secondary text-sm mb-4">
-        Block specific dates when you&apos;re unavailable (holidays, days off).
+        {t("blocked.description")}
       </p>
 
       <form onSubmit={handleAdd} className="flex flex-wrap gap-4 mb-6">
         <div>
-          <label className="block text-sm font-medium text-metro-text mb-1">Date</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">{t("blocked.date")}</label>
           <input
             type="date"
             value={date}
@@ -59,12 +60,12 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-metro-text mb-1">Reason (optional)</label>
+          <label className="block text-sm font-medium text-metro-text mb-1">{t("blocked.reason")}</label>
           <input
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g., Holiday"
+            placeholder={t("blocked.reasonPlaceholder")}
             className="border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm w-48 focus:border-metro-blue focus:outline-none"
             maxLength={200}
           />
@@ -75,13 +76,13 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
             disabled={loading}
             className="bg-metro-orange text-white px-4 py-2 text-sm font-medium hover:bg-metro-orange-hover disabled:opacity-50"
           >
-            {loading ? "Adding..." : "Block Date"}
+            {loading ? t("blocked.adding") : t("blocked.blockDate")}
           </button>
         </div>
       </form>
 
       {blockedDates.length === 0 ? (
-        <p className="text-metro-text-secondary text-sm">No blocked dates.</p>
+        <p className="text-metro-text-secondary text-sm">{t("blocked.noBlockedDates")}</p>
       ) : (
         <div className="space-y-2">
           {blockedDates.map((bd) => (
@@ -107,7 +108,7 @@ export default function BlockedDatesSection({ blockedDates }: { blockedDates: Bl
                 disabled={loading}
                 className="text-metro-error hover:text-metro-orange-hover text-sm font-medium disabled:opacity-50"
               >
-                Remove
+                {t("blocked.remove")}
               </button>
             </div>
           ))}

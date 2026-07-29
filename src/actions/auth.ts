@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/lib/auth";
+import { serverT } from "@/lib/i18n/serverT";
 import { AuthError } from "next-auth";
 
 const signupSchema = z.object({
@@ -31,7 +32,7 @@ export async function signup(formData: FormData) {
   });
 
   if (existingUser) {
-    return { error: { email: ["A user with this email already exists"] } };
+    return { error: { email: [await serverT("errors.emailExists")] } };
   }
 
   // Hash password and create user
@@ -55,7 +56,7 @@ export async function signup(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: { form: ["Login failed after signup. Please try logging in manually."] } };
+      return { error: { form: [await serverT("errors.loginFailedAfterSignup")] } };
     }
     throw error;
   }
@@ -70,7 +71,7 @@ export async function login(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid email or password" };
+      return { error: await serverT("errors.invalidCredentials") };
     }
     throw error;
   }

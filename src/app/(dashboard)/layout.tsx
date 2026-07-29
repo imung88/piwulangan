@@ -1,11 +1,11 @@
-"use client"
-
+import { cookies } from "next/headers"
 import LayoutContent from "./LayoutContent"
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return <LayoutContent>{children}</LayoutContent>
+  const lang = (await cookies()).get("lang")?.value === "en" ? "en" : "id"
+  return <LayoutContent initialLocale={lang}>{children}</LayoutContent>
 }

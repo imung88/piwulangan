@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { 
-  getMyNotifications, 
-  markRead, 
-  markAllRead, 
+import {
+  getMyNotifications,
+  markRead,
+  markAllRead,
 } from "@/actions/notifications"
+import { useT } from "@/lib/i18n/useT"
 
 interface NotificationItem {
   id: string
@@ -27,6 +28,7 @@ const TYPE_ICONS: Record<string, string> = {
 }
 
 export default function NotificationBell() {
+  const t = useT()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -80,7 +82,7 @@ export default function NotificationBell() {
         className="flex w-full items-center gap-3 px-6 py-2.5 text-sm font-medium text-white/80 hover:bg-metro-blue-hover hover:text-white transition-colors"
       >
         <span>🔔</span>
-        Notifications
+        {t("bell.notifications")}
         {unreadCount > 0 && (
           <span className="ml-auto bg-metro-error px-2 py-0.5 text-xs font-semibold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
@@ -92,21 +94,21 @@ export default function NotificationBell() {
         <div className="absolute left-full top-0 z-50 ml-2 w-80 border border-metro-border bg-metro-surface shadow-lg">
           <div className="flex items-center justify-between border-b border-metro-border px-4 py-2">
             <span className="text-sm font-semibold text-metro-text">
-              Notifications
+              {t("bell.notifications")}
             </span>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAll}
                 className="text-xs text-metro-blue hover:underline"
               >
-                Mark all read
+                {t("bell.markAllRead")}
               </button>
             )}
           </div>
           <div className="max-h-96 overflow-y-auto divide-y divide-metro-border">
             {notifications.length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-metro-text-secondary">
-                No notifications
+                {t("bell.noNotifications")}
               </p>
             )}
             {notifications.map((n) => (
@@ -137,7 +139,7 @@ export default function NotificationBell() {
               onClick={() => setOpen(false)}
               className="text-xs font-medium text-metro-blue hover:underline"
             >
-              View all →
+              {t("bell.viewAll")}
             </Link>
           </div>
         </div>

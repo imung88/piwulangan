@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { serverT } from "@/lib/i18n/serverT";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
@@ -77,7 +78,7 @@ export async function createUser(formData: FormData): Promise<{ success?: boolea
 
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
-    return { error: { email: ["A user with this email already exists"] } };
+    return { error: { email: [await serverT("errors.emailExists")] } };
   }
 
   const passwordHash = await hash(password, 12);
@@ -113,7 +114,7 @@ export async function updateUser(userId: string, formData: FormData): Promise<{ 
       where: { email: data.email, id: { not: userId } },
     });
     if (existing) {
-      return { error: { email: ["A user with this email already exists"] } };
+      return { error: { email: [await serverT("errors.emailExists")] } };
     }
   }
 
@@ -133,7 +134,7 @@ export async function deactivateUser(userId: string): Promise<{ success?: boolea
 
   // Prevent deactivating yourself
   if ((session.user as any).id === userId) {
-    return { error: "Cannot deactivate your own account" };
+    return { error: await serverT("errors.cannotDeactivateSelf") };
   }
 
   await db.user.update({
@@ -165,7 +166,7 @@ export async function resetPassword(userId: string, newPassword: string): Promis
   if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
 
   if (!newPassword || newPassword.length < 6) {
-    return { error: "Password must be at least 6 characters" };
+    return { error: await serverT("errors.passwordMin") };
   }
 
   const passwordHash = await hash(newPassword, 12);

@@ -9,6 +9,7 @@ import {
 } from "@/lib/schedule";
 import { toSessionItem } from "@/components/schedule/types";
 import ScheduleView from "@/components/schedule/ScheduleView";
+import { serverT, formatT } from "@/lib/i18n/serverT";
 
 export default async function SchedulePage() {
   const session = await auth();
@@ -21,22 +22,31 @@ export default async function SchedulePage() {
   windowStart.setDate(windowStart.getDate() - 60);
   windowStart.setHours(0, 0, 0, 0);
 
+  const labels = {
+    title: await serverT("dashboardSchedule.title"),
+    manageSessions: await serverT("dashboardSchedule.manageSessions"),
+    setAvailability: await serverT("dashboardSchedule.setAvailability"),
+    linkedStudents: await serverT("dashboardSchedule.linkedStudents"),
+    adminDesc: await serverT("dashboardSchedule.adminDesc"),
+    instructorDesc: await serverT("dashboardSchedule.instructorDesc"),
+    studentDesc: await serverT("dashboardSchedule.studentDesc"),
+    guardianDesc: await serverT("dashboardSchedule.guardianDesc"),
+  };
+
   if (role === "ADMIN") {
     const sessions = await getAllSessions({ from: windowStart, limit: 300 });
     return (
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="metro-page-title">Schedule</h1>
-            <p className="text-metro-text-secondary">
-              All sessions across all courses (last 60 days onward).
-            </p>
+            <h1 className="metro-page-title">{labels.title}</h1>
+            <p className="text-metro-text-secondary">{labels.adminDesc}</p>
           </div>
           <a
             href="/admin/schedule"
             className="text-sm text-metro-blue hover:text-metro-chrome-dark font-medium"
           >
-            Manage Sessions
+            {labels.manageSessions}
           </a>
         </div>
         <ScheduleView
@@ -54,7 +64,6 @@ export default async function SchedulePage() {
       select: { studentId: true },
     });
     const studentIds = links.map((l) => l.studentId);
-
     const [sessions, students] = await Promise.all([
       getSessionsForStudents(studentIds, { from: windowStart }),
       db.user.findMany({
@@ -62,18 +71,14 @@ export default async function SchedulePage() {
         select: { id: true, name: true },
       }),
     ]);
-
     return (
       <div>
-        <h1 className="metro-page-title mb-2">Schedule</h1>
-        <p className="text-metro-text-secondary mb-6">
-          View your linked students&apos; sessions.
-        </p>
-
+        <h1 className="metro-page-title mb-2">{labels.title}</h1>
+        <p className="text-metro-text-secondary mb-6">{labels.guardianDesc}</p>
         {students.length > 0 && (
           <div className="mb-6">
             <h2 className="metro-section-title mb-2">
-              linked students
+              {labels.linkedStudents.toLowerCase()}
             </h2>
             <div className="flex gap-2">
               {students.map((s) => (
@@ -87,7 +92,6 @@ export default async function SchedulePage() {
             </div>
           </div>
         )}
-
         <ScheduleView
           sessions={sessions.map((s) => toSessionItem(s, studentIds))}
           showAttendees
@@ -105,14 +109,14 @@ export default async function SchedulePage() {
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="metro-page-title">Schedule</h1>
-            <p className="text-metro-text-secondary">Sessions you teach.</p>
+            <h1 className="metro-page-title">{labels.title}</h1>
+            <p className="text-metro-text-secondary">{labels.instructorDesc}</p>
           </div>
           <a
             href="/schedule/availability"
             className="text-sm text-metro-blue hover:text-metro-chrome-dark font-medium"
           >
-            Set Availability
+            {labels.setAvailability}
           </a>
         </div>
         <ScheduleView
@@ -125,15 +129,11 @@ export default async function SchedulePage() {
 
   // Student
   const sessions = await getSessionsForStudent(userId, { from: windowStart });
-
   return (
     <div>
       <div className="mb-6">
-        <h1 className="metro-page-title">Schedule</h1>
-        <p className="text-metro-text-secondary">
-          Your sessions across all courses. Sessions are scheduled by your
-          instructors — check each course&apos;s Schedule tab for details.
-        </p>
+        <h1 className="metro-page-title">{labels.title}</h1>
+        <p className="text-metro-text-secondary">{labels.studentDesc}</p>
       </div>
       <ScheduleView
         sessions={sessions.map((s) => toSessionItem(s, [userId]))}
