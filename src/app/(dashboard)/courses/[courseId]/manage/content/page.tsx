@@ -3,9 +3,8 @@ import { db } from "@/lib/db";
 import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { deleteModule } from "@/actions/lessons";
 import { LessonEditForm } from "./LessonEditForm";
-import { AddModuleForm, AddLessonForm } from "./AddContentForms";
+import { AddModuleForm, AddLessonForm, DeleteModuleButton } from "./AddContentForms";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageContentPage({
@@ -79,19 +78,7 @@ export default async function ManageContentPage({
               <h2 className="font-semibold text-metro-text">
                 {formatT(labels.module, { order: mod.order })}: {mod.title}
               </h2>
-              <form
-                action={async () => {
-                  "use server";
-                  await deleteModule(mod.id);
-                }}
-              >
-                <button
-                  type="submit"
-                  className="text-xs text-metro-error hover:underline"
-                >
-                  {labels.delete}
-                </button>
-              </form>
+              <DeleteModuleButton moduleId={mod.id} moduleTitle={mod.title} />
             </div>
             {/* Lessons */}
             <div className="divide-y">

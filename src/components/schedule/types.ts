@@ -1,3 +1,6 @@
+export type SessionStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
+export type Attendance = "PRESENT" | "LATE" | "ABSENT";
+
 export interface SessionItem {
   id: string;
   title: string;
@@ -26,6 +29,20 @@ export const ATTENDANCE_COLORS: Record<string, string> = {
   LATE: "text-metro-orange",
 };
 
+// Localized enum labels. `t` is the same `(path) => string` returned by both
+// useT() (client) and getServerT() (server), so these work in either context.
+export function statusLabel(status: string, t: (path: string) => string) {
+  return t(`statusLabels.${status}`);
+}
+
+export function attendanceLabel(
+  attendance: string | null,
+  t: (path: string) => string
+) {
+  if (!attendance) return t("attendanceLabels.NONE");
+  return t(`attendanceLabels.${attendance}`);
+}
+
 const COURSE_PALETTE = [
   "bg-metro-blue-light text-metro-blue border-metro-blue",
   "bg-metro-blue text-white border-metro-chrome-dark",
@@ -44,7 +61,8 @@ export function courseColor(courseId: string) {
 }
 
 export function toDateStr(date: Date) {
-  return new Date(date).toISOString().split("T")[0];
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function formatDateStr(dateStr: string) {

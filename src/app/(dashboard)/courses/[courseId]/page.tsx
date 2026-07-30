@@ -5,6 +5,8 @@ import Link from "next/link"
 import { redirect, notFound } from "next/navigation"
 import UnenrollButton from "./UnenrollButton"
 import { PreviewEnroll } from "./PreviewEnroll"
+import CourseActionsMenu from "./CourseActionsMenu"
+import CopyInviteCode from "./CopyInviteCode"
 import { getServerT, formatT } from "@/lib/i18n/serverT"
 
 export default async function CoursePage({
@@ -23,7 +25,7 @@ export default async function CoursePage({
   const course = await db.course.findUnique({
     where: { id: courseId },
     include: {
-      instructor: true,
+      instructor: { select: { id: true, name: true } },
       modules: {
         include: {
           lessons: {
@@ -37,10 +39,11 @@ export default async function CoursePage({
         orderBy: { order: "asc" },
       },
       enrollments: { where: { userId } },
+      _count: { select: { enrollments: true } },
       announcements: {
         orderBy: { createdAt: "desc" },
         take: 3,
-        include: { author: true },
+        include: { author: { select: { id: true, name: true } } },
       },
     },
   });
@@ -69,6 +72,7 @@ export default async function CoursePage({
   const labels = {
     notAvailable: t("courseDetail.notAvailable"),
     schedule: t("courseDetail.schedule"),
+    reports: t("courseDetail.reports"),
     settings: t("courseDetail.settings"),
     code: t("courseDetail.code"),
     nextSession: t("courseDetail.nextSession"),
@@ -84,12 +88,14 @@ export default async function CoursePage({
     addModules: t("courseDetail.addModulesAndLessons"),
     viewMembers: t("courseDetail.viewMembers"),
     manageStudents: t("courseDetail.manageStudents"),
+    manageSchedule: t("courseDetail.manageSchedule"),
     previewEnroll: t("courseDetail.previewEnroll"),
     modulePlural: t("common.modulePlural"),
     lessonPlural: t("common.lessonPlural"),
     duration: t("courseDetail.duration"),
     lessonsCompleted: t("courseDetail.lessonsCompleted"),
     continueLabel: t("courseDetail.continue"),
+    studentsEnrolled: t("courseDetail.studentsEnrolled"),
   }
 
   const moduleWord = labels.modulePlural
@@ -198,7 +204,7 @@ export default async function CoursePage({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="metro-page-title">{course.title}</h1>
             {course.visibility === "DRAFT" && (
               <span className="metro-badge bg-metro-border text-metro-text-secondary">
@@ -206,47 +212,60 @@ export default async function CoursePage({
               </span>
             )}
           </div>
-          <p className="mt-1 text-sm text-metro-text-secondary">
-            👤 {course.instructor.name}
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p className="text-sm text-metro-text-secondary">
+              👤 {course.instructor.name}
+            </p>
             {isOwner && course.inviteCode && (
-              <span className="ml-3">🔑 {labels.code}: {course.inviteCode}</span>
+              <CopyInviteCode code={course.inviteCode} />
             )}
-          </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          {(isOwner || isGuardianViewer || (isEnrolled && role === "STUDENT")) && (
+            <Link
+              href={`/courses/${course.id}/reports`}
+              className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
+            >
+              📝 {labels.reports}
+            </Link>
+          )}
           <Link
             href={`/courses/${course.id}/schedule`}
             className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
           >
             📅 {labels.schedule}
           </Link>
-          {isOwner && (
-            <>
-              <Link
-                href={`/courses/${course.id}/manage/students`}
-                className="bg-metro-blue px-3 py-2 text-sm font-medium text-white hover:bg-metro-blue-hover"
-              >
-                👥 {labels.manageStudents}
-              </Link>
-              <Link
-                href={`/courses/${course.id}/announcements`}
-                className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
-              >
-                📣 {labels.announcements}
-              </Link>
-              <Link
-                href={`/courses/${course.id}/manage/settings`}
-                className="border border-metro-border px-3 py-2 text-sm text-metro-text-secondary hover:bg-metro-blue-light"
-              >
-                ⚙️ {labels.settings}
-              </Link>
-            </>
-          )}
         </div>
       </div>
 
+      {/* Manage command bar (owners) */}
+      {isOwner && (
+        <div className="mt-4">
+          <CourseActionsMenu courseId={course.id} />
+        </div>
+      )}
+
       {course.description && (
         <p className="mt-4 text-metro-text-secondary">{course.description}</p>
+      )}
+
+      {/* Owner quick stats */}
+      {isOwner && (
+        <div className="mt-6 grid max-w-md grid-cols-3 gap-2">
+          <div className="bg-metro-surface p-3 text-center">
+            <p className="text-2xl font-bold text-metro-text">{course._count.enrollments}</p>
+            <p className="text-xs text-metro-text-secondary">{labels.studentsEnrolled}</p>
+          </div>
+          <div className="bg-metro-surface p-3 text-center">
+            <p className="text-2xl font-bold text-metro-text">{course.modules.length}</p>
+            <p className="text-xs text-metro-text-secondary">{moduleWord}</p>
+          </div>
+          <div className="bg-metro-surface p-3 text-center">
+            <p className="text-2xl font-bold text-metro-text">{totalLessons}</p>
+            <p className="text-xs text-metro-text-secondary">{lessonWord}</p>
+          </div>
+        </div>
       )}
 
       {/* Next session */}
@@ -313,7 +332,7 @@ export default async function CoursePage({
       )}
 
       {/* Progress bar (students) */}
-      {(isEnrolled || isOwner) && totalLessons > 0 && (
+      {isEnrolled && !isOwner && totalLessons > 0 && (
         <div className="mt-6 metro-card">
           <div className="flex items-center justify-between text-sm">
             <span className="text-metro-text-secondary">
@@ -330,7 +349,7 @@ export default async function CoursePage({
           {nextLesson && isEnrolled && (
             <Link
               href={`/courses/${course.id}/lessons/${nextLesson.id}`}
-              className="mt-3 inline-block text-sm font-medium text-metro-blue hover:underline"
+              className="mt-3 block w-full bg-metro-blue px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-metro-blue-hover sm:inline-block sm:w-auto"
             >
               {formatT(labels.continueLabel, { title: nextLesson.title })}
             </Link>
@@ -385,13 +404,24 @@ export default async function CoursePage({
         </div>
 
         <div className="space-y-4">
-          {course.modules.map((mod) => (
-            <div key={mod.id} className="border border-metro-border bg-metro-surface">
-              <div className="border-b border-metro-border px-4 py-3">
+          {course.modules.map((mod, index) => {
+            const isOpen = nextLesson
+              ? mod.lessons.some((l) => l.id === nextLesson.id)
+              : index === 0
+            return (
+            <details
+              key={mod.id}
+              open={isOpen}
+              className="group border border-metro-border bg-metro-surface"
+            >
+              <summary className="flex cursor-pointer select-none list-none items-center justify-between border-b border-metro-border px-4 py-3 [&::-webkit-details-marker]:hidden">
                 <h3 className="font-medium text-metro-text">
                   {formatT(labels.moduleLabel, { order: mod.order })}: {mod.title}
                 </h3>
-              </div>
+                <span className="ml-3 text-metro-text-secondary transition-transform group-open:rotate-180">
+                  ▾
+                </span>
+              </summary>
               <div className="divide-y">
                 {mod.lessons.map((lesson) => {
                   const isCompleted = isGuardianViewer
@@ -434,8 +464,9 @@ export default async function CoursePage({
                   </p>
                 )}
               </div>
-            </div>
-          ))}
+            </details>
+            )
+          })}
           {course.modules.length === 0 && (
             <p className="text-center text-metro-text-secondary py-8">
               {labels.noContent}
@@ -453,7 +484,7 @@ export default async function CoursePage({
       </div>
 
       {/* Members link */}
-      {(isOwner || isEnrolled) && (
+      {isEnrolled && !isOwner && (
         <div className="mt-8 flex items-center justify-between">
           <Link
             href={`/courses/${course.id}/members`}
@@ -461,9 +492,7 @@ export default async function CoursePage({
           >
             {labels.viewMembers}
           </Link>
-          {isEnrolled && !isOwner && (
-            <UnenrollButton courseId={course.id} courseTitle={course.title} />
-          )}
+          <UnenrollButton courseId={course.id} courseTitle={course.title} />
         </div>
       )}
     </div>

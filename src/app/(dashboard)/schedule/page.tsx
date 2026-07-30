@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import Link from "next/link";
 import {
   getSessionsForInstructor,
   getSessionsForStudent,
@@ -35,26 +36,59 @@ export default async function SchedulePage() {
   };
 
   if (role === "ADMIN") {
-    const sessions = await getAllSessions({ from: windowStart, limit: 300 });
+    const [courses, sessions] = await Promise.all([
+      db.course.findMany({
+        where: { visibility: { not: "ARCHIVED" } },
+        include: {
+          instructor: { select: { id: true, name: true } },
+          _count: { select: { sessions: true, enrollments: true } },
+        },
+        orderBy: { title: "asc" },
+      }),
+      getAllSessions({ from: windowStart, limit: 300 }),
+    ]);
     return (
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="metro-page-title">{labels.title}</h1>
-            <p className="text-metro-text-secondary">{labels.adminDesc}</p>
-          </div>
-          <a
-            href="/admin/schedule"
-            className="text-sm text-metro-blue hover:text-metro-chrome-dark font-medium"
-          >
-            {labels.manageSessions}
-          </a>
+        <div className="mb-6">
+          <h1 className="metro-page-title">{labels.title}</h1>
+          <p className="text-metro-text-secondary">{labels.adminDesc}</p>
         </div>
-        <ScheduleView
-          sessions={sessions.map((s) => toSessionItem(s))}
-          showAttendees
-          showInstructor
-        />
+
+        <section className="mb-8">
+          <h2 className="metro-section-title mb-3">
+            {t("adminSchedule.courses")}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {courses.map((c) => (
+              <Link
+                key={c.id}
+                href={`/courses/${c.id}/manage/schedule`}
+                className="metro-card"
+              >
+                <h3 className="font-medium text-metro-text">{c.title}</h3>
+                <p className="text-sm text-metro-text-secondary mt-1">
+                  {c.instructor.name} · {c._count.enrollments} · {c._count.sessions}
+                </p>
+              </Link>
+            ))}
+            {courses.length === 0 && (
+              <p className="text-sm text-metro-text-secondary">
+                {t("adminSchedule.noCourses")}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="metro-section-title mb-3">
+            {t("adminSchedule.sessionsLast60Days")}
+          </h2>
+          <ScheduleView
+            sessions={sessions.map((s) => toSessionItem(s))}
+            showAttendees
+            showInstructor
+          />
+        </section>
       </div>
     );
   }

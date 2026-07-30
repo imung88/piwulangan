@@ -5,6 +5,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSessionsForCourse } from "@/lib/schedule";
 import ManageScheduleClient from "./ManageScheduleClient";
+import { toDateStr } from "@/components/schedule/types";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function ManageSchedulePage({
@@ -44,7 +45,7 @@ export default async function ManageSchedulePage({
   const lessons = course.modules.flatMap((m) =>
     m.lessons.map((l) => ({
       id: l.id,
-      title: `Module ${m.order}: ${l.title}`,
+      title: formatT(t("schedule.moduleLessonOption"), { order: m.order, title: l.title }),
     }))
   );
 
@@ -79,7 +80,7 @@ export default async function ManageSchedulePage({
           id: s.id,
           title: s.title,
           description: s.description,
-          date: s.date.toISOString().split("T")[0],
+          date: toDateStr(s.date),
           startTime: s.startTime,
           endTime: s.endTime,
           location: s.location,

@@ -1,9 +1,9 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { DAY_NAMES } from "@/lib/schedule";
 import AvailabilityForm from "./AvailabilityForm";
 import BlockedDatesSection from "./BlockedDatesSection";
+import WeeklyAvailabilitySection from "./WeeklyAvailabilitySection";
 import { getServerT } from "@/lib/i18n/serverT";
 
 const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
@@ -49,40 +49,17 @@ export default async function AvailabilityPage() {
       <p className="text-metro-text-secondary mb-8">{labels.description}</p>
 
       {/* Current Availability */}
-      <div className="metro-card p-6 mb-8">
-        <h2 className="metro-section-title mb-4">{labels.weeklySchedule.toLowerCase()}</h2>
-        {availability.length === 0 ? (
-          <p className="text-metro-text-secondary">{labels.noAvailability}</p>
-        ) : (
-          <div className="space-y-3">
-            {labels.days.map((day, index) => {
-              const daySlots = availability.filter((a) => a.dayOfWeek === index);
-              if (daySlots.length === 0) return null;
-
-              return (
-                <div key={day} className="flex items-start gap-4">
-                  <span className="w-28 font-medium text-metro-text">{day}</span>
-                  <div className="flex flex-wrap gap-2">
-                    {daySlots.map((slot) => (
-                      <span
-                        key={slot.id}
-                        className="inline-flex items-center gap-2 bg-metro-blue-light text-metro-blue px-3 py-1 text-sm"
-                      >
-                        {slot.startTime} - {slot.endTime}
-                        {slot.courseId && (
-                          <span className="text-metro-chrome-dark text-xs">
-                            ({courses.find((c) => c.id === slot.courseId)?.title || DAY_NAMES[index]})
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <WeeklyAvailabilitySection
+        availability={availability.map((a) => ({
+          id: a.id,
+          dayOfWeek: a.dayOfWeek,
+          startTime: a.startTime,
+          endTime: a.endTime,
+          courseId: a.courseId,
+        }))}
+        courses={courses}
+        dayLabels={labels.days}
+      />
 
       {/* Add Availability Form */}
       <div className="metro-card p-6 mb-8">

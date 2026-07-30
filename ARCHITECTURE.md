@@ -48,25 +48,24 @@ piwulangan/
 │   │   │   │       ├── page.tsx       # Course overview
 │   │   │   │       ├── lessons/
 │   │   │   │       │   └── [lessonId]/page.tsx
-│   │   │   │       ├── announcements/ # Per-course announcements
+│   │   │   │       ├── announcements/ # Per-course announcements (view + inline manage for owners)
 │   │   │   │       ├── members/
-│   │   │   │       ├── schedule/      # Per-course sessions
+│   │   │   │       ├── schedule/      # Per-course sessions (list + week calendar)
+│   │   │   │       │   └── [sessionId]/  # Individual session: view + manage
 │   │   │   │       └── manage/        # Instructor/admin
 │   │   │   │           ├── content/
 │   │   │   │           ├── students/
-│   │   │   │           ├── announcements/
-│   │   │   │           ├── schedule/
+│   │   │   │           ├── schedule/  # Compact overview + create session
 │   │   │   │           └── settings/
 │   │   │   │
 │   │   │   ├── schedule/              # Core: always on
-│   │   │   │   ├── page.tsx           # Calendar view (role-aware, admin sees all)
+│   │   │   │   ├── page.tsx           # Single role-aware view (admin sees all courses)
 │   │   │   │   └── availability/      # Instructor: set hours + blocked dates
 │   │   │   │
 │   │   │   ├── notifications/         # In-app notification list
 │   │   │   │
 │   │   │   ├── admin/
-│   │   │   │   ├── users/             # Admin: user management
-│   │   │   │   └── schedule/          # Admin: create/manage sessions
+│   │   │   │   └── users/             # Admin: user management
 │   │   │   │
 │   │   │   └── profile/
 │   │   │
@@ -75,8 +74,9 @@ piwulangan/
 │   │   └── globals.css
 │   │
 │   ├── components/            # Shared components (NotificationBell, MobileNav,
-│   │   │                      #   LanguageSelector, RoleBadge, schedule/*)
-│   │   └── schedule/          # Calendar, session list, availability display
+│   │   │                      #   LanguageSelector, RoleBadge, schedule/*, ui/*)
+│   │   ├── schedule/          # Calendar, session list, availability display
+│   │   └── ui/                # Metro primitives: ConfirmDialog, Toast, PendingButton
 │   │
 │   ├── lib/
 │   │   ├── auth.ts            # NextAuth (Credentials provider + Prisma adapter)
@@ -96,7 +96,7 @@ piwulangan/
 │   │   ├── auth.ts            # Login, signup
 │   │   ├── courses.ts         # Course CRUD, enrollment
 │   │   ├── lessons.ts         # Module/lesson CRUD
-│   │   ├── schedule.ts        # Session CRUD, availability, blocked dates
+│   │   ├── schedule.ts        # Session CRUD, attendance, availability, blocked dates
 │   │   ├── progress.ts        # Mark complete
 │   │   ├── announcements.ts   # Announcement CRUD
 │   │   ├── notifications.ts   # Fetch/mark-read notifications
@@ -185,6 +185,12 @@ getCourseAvailability(courseId)            // instructor availability + blocked 
 
 Instructor availability (`Availability`) and `BlockedDate` records are informational — shown when planning sessions, not enforced by a booking flow.
 
+**Single consolidated view:** `/schedule` is the one role-aware entry point (list + week calendar). There is no separate admin schedule route — admins see all courses (with a course-card grid) in the same view. Every session is clickable from both the list and the week calendar.
+
+**Individual session page:** `/courses/[courseId]/schedule/[sessionId]` renders one session. It reuses the course schedule page's permission model (`canManageCourse` / enrolled / guardian). Anyone with access can view it; managers edit details, roster, attendance, and cancel from this page. The per-course Manage Schedule page (`manage/schedule`) is a compact overview + create-session form only — per-session work lives on the detail page.
+
+**Attendance:** managers record per-attendee status (Present / Late / Absent) plus free-text notes, with a "Mark all present" shortcut. Lock rules mirror the actions' server-side checks: attendance is editable on the session date and past sessions only; details/roster are editable on today and future dates only; cancelled sessions are read-only for everyone.
+
 **Multi-teacher support:** Each course has one instructor. The admin can schedule sessions across different instructors; the admin calendar queries all instructors' sessions side by side.
 
 ### 7. Internationalization (id/en)
@@ -195,6 +201,18 @@ Cookie-based locale (`lang`), no URL prefix. Bahasa Indonesia is the default.
 - **Server components:** `const t = await getServerT()` **once per page**, then call `t("key.path")` synchronously (`src/lib/i18n/serverT.ts`). Avoid per-string `await serverT(...)` — it re-resolves the locale on every call.
 - **Server actions:** `await serverT("errors.key")` for error messages is fine (low volume).
 - All strings live in `src/lib/i18n/locales/{id,en}.ts` with a shared key structure.
+
+### 8. Mobile-First UX Conventions
+
+Primary users are non-technical people on phones. Conventions enforced across the app:
+
+- **Touch targets ≥ 44px** for all interactive controls (attendance buttons, row action menus, form submits).
+- **Tables become card lists on mobile:** data tables are wrapped in `hidden md:block overflow-x-auto`, with a parallel `md:hidden` card list (`divide-y divide-metro-border`). See `manage/students/page.tsx` and `admin/users/AdminUsersClient.tsx`.
+- **Optimistic updates for attendance:** `SessionDetailClient` updates local state immediately, re-syncs via `useEffect` after `router.refresh()`, and reverts + toasts on failure.
+- **Shared UI primitives** in `src/components/ui/`: `ConfirmDialog` (replaces `window.confirm` on destructive actions), `Toast`, and `PendingButton` (`useFormStatus`-based submit button for server-action forms).
+- **Route-group boundaries:** `(dashboard)/loading.tsx` (Metro skeleton) and `(dashboard)/error.tsx` (localized retry card) cover all authenticated pages.
+- **Deep links:** dashboard session cards link straight to `/courses/{courseId}/schedule/{sessionId}` so instructors can mark attendance in one tap.
+- **Role colors (app-wide standard):** admin = purple, instructor = navy blue, student = Metro green, guardian = deep yellow. Tokens: `--metro-role-{admin,instructor,student,guardian}` in `globals.css` (+ Tailwind `metro-role-*`). Always render roles through `<RoleBadge>` (or its exported `ROLE_BADGE_STYLES` map) in `src/components/RoleBadge.tsx` — never inline role colors.
 
 ---
 

@@ -21,7 +21,7 @@ export default async function MembersPage({
   const course = await db.course.findUnique({
     where: { id: courseId },
     include: {
-      instructor: true,
+      instructor: { select: { id: true, name: true, email: true } },
       coInstructors: {
         include: { user: { select: { id: true, name: true, email: true } } },
         orderBy: { addedAt: "asc" },
@@ -29,7 +29,10 @@ export default async function MembersPage({
       enrollments: {
         include: {
           user: {
-            include: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
               progress: { where: { completed: true } },
             },
           },

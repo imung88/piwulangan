@@ -7,6 +7,7 @@ import { serverT } from "@/lib/i18n/serverT";
 import { revalidatePath } from "next/cache";
 import { notify, withGuardians } from "@/lib/notifications";
 import { canManageCourse } from "@/lib/coursePerms";
+import { toDateStr } from "@/components/schedule/types";
 
 type ActionResult = { success?: boolean; error?: any };
 
@@ -49,7 +50,6 @@ async function requireCourseManager(courseId: string) {
 
 function revalidateScheduleViews(courseId: string) {
   revalidatePath("/schedule");
-  revalidatePath("/admin/schedule");
   revalidatePath("/dashboard");
   revalidatePath(`/courses/${courseId}/schedule`);
   revalidatePath(`/courses/${courseId}/manage/schedule`);
@@ -122,6 +122,7 @@ export async function removeAvailability(id: string): Promise<ActionResult> {
 }
 
 export async function getInstructorAvailability(instructorId: string) {
+  await requireUser();
   return db.availability.findMany({
     where: { userId: instructorId },
     orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
@@ -179,6 +180,10 @@ export async function removeBlockedDate(id: string): Promise<ActionResult> {
 }
 
 export async function getBlockedDates(userId: string) {
+  const { userId: me, role } = await requireUser();
+  if (role !== "ADMIN" && userId !== me) {
+    throw new Error("Not authorized");
+  }
   return db.blockedDate.findMany({
     where: { userId },
     orderBy: { date: "asc" },
@@ -411,7 +416,7 @@ export async function cancelSession(
     "SESSION_CANCELLED",
     `Session cancelled: ${existing.title}`,
     {
-      body: `${existing.course.title} — ${existing.date.toISOString().split("T")[0]} at ${existing.startTime}${reason ? `. Reason: ${reason}` : ""}`,
+      body: `${existing.course.title} — ${toDateStr(existing.date)} at ${existing.startTime}${reason ? `. Reason: ${reason}` : ""}`,
       link: `/courses/${existing.courseId}/schedule`,
     }
   );
@@ -462,7 +467,19 @@ export async function setSessionAttendees(
       "SESSION_CREATED",
       `New session: ${existing.title}`,
       {
-        body: `${existing.course.title} — ${existing.date.toISOString().split("T")[0]} at ${existing.startTime}`,
+        body: `${existing.course.title} — ${toDateStr(existing.date)} at ${existing.startTime}`,
+        link: `/courses/${existing.courseId}/schedule`,
+      }
+    );
+  }
+
+  if (toRemove.length > 0) {
+    await notify(
+      await withGuardians(toRemove),
+      "SESSION_REMOVED",
+      `Removed from session: ${existing.title}`,
+      {
+        body: `${existing.course.title} — ${toDateStr(existing.date)} at ${existing.startTime}`,
         link: `/courses/${existing.courseId}/schedule`,
       }
     );
@@ -477,16 +494,22 @@ export async function setSessionAttendees(
 const attendanceSchema = z.object({
   sessionId: z.string(),
   studentId: z.string(),
-  attendance: z.enum(["PRESENT", "ABSENT", "LATE"]),
+  attendance: z.enum(["PRESENT", "ABSENT", "LATE", "NONE"]),
   notes: z.string().max(500).optional(),
 });
+
+function completesOnDate(date: Date) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date.getTime() <= today.getTime();
+}
 
 export async function markAttendance(formData: FormData): Promise<ActionResult> {
   const parsed = attendanceSchema.safeParse({
     sessionId: formData.get("sessionId"),
     studentId: formData.get("studentId"),
     attendance: formData.get("attendance"),
-    notes: formData.get("notes") || undefined,
+    notes: formData.get("notes") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -494,6 +517,8 @@ export async function markAttendance(formData: FormData): Promise<ActionResult> 
   }
 
   const { sessionId, studentId, attendance, notes } = parsed.data;
+  const newAttendance = attendance === "NONE" ? null : attendance;
+  const newNotes = notes && notes.trim().length > 0 ? notes : null;
 
   const classSession = await db.classSession.findUnique({
     where: { id: sessionId },
@@ -508,24 +533,31 @@ export async function markAttendance(formData: FormData): Promise<ActionResult> 
   });
   if (!attendee) return { error: await serverT("errors.studentNotAssigned") };
 
+  const prevAttendance = attendee.attendance;
+
   await db.sessionAttendee.update({
     where: { id: attendee.id },
-    data: { attendance, notes, recordedAt: new Date() },
+    data: {
+      attendance: newAttendance,
+      notes: newNotes,
+      recordedAt: newAttendance ? new Date() : null,
+    },
   });
 
-  // A session with recorded attendance on a past/current date is complete
-  if (classSession.status === "SCHEDULED") {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (classSession.date.getTime() <= today.getTime()) {
-      await db.classSession.update({
-        where: { id: sessionId },
-        data: { status: "COMPLETED" },
-      });
-    }
+  // A session with recorded attendance on a past/current date is complete.
+  if (
+    newAttendance &&
+    classSession.status === "SCHEDULED" &&
+    completesOnDate(classSession.date)
+  ) {
+    await db.classSession.update({
+      where: { id: sessionId },
+      data: { status: "COMPLETED" },
+    });
   }
 
-  if (attendance === "ABSENT") {
+  // Notify only when the status actually changes TO absent.
+  if (newAttendance === "ABSENT" && prevAttendance !== "ABSENT") {
     const guardians = await db.guardianStudent.findMany({
       where: { studentId },
       select: { guardianId: true },
@@ -535,10 +567,37 @@ export async function markAttendance(formData: FormData): Promise<ActionResult> 
       "ATTENDANCE_ABSENT",
       `Marked absent: ${classSession.title}`,
       {
-        body: `${classSession.course.title} — ${classSession.date.toISOString().split("T")[0]}${notes ? `. ${notes}` : ""}`,
+        body: `${classSession.course.title} — ${toDateStr(classSession.date)}${newNotes ? `. ${newNotes}` : ""}`,
         link: `/courses/${classSession.courseId}/schedule`,
       }
     );
+  }
+
+  revalidateScheduleViews(classSession.courseId);
+  return { success: true };
+}
+
+export async function markAllPresent(sessionId: string): Promise<ActionResult> {
+  const classSession = await db.classSession.findUnique({
+    where: { id: sessionId },
+  });
+  if (!classSession) return { error: await serverT("errors.sessionNotFound") };
+
+  await requireCourseManager(classSession.courseId);
+
+  await db.sessionAttendee.updateMany({
+    where: { sessionId },
+    data: { attendance: "PRESENT", recordedAt: new Date() },
+  });
+
+  if (
+    classSession.status === "SCHEDULED" &&
+    completesOnDate(classSession.date)
+  ) {
+    await db.classSession.update({
+      where: { id: sessionId },
+      data: { status: "COMPLETED" },
+    });
   }
 
   revalidateScheduleViews(classSession.courseId);

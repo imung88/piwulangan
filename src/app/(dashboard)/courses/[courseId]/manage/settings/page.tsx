@@ -3,13 +3,15 @@ import { db } from "@/lib/db";
 import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { publishCourse, unpublishCourse, deleteCourse, archiveCourse, unarchiveCourse } from "@/actions/courses";
+import { publishCourse, unpublishCourse, archiveCourse, unarchiveCourse } from "@/actions/courses";
 import {
   AddCoInstructorForm,
   RemoveCoInstructorButton,
   TransferOwnershipForm,
+  DeleteCourseButton,
 } from "./TeacherActions";
 import { CourseDetailsForm } from "./CourseDetailsForm";
+import { PendingButton } from "@/components/ui/PendingButton";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function CourseSettingsPage({
@@ -189,12 +191,12 @@ export default async function CourseSettingsPage({
               await publishCourse(courseId);
             }}
           >
-            <button
-              type="submit"
-              className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
+            <PendingButton
+              pendingLabel={t("common.loading")}
+              className="min-h-[44px] bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
             >
               {labels.publish}
-            </button>
+            </PendingButton>
           </form>
         )}
         {course.visibility === "PUBLISHED" && (
@@ -205,12 +207,12 @@ export default async function CourseSettingsPage({
                 await unpublishCourse(courseId);
               }}
             >
-              <button
-                type="submit"
-                className="bg-metro-orange px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              <PendingButton
+                pendingLabel={t("common.loading")}
+                className="min-h-[44px] bg-metro-orange px-4 py-2 text-sm font-medium text-white hover:opacity-90"
               >
                 {labels.unpublish}
-              </button>
+              </PendingButton>
             </form>
             {role === "ADMIN" && (
               <form
@@ -219,12 +221,12 @@ export default async function CourseSettingsPage({
                   await archiveCourse(courseId);
                 }}
               >
-                <button
-                  type="submit"
-                  className="bg-metro-chrome-dark px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                <PendingButton
+                  pendingLabel={t("common.loading")}
+                  className="min-h-[44px] bg-metro-chrome-dark px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                 >
                   {labels.archive}
-                </button>
+                </PendingButton>
               </form>
             )}
           </div>
@@ -236,12 +238,12 @@ export default async function CourseSettingsPage({
                 await unarchiveCourse(courseId);
             }}
           >
-            <button
-              type="submit"
-              className="bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
+            <PendingButton
+              pendingLabel={t("common.loading")}
+              className="min-h-[44px] bg-metro-green px-4 py-2 text-sm font-medium text-white hover:bg-metro-green-hover"
             >
               {labels.unarchive}
-            </button>
+            </PendingButton>
           </form>
         )}
       </div>
@@ -266,19 +268,7 @@ export default async function CourseSettingsPage({
           <p className="text-sm text-metro-error mb-4">
             {labels.dangerDesc}
           </p>
-          <form
-            action={async () => {
-              "use server";
-              await deleteCourse(courseId);
-            }}
-          >
-            <button
-              type="submit"
-              className="bg-metro-error px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-            >
-              {labels.delete}
-            </button>
-          </form>
+          <DeleteCourseButton courseId={courseId} courseTitle={course.title} />
         </div>
       )}
     </div>

@@ -67,6 +67,7 @@ export default async function ManageStudentsPage({
     completed: t("courseManage.completed"),
     enrolled: t("courseManage.enrolled"),
     noStudents: t("courseManage.noStudents"),
+    reports: t("courseDetail.reports"),
   };
 
   return (
@@ -91,64 +92,136 @@ export default async function ManageStudentsPage({
         <AddStudentForm courseId={courseId} candidates={candidates} />
       </div>
 
-      <div className="mt-6 border border-metro-border bg-metro-surface overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead className="bg-metro-bg border-b border-metro-border">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.student}</th>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.email}</th>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.progress}</th>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.completed}</th>
-              <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.enrolled}</th>
-              <th className="px-4 py-3 text-right font-medium text-metro-text-secondary"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {course.enrollments.map((enrollment) => {
-              const student = enrollment.user;
-              const completedCount = student.progress.filter((p) =>
-                course.modules.some((m) =>
-                  m.lessons.some((l) => l.id === p.lessonId)
-                )
-              ).length;
-              const percentage =
-                totalLessons > 0
-                  ? Math.round((completedCount / totalLessons) * 100)
-                  : 0;
+      <div className="mt-6 border border-metro-border bg-metro-surface">
+        {/* Mobile cards */}
+        <div className="divide-y divide-metro-border md:hidden">
+          {course.enrollments.map((enrollment) => {
+            const student = enrollment.user;
+            const completedCount = student.progress.filter((p) =>
+              course.modules.some((m) =>
+                m.lessons.some((l) => l.id === p.lessonId)
+              )
+            ).length;
+            const percentage =
+              totalLessons > 0
+                ? Math.round((completedCount / totalLessons) * 100)
+                : 0;
 
-              return (
-                <tr key={enrollment.id} className="hover:bg-metro-blue-light">
-                  <td className="px-4 py-3 font-medium">{student.name}</td>
-                  <td className="px-4 py-3 text-metro-text-secondary">{student.email}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 h-2 bg-metro-border">
-                        <div
-                          className="h-2 bg-metro-blue"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-metro-text-secondary">{percentage}%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-metro-text-secondary">
-                    {completedCount}/{totalLessons}
-                  </td>
-                  <td className="px-4 py-3 text-metro-text-secondary text-xs">
-                    {new Date(enrollment.enrolledAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+            return (
+              <div key={enrollment.id} className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-metro-text truncate">
+                      {student.name}
+                    </p>
+                    {student.email && (
+                      <p className="text-sm text-metro-text-secondary truncate">
+                        {student.email}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <Link
+                      href={`/courses/${courseId}/manage/reports?student=${student.id}`}
+                      className="text-sm font-medium text-metro-blue hover:underline"
+                    >
+                      📝 {labels.reports}
+                    </Link>
                     <RemoveStudentButton
                       courseId={courseId}
                       studentId={student.id}
                       studentName={student.name}
                     />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="h-2 flex-1 bg-metro-border">
+                    <div
+                      className="h-2 bg-metro-blue"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-metro-text-secondary shrink-0">
+                    {completedCount}/{totalLessons} · {percentage}%
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-metro-text-secondary">
+                  {labels.enrolled}:{" "}
+                  {new Date(enrollment.enrolledAt).toLocaleDateString()}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead className="bg-metro-bg border-b border-metro-border">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.student}</th>
+                <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.email}</th>
+                <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.progress}</th>
+                <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.completed}</th>
+                <th className="px-4 py-3 text-left font-medium text-metro-text-secondary">{labels.enrolled}</th>
+                <th className="px-4 py-3 text-right font-medium text-metro-text-secondary"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {course.enrollments.map((enrollment) => {
+                const student = enrollment.user;
+                const completedCount = student.progress.filter((p) =>
+                  course.modules.some((m) =>
+                    m.lessons.some((l) => l.id === p.lessonId)
+                  )
+                ).length;
+                const percentage =
+                  totalLessons > 0
+                    ? Math.round((completedCount / totalLessons) * 100)
+                    : 0;
+
+                return (
+                  <tr key={enrollment.id} className="hover:bg-metro-blue-light">
+                    <td className="px-4 py-3 font-medium">{student.name}</td>
+                    <td className="px-4 py-3 text-metro-text-secondary">{student.email}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-metro-border">
+                          <div
+                            className="h-2 bg-metro-blue"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-metro-text-secondary">{percentage}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-metro-text-secondary">
+                      {completedCount}/{totalLessons}
+                    </td>
+                    <td className="px-4 py-3 text-metro-text-secondary text-xs">
+                      {new Date(enrollment.enrolledAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-3">
+                        <Link
+                          href={`/courses/${courseId}/manage/reports?student=${student.id}`}
+                          className="text-sm font-medium text-metro-blue hover:underline"
+                        >
+                          📝 {labels.reports}
+                        </Link>
+                        <RemoveStudentButton
+                          courseId={courseId}
+                          studentId={student.id}
+                          studentName={student.name}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         {course.enrollments.length === 0 && (
           <p className="px-4 py-8 text-center text-metro-text-secondary">

@@ -5,7 +5,10 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useT } from "@/lib/i18n/useT"
 import { format } from "@/lib/i18n/useT"
-import { archiveCourse, unarchiveCourse } from "@/actions/courses"
+import ConfirmDialog from "@/components/ui/ConfirmDialog"
+import { useToast } from "@/components/ui/Toast"
+import { archiveCourse, unarchiveCourse, unpublishCourse } from "@/actions/courses"
+import PublishCourseButton from "@/components/PublishCourseButton"
 
 type Course = {
   id: string;
@@ -20,7 +23,7 @@ type Course = {
 };
 
 export default function CoursesClient({
-  courses: initialCourses,
+  courses,
   role,
 }: {
   courses: Course[];
@@ -28,51 +31,58 @@ export default function CoursesClient({
 }) {
   const router = useRouter()
   const t = useT()
-  const [courses] = useState(initialCourses)
+  const toast = useToast()
   const [showArchived, setShowArchived] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [archiving, setArchiving] = useState<Course | null>(null);
+  const [archivePending, setArchivePending] = useState(false);
+  const [unpublishing, setUnpublishing] = useState<Course | null>(null);
+  const [unpublishPending, setUnpublishPending] = useState(false);
 
   const activeCourses = courses.filter((c) => c.visibility !== "ARCHIVED");
   const archivedCourses = courses.filter((c) => c.visibility === "ARCHIVED");
   const displayCourses = showArchived ? archivedCourses : activeCourses;
 
-  const handleArchive = async (courseId: string) => {
-    const result = await archiveCourse(courseId);
+  const handleArchive = async () => {
+    if (!archiving) return;
+    setArchivePending(true);
+    const result = await archiveCourse(archiving.id);
+    setArchivePending(false);
+    setArchiving(null);
     if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+      toast.error(result.error as string);
     } else {
-      setMessage({ type: "success", text: "Course archived" });
+      toast.success(t("courses.courseArchived"));
       router.refresh();
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!unpublishing) return;
+    setUnpublishPending(true);
+    try {
+      await unpublishCourse(unpublishing.id);
+      toast.success(t("courses.courseUnpublished"));
+      setUnpublishing(null);
+      router.refresh();
+    } catch {
+      toast.error(t("settings.failedTeacherAction"));
+    } finally {
+      setUnpublishPending(false);
     }
   };
 
   const handleUnarchive = async (courseId: string) => {
     const result = await unarchiveCourse(courseId);
     if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+      toast.error(result.error as string);
     } else {
-      setMessage({ type: "success", text: "Course unarchived" });
+      toast.success(t("courses.courseUnarchived"));
       router.refresh();
     }
   };
 
   return (
     <div>
-      {message && (
-        <div
-          className={`p-4 mb-4 ${
-            message.type === "success" ? "bg-metro-green-light text-metro-green" : "bg-metro-error text-white"
-          }`}
-        >
-          {message.text}
-          <button
-            onClick={() => setMessage(null)}
-            className="ml-2 underline text-sm"
-          >
-            {t("courses.dismiss")}
-          </button>
-        </div>
-      )}
 
       {role === "ADMIN" && archivedCourses.length > 0 && (
         <div className="mb-4">
@@ -98,7 +108,7 @@ export default function CoursesClient({
                 <h2 className="font-semibold text-metro-text">{course.title}</h2>
                 {course.visibility === "DRAFT" && (
                   <span className="metro-badge bg-metro-border text-metro-text-secondary">
-                    Draft
+                    {t("common.draft")}
                   </span>
                 )}
                 {course.visibility === "ARCHIVED" && (
@@ -123,23 +133,35 @@ export default function CoursesClient({
                 </p>
               )}
             </Link>
-            {role === "ADMIN" && (
-              <div className="mt-3 pt-3 border-t border-metro-border">
-                {course.visibility === "ARCHIVED" ? (
+            {(role === "ADMIN" || (role === "INSTRUCTOR" && course.visibility !== "ARCHIVED")) && (
+              <div className="mt-3 pt-3 border-t border-metro-border flex items-center gap-4">
+                {course.visibility === "DRAFT" && (
+                  <PublishCourseButton courseId={course.id} title={course.title} />
+                )}
+                {course.visibility === "PUBLISHED" && (
                   <button
-                    onClick={() => handleUnarchive(course.id)}
-                    className="text-sm text-metro-green hover:text-metro-green-hover font-medium"
+                    onClick={() => setUnpublishing(course)}
+                    className="min-h-[44px] border-2 border-metro-border bg-metro-surface px-4 text-sm font-medium text-metro-text hover:bg-metro-bg"
                   >
-                    {t("courses.unarchive")}
-                  </button>
-                ) : (
-                <button
-                  onClick={() => handleArchive(course.id)}
-                    className="text-sm text-metro-text-secondary hover:text-metro-text font-medium"
-                  >
-                    {t("courses.archive")}
+                    {t("common.draft")}
                   </button>
                 )}
+                {role === "ADMIN" &&
+                  (course.visibility === "ARCHIVED" ? (
+                    <button
+                      onClick={() => handleUnarchive(course.id)}
+                      className="min-h-[44px] bg-metro-green px-4 text-sm font-medium text-white hover:bg-metro-green-hover"
+                    >
+                      {t("courses.unarchive")}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setArchiving(course)}
+                      className="min-h-[44px] border-2 border-metro-border bg-metro-surface px-4 text-sm font-medium text-metro-text hover:bg-metro-bg"
+                    >
+                      {t("courses.archive")}
+                    </button>
+                  ))}
               </div>
             )}
             {role === "STUDENT" && course._totalLessons && course._totalLessons > 0 && (
@@ -177,6 +199,28 @@ export default function CoursesClient({
             : t("courses.noCoursesAdmin")}
         </p>
       )}
+
+      <ConfirmDialog
+        open={unpublishing !== null}
+        pending={unpublishPending}
+        title={format(t("courses.confirmUnpublish"), { title: unpublishing?.title ?? "" })}
+        message={t("courses.unpublishInfo")}
+        confirmLabel={t("common.draft")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleUnpublish}
+        onCancel={() => setUnpublishing(null)}
+      />
+
+      <ConfirmDialog
+        open={archiving !== null}
+        pending={archivePending}
+        title={format(t("courses.confirmArchive"), { title: archiving?.title ?? "" })}
+        message={t("courses.archiveWarn")}
+        confirmLabel={t("courses.archive")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleArchive}
+        onCancel={() => setArchiving(null)}
+      />
     </div>
   );
 }

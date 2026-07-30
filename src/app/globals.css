@@ -19,6 +19,13 @@
   --metro-border: #E1DFDD;
   --metro-text: #323130;
   --metro-text-secondary: #605E5C;
+
+  /* Role colors — app-wide convention:
+     admin=purple, instructor=navy, student=metro green, guardian=deep yellow */
+  --metro-role-admin: #68217A;
+  --metro-role-instructor: #1E3A8A;
+  --metro-role-student: var(--metro-green);
+  --metro-role-guardian: #B8860B;
   
   /* Additional CSS variables for backward compatibility */
   --background: var(--metro-bg);
@@ -62,6 +69,20 @@
   }
   
   .metro-btn-green:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .metro-btn-orange {
+    @apply w-full py-3 text-base font-bold text-white transition-colors;
+    background-color: var(--metro-orange);
+    border-radius: 0 !important;
+  }
+
+  .metro-btn-orange:hover {
+    background-color: var(--metro-orange-hover);
+  }
+
+  .metro-btn-orange:disabled {
     @apply opacity-50 cursor-not-allowed;
   }
   
@@ -167,3 +188,20 @@
 .text-metro-error { color: var(--metro-error); }
 
 .border-metro-border { border-color: var(--metro-border); }
+
+/* Keyboard focus visibility — Metro flat outline, no rounding */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--metro-chrome-dark);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+.bg-metro-blue a:focus-visible,
+.bg-metro-blue button:focus-visible {
+  outline-color: #ffffff;
+}

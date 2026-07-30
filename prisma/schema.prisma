@@ -39,6 +39,8 @@ model User {
   notifications         Notification[]
   guardianLinks         GuardianStudent[]  @relation("Guardian")
   studentLinks          GuardianStudent[]  @relation("Student")
+  reportsReceived       StudentReport[]    @relation("ReportStudent")
+  reportsWritten        StudentReport[]    @relation("ReportAuthor")
 }
 
 enum Role {
@@ -80,6 +82,7 @@ model Course {
   announcements Announcement[]
   sessions      ClassSession[]
   availability  Availability[]
+  reports       StudentReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,6 +119,7 @@ model Module {
   courseId  String
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons  Lesson[]
+  reports  StudentReport[]
 }
 
 model Lesson {
@@ -132,6 +136,7 @@ model Lesson {
   progress   Progress[]
   assignment Assignment?
   sessions   ClassSession[]
+  reports    StudentReport[]
 }
 
 enum LessonType {
@@ -306,6 +311,27 @@ enum SubmissionStatus {
   SUBMITTED
   REVIEWED
   NEEDS_REVISION
+}
+
+// ─── Student Reports ───
+
+model StudentReport {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation("ReportStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("ReportAuthor", fields: [authorId], references: [id])
+  moduleId  String?
+  module    Module?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lessonId  String?
+  lesson    Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId, studentId])
 }
 
 // ─── Announcements Module ───

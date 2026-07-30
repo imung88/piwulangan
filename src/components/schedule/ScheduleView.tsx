@@ -13,6 +13,14 @@ interface Props {
   showInstructor?: boolean;
 }
 
+function mondayOf(d: Date) {
+  const copy = new Date(d);
+  copy.setHours(0, 0, 0, 0);
+  const day = copy.getDay();
+  copy.setDate(copy.getDate() - ((day + 6) % 7));
+  return copy;
+}
+
 export default function ScheduleView({
   sessions,
   showCourse,
@@ -20,6 +28,8 @@ export default function ScheduleView({
   showInstructor,
 }: Props) {
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [filter, setFilter] = useState<"upcoming" | "past" | "all">("upcoming");
+  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const t = useT();
 
   return (
@@ -42,12 +52,20 @@ export default function ScheduleView({
       {view === "list" ? (
         <SessionList
           sessions={sessions}
+          filter={filter}
+          onFilterChange={setFilter}
           showCourse={showCourse}
           showAttendees={showAttendees}
           showInstructor={showInstructor}
         />
       ) : (
-        <WeekCalendar sessions={sessions} />
+        <WeekCalendar
+          sessions={sessions}
+          weekStart={weekStart}
+          onWeekStartChange={setWeekStart}
+          showCourse={showCourse}
+          showAttendees={showAttendees}
+        />
       )}
     </div>
   );

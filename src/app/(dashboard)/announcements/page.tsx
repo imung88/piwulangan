@@ -28,7 +28,7 @@ export default async function AnnouncementsPage() {
   if (role === "ADMIN") {
     // Admin sees all announcements
     announcements = await db.announcement.findMany({
-      include: { author: true, course: true },
+      include: { author: { select: { id: true, name: true } }, course: true },
       orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
       take: 50,
     });
@@ -40,7 +40,7 @@ export default async function AnnouncementsPage() {
           OR: [{ instructorId: userId }, { coInstructors: { some: { userId } } }],
         },
       },
-      include: { author: true, course: true },
+      include: { author: { select: { id: true, name: true } }, course: true },
       orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
       take: 50,
     });
@@ -56,7 +56,7 @@ export default async function AnnouncementsPage() {
     if (enrolledCourseIds.length > 0) {
       announcements = await db.announcement.findMany({
         where: { courseId: { in: enrolledCourseIds } },
-        include: { author: true, course: true },
+        include: { author: { select: { id: true, name: true } }, course: true },
         orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
         take: 50,
       });
@@ -81,7 +81,7 @@ export default async function AnnouncementsPage() {
     if (linkedCourseIds.length > 0) {
       announcements = await db.announcement.findMany({
         where: { courseId: { in: linkedCourseIds } },
-        include: { author: true, course: true },
+        include: { author: { select: { id: true, name: true } }, course: true },
         orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
         take: 50,
       });

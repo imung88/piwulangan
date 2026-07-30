@@ -29,13 +29,14 @@ export default function MobileNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={`flex min-h-[64px] flex-col items-center justify-center gap-0.5 transition-colors ${
-                active ? "bg-metro-chrome-dark text-white" : "text-white/70"
+                active ? "bg-metro-chrome-dark text-white" : "text-white opacity-90"
               }`}
             >
-              <span className="text-2xl leading-none">{item.icon}</span>
+              <span aria-hidden="true" className="text-2xl leading-none">{item.icon}</span>
               <span
-                className={`text-xs ${
+                className={`max-w-full truncate px-1 text-xs ${
                   active ? "font-semibold" : "font-medium"
                 }`}
               >

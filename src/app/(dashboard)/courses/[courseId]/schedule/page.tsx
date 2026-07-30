@@ -152,6 +152,7 @@ async function StudentView({
   userId: string;
   instructorName: string;
 }) {
+  const t = await getServerT();
   const sessions = await getSessionsForStudent(userId, { courseId });
   const hasUpcoming = sessions.some((s) => {
     return s.date.toISOString().split("T")[0] >= todayStr();
@@ -169,7 +170,7 @@ async function StudentView({
         )}
         <div>
           <h2 className="metro-section-title mb-3">
-            instructor availability
+            {t("courseSchedule.instructorAvailability")}
           </h2>
           <AvailabilityDisplay
             windows={availability}

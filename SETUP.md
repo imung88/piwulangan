@@ -107,10 +107,14 @@ You'll be redirected to the login page. Sign in with any test account.
 - Route protection via middleware
 
 ### Scheduling
-- Course-centric scheduling with sessions, availability blocks, and instructor availability
-- Admin schedule management
-- Instructor availability editor
-- Student schedule viewer
+- Single role-aware schedule view (list + week calendar); admin sees all courses
+- Per-course schedule management: compact overview + create session (with weekly recurrence)
+- Individual session detail page (`/courses/[id]/schedule/[sessionId]`): viewable by anyone
+  with access; managers edit details, roster, attendance, and cancel — respecting locks
+  (attendance on today/past; details/roster on today/future; cancelled is read-only)
+- Attendance recording: Present / Late / Absent + per-attendee notes + "Mark all present"
+- Instructor availability editor (add/remove weekly slots) + blocked dates
+- Student & guardian read-only schedule with their own attendance
 
 ### Courses
 - Create new course (title, description, enrollment mode)
@@ -143,7 +147,9 @@ You'll be redirected to the login page. Sign in with any test account.
 
 ### Announcements
 - Course-level announcements with pinning
-- Announcements management (create, edit, delete, pin/unpin)
+- Single merged page per course (`/courses/[id]/announcements`): everyone reads; owners (instructor, co-instructor, admin) create, edit, pin/unpin, and delete inline
+- Access limited to course owners, enrolled students, and linked guardians
+- Global feed (`/announcements`) aggregates by role (admin: all, instructor: own + co-taught, student: enrolled, guardian: linked students' courses)
 
 ### Members
 - Course roster page showing all enrolled students

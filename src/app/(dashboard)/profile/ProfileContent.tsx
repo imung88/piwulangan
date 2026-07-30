@@ -88,7 +88,7 @@ export default function ProfileContent({ user }: Props) {
             </div>
             <div>
               <p className="text-metro-text-secondary text-sm font-medium">{t("profile.role")}</p>
-              <RoleBadge role={user.role} />
+              <RoleBadge role={user.role} className="mt-1" />
             </div>
             {saved && <p className="text-sm font-medium text-metro-green">{t("profile.saved")}</p>}
             <button type="button" onClick={() => { setEditing(true); setSaved(false) }} className="metro-btn mt-2">

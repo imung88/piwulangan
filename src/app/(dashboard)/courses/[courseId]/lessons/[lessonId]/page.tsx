@@ -4,6 +4,7 @@ import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { toggleProgress } from "@/actions/progress";
+import { PendingButton } from "@/components/ui/PendingButton";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
 
 export default async function LessonPage({
@@ -22,7 +23,7 @@ export default async function LessonPage({
   const course = await db.course.findUnique({
     where: { id: courseId },
     include: {
-      instructor: true,
+      instructor: { select: { id: true, name: true } },
       enrollments: { where: { userId } },
       modules: {
         include: {
@@ -143,7 +144,7 @@ export default async function LessonPage({
           {linkedSessions.map((s) => (
             <Link
               key={s.id}
-              href={`/courses/${courseId}/schedule`}
+              href={`/courses/${courseId}/schedule/${s.id}`}
               className="block border border-metro-blue bg-metro-blue-light px-3 py-2 text-sm text-metro-blue hover:bg-metro-blue-light"
             >
               📅 {labels.scheduled}
@@ -202,8 +203,8 @@ export default async function LessonPage({
               await toggleProgress(lessonId);
             }}
           >
-            <button
-              type="submit"
+            <PendingButton
+              pendingLabel={t("common.loading")}
               className={`w-full border-2 py-3 text-sm font-semibold transition-colors ${
                 isCompleted
                   ? "border-metro-green bg-metro-green-light text-metro-green"
@@ -211,7 +212,7 @@ export default async function LessonPage({
               }`}
             >
               {isCompleted ? labels.completed : labels.markComplete}
-            </button>
+            </PendingButton>
           </form>
         </div>
       )}
@@ -248,9 +249,18 @@ export default async function LessonPage({
   );
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Simple markdown renderer (paragraphs, headings, bold, italic, lists, code)
 function renderMarkdown(md: string): string {
-  return md
+  return escapeHtml(md)
     // Headings
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')

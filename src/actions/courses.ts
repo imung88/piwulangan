@@ -256,6 +256,27 @@ export async function unenrollSelf(courseId: string) {
     where: { userId_courseId: { userId, courseId } },
   });
 
+  const course = await db.course.findUnique({
+    where: { id: courseId },
+    select: {
+      title: true,
+      instructorId: true,
+      coInstructors: { select: { userId: true } },
+    },
+  });
+  if (course) {
+    const student = await db.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    await notify(
+      [course.instructorId, ...course.coInstructors.map((c) => c.userId)],
+      "UNENROLLMENT",
+      `${student?.name ?? "A student"} left ${course.title}`,
+      { link: `/courses/${courseId}/manage/students` }
+    );
+  }
+
   revalidatePath("/courses");
   revalidatePath(`/courses/${courseId}`);
   return { success: true };

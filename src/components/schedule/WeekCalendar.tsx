@@ -1,22 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/useT";
 import {
   SessionItem,
   STATUS_COLORS,
+  statusLabel,
   courseColor,
   formatDateStr,
+  toDateStr,
   todayStr,
 } from "./types";
 
 interface Props {
   sessions: SessionItem[];
-}
-
-function dateKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  weekStart: Date;
+  onWeekStartChange: (d: Date) => void;
+  showCourse?: boolean;
+  showAttendees?: boolean;
 }
 
 function mondayOf(d: Date) {
@@ -27,8 +28,13 @@ function mondayOf(d: Date) {
   return copy;
 }
 
-export default function WeekCalendar({ sessions }: Props) {
-  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
+export default function WeekCalendar({
+  sessions,
+  weekStart,
+  onWeekStartChange,
+  showCourse = true,
+  showAttendees = false,
+}: Props) {
   const today = todayStr();
   const t = useT();
 
@@ -51,13 +57,14 @@ export default function WeekCalendar({ sessions }: Props) {
   function shiftWeek(weeks: number) {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + weeks * 7);
-    setWeekStart(d);
+    onWeekStartChange(d);
   }
 
-  // Week range header — left as browser locale so it adapts to user settings.
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
-  const rangeLabel = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+  const rangeLabel = `${weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+
+  const emptyWeek = days.every((d) => !(byDay.get(toDateStr(d)) || []).length);
 
   return (
     <div>
@@ -71,7 +78,7 @@ export default function WeekCalendar({ sessions }: Props) {
             ←
           </button>
           <button
-            onClick={() => setWeekStart(mondayOf(new Date()))}
+            onClick={() => onWeekStartChange(mondayOf(new Date()))}
             className="border border-metro-border px-2.5 py-1 text-sm text-metro-text-secondary hover:bg-metro-bg"
           >
             {t("scheduleView.today")}
@@ -88,7 +95,7 @@ export default function WeekCalendar({ sessions }: Props) {
       {/* Desktop: 7-column grid */}
       <div className="hidden md:grid grid-cols-7 gap-2">
         {days.map((d) => {
-          const key = dateKey(d);
+          const key = toDateStr(d);
           const daySessions = byDay.get(key) || [];
           const isToday = key === today;
           return (
@@ -103,20 +110,28 @@ export default function WeekCalendar({ sessions }: Props) {
                   isToday ? "text-metro-blue" : "text-metro-text-secondary"
                 }`}
               >
-                {d.toLocaleDateString("en-US", { weekday: "short" })}{" "}
+                {d.toLocaleDateString(undefined, { weekday: "short" })}{" "}
                 {d.getDate()}
               </div>
               <div className="p-1.5 space-y-1.5">
                 {daySessions.map((s) => (
                   <Link
                     key={s.id}
-                    href={`/courses/${s.course.id}/schedule`}
+                    href={`/courses/${s.course.id}/schedule/${s.id}`}
                     className={`block border px-1.5 py-1 text-xs ${courseColor(s.course.id)} ${
                       s.status === "CANCELLED" ? "opacity-50 line-through" : ""
                     }`}
                   >
                     <div className="font-medium truncate">{s.title}</div>
-                    <div className="truncate">{s.startTime} · {s.course.title}</div>
+                    <div className="truncate">
+                      {s.startTime}
+                      {showCourse && <> · {s.course.title}</>}
+                    </div>
+                    {showAttendees && s.attendeeNames.length > 0 && (
+                      <div className="truncate opacity-80">
+                        {s.attendeeNames.length}
+                      </div>
+                    )}
                   </Link>
                 ))}
               </div>
@@ -124,11 +139,16 @@ export default function WeekCalendar({ sessions }: Props) {
           );
         })}
       </div>
+      {emptyWeek && (
+        <p className="hidden md:block text-sm text-metro-text-secondary text-center py-6">
+          {t("scheduleView.noSessionsThisWeek")}
+        </p>
+      )}
 
       {/* Mobile: stacked days */}
       <div className="md:hidden space-y-3">
         {days.map((d) => {
-          const key = dateKey(d);
+          const key = toDateStr(d);
           const daySessions = byDay.get(key) || [];
           if (daySessions.length === 0) return null;
           return (
@@ -145,7 +165,7 @@ export default function WeekCalendar({ sessions }: Props) {
                 {daySessions.map((s) => (
                   <Link
                     key={s.id}
-                    href={`/courses/${s.course.id}/schedule`}
+                    href={`/courses/${s.course.id}/schedule/${s.id}`}
                     className="flex items-center justify-between px-3 py-2"
                   >
                     <div>
@@ -153,13 +173,14 @@ export default function WeekCalendar({ sessions }: Props) {
                         {s.title}
                       </div>
                       <div className="text-xs text-metro-text-secondary">
-                        {s.startTime}–{s.endTime} · {s.course.title}
+                        {s.startTime}–{s.endTime}
+                        {showCourse && <> · {s.course.title}</>}
                       </div>
                     </div>
                     <span
                       className={`metro-badge ${STATUS_COLORS[s.status] || ""}`}
                     >
-                      {s.status}
+                      {statusLabel(s.status, t)}
                     </span>
                   </Link>
                 ))}
@@ -167,7 +188,7 @@ export default function WeekCalendar({ sessions }: Props) {
             </div>
           );
         })}
-        {days.every((d) => !(byDay.get(dateKey(d)) || []).length) && (
+        {emptyWeek && (
           <p className="text-sm text-metro-text-secondary text-center py-6">
             {t("scheduleView.noSessionsThisWeek")}
           </p>

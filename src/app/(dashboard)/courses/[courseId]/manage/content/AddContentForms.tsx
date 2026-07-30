@@ -2,8 +2,56 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useT } from "@/lib/i18n/useT";
-import { createModule, createLesson } from "@/actions/lessons";
+import { useT, format } from "@/lib/i18n/useT";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { createModule, createLesson, deleteModule } from "@/actions/lessons";
+
+export function DeleteModuleButton({
+  moduleId,
+  moduleTitle,
+}: {
+  moduleId: string;
+  moduleTitle: string;
+}) {
+  const router = useRouter();
+  const t = useT();
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleDelete() {
+    setLoading(true);
+    try {
+      await deleteModule(moduleId);
+    } finally {
+      setLoading(false);
+      setConfirming(false);
+    }
+    router.refresh();
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        className="min-h-[44px] px-3 text-sm font-medium text-metro-error hover:underline"
+      >
+        {t("content.deleteModule")}
+      </button>
+      <ConfirmDialog
+        open={confirming}
+        danger
+        pending={loading}
+        title={format(t("content.confirmDeleteModule"), { title: moduleTitle })}
+        message={t("content.deleteModuleWarn")}
+        confirmLabel={t("content.deleteModule")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirming(false)}
+      />
+    </>
+  );
+}
 
 export function AddModuleForm({ courseId }: { courseId: string }) {
   const router = useRouter();

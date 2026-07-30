@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { format as i18nFormat } from "@/lib/i18n/useT";
 import { useT } from "@/lib/i18n/useT";
@@ -8,18 +7,24 @@ import {
   SessionItem,
   STATUS_COLORS,
   ATTENDANCE_COLORS,
+  statusLabel,
+  attendanceLabel,
   formatDateStr,
   todayStr,
 } from "./types";
 
+type Filter = "upcoming" | "past" | "all";
+
 interface Props {
   sessions: SessionItem[];
+  filter: Filter;
+  onFilterChange: (f: Filter) => void;
   showCourse?: boolean;
   showAttendees?: boolean;
   showInstructor?: boolean;
 }
 
-const FILTER_LABELS: Record<"upcoming" | "past" | "all", string> = {
+const FILTER_LABELS: Record<Filter, string> = {
   upcoming: "schedule.upcoming",
   past: "schedule.past",
   all: "schedule.all",
@@ -27,11 +32,12 @@ const FILTER_LABELS: Record<"upcoming" | "past" | "all", string> = {
 
 export default function SessionList({
   sessions,
+  filter,
+  onFilterChange,
   showCourse = true,
   showAttendees = false,
   showInstructor = false,
 }: Props) {
-  const [filter, setFilter] = useState<"upcoming" | "past" | "all">("upcoming");
   const today = todayStr();
   const t = useT();
 
@@ -55,7 +61,7 @@ export default function SessionList({
         {(["upcoming", "past", "all"] as const).map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => onFilterChange(f)}
             className={`px-3 py-1.5 text-sm font-medium transition-colors ${
               filter === f
                 ? "bg-metro-blue text-white"
@@ -82,11 +88,16 @@ export default function SessionList({
             }`}
           >
             <div className="flex items-center gap-3 mb-1 flex-wrap">
-              <span className="font-semibold text-metro-text">{s.title}</span>
+              <Link
+                href={`/courses/${s.course.id}/schedule/${s.id}`}
+                className="font-semibold text-metro-text hover:text-metro-blue hover:underline"
+              >
+                {s.title}
+              </Link>
               <span
                 className={`metro-badge ${STATUS_COLORS[s.status] || ""}`}
               >
-                {s.status}
+                {statusLabel(s.status, t)}
               </span>
               {s.date === today && s.status !== "CANCELLED" && (
                 <span className="metro-badge bg-metro-blue text-white">
@@ -131,7 +142,7 @@ export default function SessionList({
                 )}
               </div>
             )}
-            {s.lesson && (
+            {showCourse && s.lesson && (
               <div className="text-sm mt-1">
                 <Link
                   href={`/courses/${s.course.id}/lessons/${s.lesson.id}`}
@@ -149,8 +160,7 @@ export default function SessionList({
             {s.myAttendance && (
               <div className="text-sm mt-1">
                 <span className={ATTENDANCE_COLORS[s.myAttendance] || ""}>
-                  {s.myAttendance.charAt(0) +
-                    s.myAttendance.slice(1).toLowerCase()}
+                  {attendanceLabel(s.myAttendance, t)}
                 </span>
               </div>
             )}

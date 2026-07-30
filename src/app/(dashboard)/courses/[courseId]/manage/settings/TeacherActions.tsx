@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useT } from "@/lib/i18n/useT";
+import { useT, format } from "@/lib/i18n/useT";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import {
   addCoInstructor,
   removeCoInstructor,
   transferOwnership,
+  deleteCourse,
 } from "@/actions/courses";
 
 interface InstructorOption {
@@ -86,24 +89,36 @@ export function RemoveCoInstructorButton({
   const router = useRouter();
   const t = useT();
   const [loading, setLoading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   async function handleRemove() {
-    const msg = t("settings.confirmRemoveTeacher").replace("{name}", instructorName);
-    if (!confirm(msg)) return;
     setLoading(true);
     await removeCoInstructor(courseId, instructorId);
     setLoading(false);
+    setConfirming(false);
     router.refresh();
   }
 
   return (
-    <button
-      onClick={handleRemove}
-      disabled={loading}
-      className="text-sm font-medium text-metro-error hover:underline disabled:opacity-50"
-    >
-      {t("settings.removeTeacher")}
-    </button>
+    <>
+      <button
+        onClick={() => setConfirming(true)}
+        disabled={loading}
+        className="min-h-[44px] px-3 text-sm font-medium text-metro-error hover:underline disabled:opacity-50"
+      >
+        {t("settings.removeTeacher")}
+      </button>
+      <ConfirmDialog
+        open={confirming}
+        danger
+        pending={loading}
+        title={format(t("settings.confirmRemoveTeacher"), { name: instructorName })}
+        confirmLabel={t("settings.removeTeacher")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleRemove}
+        onCancel={() => setConfirming(false)}
+      />
+    </>
   );
 }
 
@@ -119,6 +134,7 @@ export function TransferOwnershipForm({
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   if (candidates.length === 0) {
     return (
@@ -127,14 +143,11 @@ export function TransferOwnershipForm({
   }
 
   async function handleTransfer() {
-    if (!selected) return;
-    const name = candidates.find((c) => c.id === selected)?.name ?? "";
-    const msg = t("settings.confirmTransfer").replace("{name}", name);
-    if (!confirm(msg)) return;
     setLoading(true);
     setError(null);
     const res = await transferOwnership(courseId, selected);
     setLoading(false);
+    setConfirming(false);
     if (res?.error) {
       setError(typeof res.error === "string" ? res.error : t("settings.failedTeacherAction"));
       return;
@@ -142,6 +155,8 @@ export function TransferOwnershipForm({
     setSelected("");
     router.refresh();
   }
+
+  const selectedName = candidates.find((c) => c.id === selected)?.name ?? "";
 
   return (
     <div className="flex items-center gap-2">
@@ -158,13 +173,73 @@ export function TransferOwnershipForm({
         ))}
       </select>
       <button
-        onClick={handleTransfer}
+        onClick={() => setConfirming(true)}
         disabled={!selected || loading}
         className="bg-metro-orange px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
       >
         {t("settings.transferBtn")}
       </button>
       {error && <span className="text-sm text-metro-error">{error}</span>}
+      <ConfirmDialog
+        open={confirming}
+        danger
+        pending={loading}
+        title={format(t("settings.confirmTransfer"), { name: selectedName })}
+        message={t("settings.transferDesc")}
+        confirmLabel={t("settings.transferBtn")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleTransfer}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
+  );
+}
+
+export function DeleteCourseButton({
+  courseId,
+  courseTitle,
+}: {
+  courseId: string;
+  courseTitle: string;
+}) {
+  const router = useRouter();
+  const t = useT();
+  const toast = useToast();
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleDelete() {
+    setLoading(true);
+    try {
+      await deleteCourse(courseId);
+      toast.success(t("settings.deleted"));
+      router.push("/courses");
+    } catch {
+      toast.error(t("settings.failedTeacherAction"));
+      setLoading(false);
+      setConfirming(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setConfirming(true)}
+        className="min-h-[44px] bg-metro-error px-4 py-2 text-sm font-bold text-white hover:opacity-90"
+      >
+        {t("settings.delete")}
+      </button>
+      <ConfirmDialog
+        open={confirming}
+        danger
+        pending={loading}
+        title={format(t("settings.confirmDelete"), { title: courseTitle })}
+        message={t("settings.dangerDesc")}
+        confirmLabel={t("settings.delete")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirming(false)}
+      />
+    </>
   );
 }

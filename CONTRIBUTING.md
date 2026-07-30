@@ -52,6 +52,8 @@ chore: update dependencies
 - **Naming** — camelCase for variables/functions, PascalCase for components/types
 - **Imports** — absolute imports via `@/` prefix (configured in tsconfig)
 - **Formatting** — Prettier with default settings
+- **UI** — Metro design system (square corners, solid colors, tokens in `globals.css`); touch targets ≥ 44px; every user-facing string goes through i18n (`useT` / `getServerT`) with key parity in `locales/{id,en}.ts`
+- **Role colors** — admin = purple, instructor = navy, student = Metro green, guardian = deep yellow. Always render roles with `<RoleBadge>` (`src/components/RoleBadge.tsx`); never inline role colors
 
 ## What We're Looking For
 

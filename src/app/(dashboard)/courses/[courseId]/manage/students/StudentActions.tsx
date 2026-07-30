@@ -172,7 +172,7 @@ export function RemoveStudentButton({
       disabled={loading}
       className="text-sm font-medium text-metro-error hover:underline disabled:opacity-50"
     >
-      Remove
+      {t("courseManage.remove")}
     </button>
   );
 }

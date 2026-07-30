@@ -7,6 +7,9 @@ import { useCallback, useEffect, useState } from "react"
 import LocaleProvider from "@/lib/i18n/LocaleProvider"
 import NotificationBell, { type NotificationItem } from "@/components/NotificationBell"
 import MobileNav from "@/components/MobileNav"
+import RoleBadge from "@/components/RoleBadge"
+import ToastProvider from "@/components/ui/Toast"
+import ConfirmDialog from "@/components/ui/ConfirmDialog"
 import { getMyNotifications } from "@/actions/notifications"
 import { useT } from "@/lib/i18n/useT"
 
@@ -32,17 +35,6 @@ function buildAdminNavItems(t: (p: string) => string) {
   ]
 }
 
-function roleBadgeLabel(role: string | null, t: (p: string) => string) {
-  if (!role) return ""
-  const map: Record<string, string> = {
-    ADMIN: t("roles.admin"),
-    INSTRUCTOR: t("roles.instructor"),
-    STUDENT: t("roles.student"),
-    GUARDIAN: t("roles.guardian"),
-  }
-  return map[role] ?? ""
-}
-
 function LayoutBody({ children, role, userName }: Props) {
   const t = useT()
   const navItems = buildNavItems(t)
@@ -50,6 +42,7 @@ function LayoutBody({ children, role, userName }: Props) {
   const pathname = usePathname()
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [confirmSignOut, setConfirmSignOut] = useState(false)
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -70,45 +63,54 @@ function LayoutBody({ children, role, userName }: Props) {
 
   return (
     <div className="min-h-screen bg-metro-bg">
-      <header className="sticky top-0 z-40 flex items-center justify-between bg-metro-blue px-4 py-3 md:hidden">
-        <Link href="/dashboard" className="text-lg font-light lowercase tracking-tight text-white">
+      <header className="sticky top-0 z-40 flex items-center justify-between bg-metro-blue px-4 py-1.5 md:hidden">
+        <Link
+          href="/dashboard"
+          className="flex min-h-[44px] items-center text-lg font-light lowercase tracking-tight text-white"
+        >
           piwulangan
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
           {userName && (
-            <div className="flex flex-col shrink-0">
-              <p className="text-sm font-semibold text-white truncate max-w-[100px]">
+            <div className="mr-1 flex min-w-0 flex-col items-end leading-tight">
+              <span className="max-w-[110px] truncate text-xs font-medium text-white">
                 {displayName}
-              </p>
-              {role && (
-                <span className="metro-badge mt-0.5 bg-white/20 text-white leading-none">
-                  {roleBadgeLabel(role, t)}
-                </span>
-              )}
+              </span>
+              {role && <RoleBadge role={role} className="mt-0.5 !text-[9px] !px-1.5" />}
             </div>
           )}
           <Link
             href="/notifications"
             aria-label={t("nav.notifications")}
-            className={`relative text-xl ${pathname.startsWith("/notifications") ? "" : "opacity-70"}`}
+            className={`relative flex min-h-[44px] min-w-[44px] items-center justify-center text-xl ${
+              pathname.startsWith("/notifications") ? "bg-metro-chrome-dark" : ""
+            }`}
           >
-            🔔
+            <span aria-hidden="true">🔔</span>
             {unreadCount > 0 && (
-              <span className="absolute -right-2.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center bg-metro-error px-1 text-[11px] font-bold text-white">
+              <span className="absolute right-0.5 top-1 flex h-5 min-w-[20px] items-center justify-center bg-metro-error px-1 text-[11px] font-bold text-white">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
           </Link>
           {isAdmin && (
-            <Link href="/admin/users" aria-label={t("nav.userManagement")} className="text-xl opacity-70">
-              👥
+            <Link
+              href="/admin/users"
+              aria-label={t("nav.userManagement")}
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center text-xl ${
+                pathname.startsWith("/admin") ? "bg-metro-chrome-dark" : ""
+              }`}
+            >
+              <span aria-hidden="true">👥</span>
             </Link>
           )}
-          <form action={logout}>
-            <button type="submit" className="px-3 py-1.5 text-sm font-medium text-white/80 hover:text-white">
-              {t("nav.signOut")}
-            </button>
-          </form>
+          <button
+            type="button"
+            onClick={() => setConfirmSignOut(true)}
+            className="flex min-h-[44px] items-center px-3 text-sm font-semibold text-white"
+          >
+            {t("nav.signOut")}
+          </button>
         </div>
       </header>
 
@@ -126,12 +128,12 @@ function LayoutBody({ children, role, userName }: Props) {
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-6 py-2.5 text-sm font-medium transition-colors ${
-                  pathname === item.href
-                    ? "bg-metro-chrome-dark text-white"
-                    : "text-white/80 hover:bg-metro-blue-hover hover:text-white"
+                  pathname === item.href || pathname.startsWith(item.href + "/")
+                    ? "bg-metro-chrome-dark text-white font-semibold"
+                    : "text-white hover:bg-metro-blue-hover"
                 }`}
               >
-                <span>{item.icon}</span>
+                <span aria-hidden="true">{item.icon}</span>
                 {item.label}
               </Link>
             ))}
@@ -143,7 +145,7 @@ function LayoutBody({ children, role, userName }: Props) {
             {isAdmin && (
               <>
                 <div className="pt-4 pb-2">
-                  <p className="px-6 text-xs font-semibold text-white/60 uppercase tracking-wider">
+                  <p className="px-6 text-xs font-semibold text-white/80 uppercase tracking-wider">
                     {t("nav.admin")}
                   </p>
                 </div>
@@ -152,12 +154,12 @@ function LayoutBody({ children, role, userName }: Props) {
                     key={item.href}
                     href={item.href}
                     className={`flex items-center gap-3 px-6 py-2.5 text-sm font-medium transition-colors ${
-                      pathname === item.href
-                        ? "bg-metro-chrome-dark text-white"
-                        : "text-white/80 hover:bg-metro-blue-hover hover:text-white"
+                      pathname === item.href || pathname.startsWith(item.href + "/")
+                        ? "bg-metro-chrome-dark text-white font-semibold"
+                        : "text-white hover:bg-metro-blue-hover"
                     }`}
                   >
-                    <span>{item.icon}</span>
+                    <span aria-hidden="true">{item.icon}</span>
                     {item.label}
                   </Link>
                 ))}
@@ -173,19 +175,17 @@ function LayoutBody({ children, role, userName }: Props) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                  {role && (
-                    <span className="metro-badge mt-0.5 bg-white/20 text-white">
-                      {roleBadgeLabel(role, t)}
-                    </span>
-                  )}
+                  {role && <RoleBadge role={role} className="mt-0.5" />}
                 </div>
               </div>
             )}
-            <form action={logout}>
-              <button type="submit" className="w-full text-left text-sm text-white/70 hover:text-white">
-                {t("nav.signOut")}
-              </button>
-            </form>
+            <button
+              type="button"
+              onClick={() => setConfirmSignOut(true)}
+              className="w-full min-h-[44px] text-left text-sm font-medium text-white hover:underline"
+            >
+              {t("nav.signOut")}
+            </button>
           </div>
         </aside>
 
@@ -193,6 +193,15 @@ function LayoutBody({ children, role, userName }: Props) {
           <div className="p-4 md:p-8">{children}</div>
         </main>
       </div>
+
+      <ConfirmDialog
+        open={confirmSignOut}
+        title={t("nav.signOutConfirm")}
+        confirmLabel={t("nav.signOut")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={() => logout()}
+        onCancel={() => setConfirmSignOut(false)}
+      />
 
       <MobileNav />
     </div>
@@ -207,7 +216,9 @@ export default function LayoutContent({
 }: Props & { initialLocale: "id" | "en" }) {
   return (
     <LocaleProvider initial={initialLocale}>
-      <LayoutBody role={role} userName={userName}>{children}</LayoutBody>
+      <ToastProvider>
+        <LayoutBody role={role} userName={userName}>{children}</LayoutBody>
+      </ToastProvider>
     </LocaleProvider>
   )
 }

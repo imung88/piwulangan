@@ -58,7 +58,7 @@ export default async function AnnouncementsPage({
 
   const announcements = await db.announcement.findMany({
     where: { courseId },
-    include: { author: true },
+    include: { author: { select: { id: true, name: true } } },
     orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
   });
 

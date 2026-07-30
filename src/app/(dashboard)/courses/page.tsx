@@ -20,7 +20,7 @@ export default async function CoursesPage() {
   if (role === "ADMIN") {
     courses = await db.course.findMany({
       include: {
-        instructor: true,
+        instructor: { select: { id: true, name: true } },
         _count: { select: { enrollments: true, modules: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -42,7 +42,7 @@ export default async function CoursesPage() {
         include: {
           course: {
             include: {
-              instructor: true,
+              instructor: { select: { id: true, name: true } },
               modules: { include: { lessons: true } },
             },
           },
@@ -103,7 +103,7 @@ export default async function CoursesPage() {
               include: {
                 course: {
                   include: {
-                    instructor: true,
+                    instructor: { select: { id: true, name: true } },
                     _count: { select: { enrollments: true, modules: true } },
                   },
                 },

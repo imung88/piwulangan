@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useT, format } from "@/lib/i18n/useT";
+import RoleBadge from "@/components/RoleBadge";
 import {
   createUser,
   updateUser,
@@ -86,14 +87,14 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
   const errorText = (error: unknown) =>
     typeof error === "string"
       ? error
-      : Object.values(error as Record<string, string[]>).flat()[0] ?? "Validation error";
+      : Object.values(error as Record<string, string[]>).flat()[0] ?? t("adminUsers.validationError");
 
   const handleCreateUser = async (formData: FormData) => {
     const result = await createUser(formData);
     if (result?.error) {
       setMessage({ type: "error", text: errorText(result.error) });
     } else {
-      setMessage({ type: "success", text: "User created successfully" });
+      setMessage({ type: "success", text: t("adminUsers.userCreated") });
       setShowCreateForm(false);
       router.refresh();
     }
@@ -104,7 +105,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     if (result?.error) {
       setMessage({ type: "error", text: errorText(result.error) });
     } else {
-      setMessage({ type: "success", text: "User updated successfully" });
+      setMessage({ type: "success", text: t("adminUsers.userUpdated") });
       setEditingUser(null);
       router.refresh();
     }
@@ -115,7 +116,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     if (result?.error) {
       setMessage({ type: "error", text: result.error as string });
     } else {
-      setMessage({ type: "success", text: "User deactivated" });
+      setMessage({ type: "success", text: t("adminUsers.userDeactivated") });
       router.refresh();
     }
   };
@@ -125,7 +126,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     if (result?.error) {
       setMessage({ type: "error", text: result.error as string });
     } else {
-      setMessage({ type: "success", text: "User activated" });
+      setMessage({ type: "success", text: t("adminUsers.userActivated") });
       router.refresh();
     }
   };
@@ -135,7 +136,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     if (result?.error) {
       setMessage({ type: "error", text: result.error as string });
     } else {
-      setMessage({ type: "success", text: "Password reset successfully" });
+      setMessage({ type: "success", text: t("adminUsers.passwordResetDone") });
       setResetPasswordUser(null);
     }
   };
@@ -163,7 +164,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     if (result?.error) {
       setMessage({ type: "error", text: result.error as string });
     } else {
-      setMessage({ type: "success", text: "Guardian linked to student" });
+      setMessage({ type: "success", text: t("adminUsers.guardianLinked") });
       setSelectedStudentId("");
       // Refresh linked users
       const updated = await getLinkedStudents(linkingUser.id);
@@ -177,7 +178,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     if (result?.error) {
       setMessage({ type: "error", text: result.error as string });
     } else {
-      setMessage({ type: "success", text: "Guardian unlinked from student" });
+      setMessage({ type: "success", text: t("adminUsers.guardianUnlinked") });
       // Refresh linked users
       const updated = await getLinkedStudents(linkingUser.id);
       setLinkedUsers(updated);
@@ -190,7 +191,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     if (result?.error) {
       setMessage({ type: "error", text: result.error as string });
     } else {
-      setMessage({ type: "success", text: "Guardian linked to student" });
+      setMessage({ type: "success", text: t("adminUsers.guardianLinked") });
       setSelectedGuardianId("");
       // Refresh linked users
       const updated = await getLinkedGuardians(linkingUser.id);
@@ -204,7 +205,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     if (result?.error) {
       setMessage({ type: "error", text: result.error as string });
     } else {
-      setMessage({ type: "success", text: "Guardian unlinked from student" });
+      setMessage({ type: "success", text: t("adminUsers.guardianUnlinked") });
       // Refresh linked users
       const updated = await getLinkedGuardians(linkingUser.id);
       setLinkedUsers(updated);
@@ -230,13 +231,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
       )}
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-2">
         <input
           type="text"
           placeholder={t("adminUsers.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
+          className="min-w-[12rem] flex-1 border-2 border-metro-border bg-metro-surface px-3 py-2 text-sm focus:border-metro-blue focus:outline-none"
         />
         <select
           value={roleFilter}
@@ -257,8 +258,59 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
         </button>
       </div>
 
-      {/* Users Table */}
-      <div className="border border-metro-border bg-metro-surface overflow-x-auto">
+      {/* Users list */}
+      <div className="border border-metro-border bg-metro-surface">
+        {/* Mobile cards */}
+        <div className="divide-y divide-metro-border md:hidden">
+          {paginatedUsers.map((user) => (
+            <div
+              key={user.id}
+              className={"p-4" + (!user.active ? " bg-metro-bg" : "")}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-metro-text truncate">
+                    {user.name}
+                  </p>
+                  <div className="text-sm text-metro-text-secondary">
+                    {user.email && <div className="truncate">{user.email}</div>}
+                    {user.phone && <div className="truncate">{user.phone}</div>}
+                    {!user.email && !user.phone && <div>—</div>}
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setMenu(
+                      menu?.user.id === user.id
+                        ? null
+                        : { user, x: rect.right, y: rect.bottom }
+                    );
+                  }}
+                  aria-label={t("adminUsers.actions")}
+                  className="min-h-[44px] min-w-[44px] border-2 border-metro-border font-bold text-metro-text hover:bg-metro-bg shrink-0"
+                >
+                  ⋯
+                </button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <RoleBadge role={user.role} />
+                <span
+                  className={`metro-badge ${
+                    user.active
+                      ? "bg-metro-green-light text-metro-green"
+                      : "bg-metro-error text-white"
+                  }`}
+                >
+                  {user.active ? t("adminUsers.active") : t("adminUsers.inactive")}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-metro-border">
           <thead className="bg-metro-bg">
             <tr>
@@ -293,19 +345,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`metro-badge ${
-                      user.role === "ADMIN"
-                        ? "bg-metro-chrome-dark text-white"
-                        : user.role === "INSTRUCTOR"
-                        ? "bg-metro-blue text-white"
-                        : user.role === "STUDENT"
-                        ? "bg-metro-green-light text-metro-green"
-                        : "bg-metro-blue-light text-metro-blue"
-                    }`}
-                  >
-                    {user.role}
-                  </span>
+                  <RoleBadge role={user.role} />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
@@ -329,7 +369,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
                       );
                     }}
                     aria-label={t("adminUsers.actions")}
-                    className="border-2 border-metro-border px-3 py-1 font-bold text-metro-text hover:bg-metro-bg"
+                    className="min-h-[44px] min-w-[44px] border-2 border-metro-border font-bold text-metro-text hover:bg-metro-bg"
                   >
                     ⋯
                   </button>
@@ -338,6 +378,7 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
             ))}
           </tbody>
         </table>
+        </div>
         {filteredUsers.length === 0 && (
           <div className="p-6 text-center text-metro-text-secondary">{t("adminUsers.noUsersFound")}</div>
         )}

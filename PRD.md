@@ -383,10 +383,17 @@ The admin or instructor manages the schedule for their courses:
 | Create session | Admin, Instructor | Add a session to the calendar with date, time, course, instructor |
 | Edit session | Admin, Instructor | Change date, time, or reassign instructor |
 | Cancel session | Admin, Instructor | Cancel with optional reason |
-| Mark attendance | Admin, Instructor | Record present / no-show after session |
+| Mark attendance | Admin, Instructor | Record Present / Late / Absent + per-attendee notes on the session's detail page (on or after the session date) |
 | Set availability | Instructor | Define weekly available hours (used for student booking if enabled) |
 | Block dates | Instructor | Block holidays, sick days, etc. |
 | Enable student booking | Admin | Toggle per course: students can self-book from available slots |
+
+Each session has an individual detail page (`/courses/[id]/schedule/[sessionId]`), reached
+by clicking a session in the list or week calendar. Managers do per-session work there —
+edit details, assign students, record attendance, cancel — while students and guardians see
+a read-only view of their own attendance. Edits respect locks: attendance is editable on the
+session date and past sessions; details and roster on today and future dates; cancelled
+sessions are read-only.
 
 **Admin schedule view (all instructors, all courses):**
 
@@ -639,14 +646,13 @@ The module system is designed for extensibility. These modules are not built in 
 │   │   ├── /lessons/[lessonId] # Lesson viewer
 │   │   ├── /assignments        # (if assignments enabled)
 │   │   │   └── /[assignmentId]
-│   │   ├── /announcements      # Per-course announcements
+│   │   ├── /announcements      # Per-course announcements (owners manage inline)
 │   │   ├── /grades             # (if gradebook enabled)
 │   │   └── /members            # Course roster
 │   │
 │   └── /courses/[courseId]/manage
 │       ├── /manage/content     # Content editor
 │       ├── /manage/students    # Roster + progress
-│       ├── /manage/announcements # Announcement management
 │       ├── /manage/settings    # Course settings + module toggles
 │       └── /manage/grades      # (if gradebook enabled)
 │

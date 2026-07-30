@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useT } from "@/lib/i18n/useT";
+import { useT, format } from "@/lib/i18n/useT";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import {
   updateLesson,
   deleteLesson,
@@ -66,6 +67,9 @@ export function LessonEditForm({
   const [editResUrl, setEditResUrl] = useState("");
   const [editResType, setEditResType] = useState<"LINK" | "VIDEO" | "DOCUMENT">("LINK");
   const [resourceError, setResourceError] = useState<string | null>(null);
+  const [deletingRes, setDeletingRes] = useState<Resource | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -83,14 +87,14 @@ export function LessonEditForm({
           typeof result.error === "string"
             ? result.error
             : Object.values(result.error).flat().join(", ");
-        setError(msgs || t("schedule.saving"));
+        setError(msgs || t("lesson.failedSave"));
         return;
       }
       setExpanded(false);
       router.refresh();
     } catch {
       setSaving(false);
-      setError(t("lesson.noContent"));
+      setError(t("lesson.failedSave"));
     }
   }
 
@@ -115,7 +119,7 @@ export function LessonEditForm({
       );
       if (result?.error) {
         setResourceError(
-          typeof result.error === "string" ? result.error : "Failed to add resource"
+          typeof result.error === "string" ? result.error : t("lesson.failedResource")
         );
         return;
       }
@@ -124,17 +128,19 @@ export function LessonEditForm({
       setNewResType("LINK");
       router.refresh();
     } catch {
-      setResourceError("Failed to add resource");
+      setResourceError(t("lesson.failedResource"));
     }
   }
 
-  async function handleDeleteResource(resourceId: string) {
-    if (!window.confirm(t("lesson.deleteResource"))) return;
+  async function handleDeleteResource() {
+    if (!deletingRes) return;
     try {
-      await deleteResource(resourceId);
+      await deleteResource(deletingRes.id);
+      setDeletingRes(null);
       router.refresh();
     } catch {
-      setResourceError("Failed to delete resource");
+      setDeletingRes(null);
+      setResourceError(t("lesson.failedResource"));
     }
   }
 
@@ -157,14 +163,14 @@ export function LessonEditForm({
       });
       if (result?.error) {
         setResourceError(
-          typeof result.error === "string" ? result.error : "Failed to update resource"
+          typeof result.error === "string" ? result.error : t("lesson.failedResource")
         );
         return;
       }
       setEditingResId(null);
       router.refresh();
     } catch {
-      setResourceError("Failed to update resource");
+      setResourceError(t("lesson.failedResource"));
     }
   }
 
@@ -306,16 +312,16 @@ export function LessonEditForm({
                             <p className="text-xs text-metro-text-secondary truncate">{res.url}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
                           <button
                             onClick={() => startEditResource(res)}
-                            className="text-xs text-metro-blue hover:underline"
+                            className="min-h-[44px] px-2 text-xs font-medium text-metro-blue hover:underline"
                           >
                             {t("lesson.editResource")}
                           </button>
                           <button
-                            onClick={() => handleDeleteResource(res.id)}
-                            className="text-xs text-metro-error hover:underline"
+                            onClick={() => setDeletingRes(res)}
+                            className="min-h-[44px] px-2 text-xs font-medium text-metro-error hover:underline"
                           >
                             {t("lesson.deleteResource")}
                           </button>
@@ -395,10 +401,11 @@ export function LessonEditForm({
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-metro-text">Markdown Guide</h3>
+                  <h3 className="text-sm font-semibold text-metro-text">{t("lesson.markdownGuide")}</h3>
                   <button
                     onClick={() => setShowGuide(false)}
-                    className="text-metro-text-secondary hover:text-metro-text text-lg leading-none"
+                    aria-label={t("lesson.cancel")}
+                    className="flex min-h-[44px] min-w-[44px] items-center justify-center text-metro-text-secondary hover:text-metro-text text-lg leading-none"
                   >
                     &times;
                   </button>
@@ -467,13 +474,22 @@ export function LessonEditForm({
             {error && <span className="text-sm text-metro-error">{error}</span>}
           </div>
         </div>
+        <ConfirmDialog
+          open={deletingRes !== null}
+          danger
+          title={format(t("lesson.confirmDeleteResource"), { title: deletingRes?.title ?? "" })}
+          confirmLabel={t("lesson.deleteResource")}
+          cancelLabel={t("common.cancel")}
+          onConfirm={handleDeleteResource}
+          onCancel={() => setDeletingRes(null)}
+        />
       </div>
     );
   }
 
   // Collapsed: normal lesson row
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <div className="flex items-center justify-between px-4 py-2">
       <div>
         <p className="text-sm font-medium">
           {order}. {title}
@@ -481,47 +497,61 @@ export function LessonEditForm({
         <div className="flex items-center gap-3 mt-1">
           {initialDuration && (
             <span className="text-xs text-metro-text-secondary">
-              ~{initialDuration} min
+              {format(t("lesson.minShort"), { n: initialDuration })}
             </span>
           )}
           {resources.length > 0 && (
             <span className="text-xs text-metro-text-secondary">
-              📎 {resources.length} resources
+              📎 {format(t("lesson.resourceCount"), { n: resources.length })}
             </span>
           )}
           <span className="text-xs text-metro-text-secondary">
             {initialContent
-              ? `${initialContent.length} chars`
-              : "No content"}
+              ? format(t("lesson.charCount"), { n: initialContent.length })
+              : t("lesson.noContent")}
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <button
           onClick={() => setExpanded(true)}
-          className="text-xs text-metro-blue hover:underline"
+          className="min-h-[44px] px-2 text-xs font-medium text-metro-blue hover:underline"
         >
-          {t("lesson.editResource")}
+          {t("lesson.edit")}
         </button>
         <Link
           href={`/courses/${courseId}/lessons/${lessonId}`}
-          className="text-xs text-metro-blue hover:underline"
+          className="flex min-h-[44px] items-center px-2 text-xs font-medium text-metro-blue hover:underline"
         >
           {t("lesson.view")}
         </Link>
-        <form
-          action={async () => {
-            await deleteLesson(lessonId);
-          }}
+        <button
+          onClick={() => setConfirmingDelete(true)}
+          className="min-h-[44px] px-2 text-xs font-medium text-metro-error hover:underline"
         >
-          <button
-            type="submit"
-            className="text-xs text-metro-error hover:underline"
-          >
-            Delete
-          </button>
-        </form>
+          {t("lesson.delete")}
+        </button>
       </div>
+      <ConfirmDialog
+        open={confirmingDelete}
+        danger
+        pending={deleting}
+        title={format(t("lesson.confirmDelete"), { title })}
+        message={t("lesson.deleteWarn")}
+        confirmLabel={t("lesson.delete")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={async () => {
+          setDeleting(true);
+          try {
+            await deleteLesson(lessonId);
+          } finally {
+            setDeleting(false);
+            setConfirmingDelete(false);
+          }
+          router.refresh();
+        }}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </div>
   );
 }

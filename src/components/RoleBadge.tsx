@@ -2,16 +2,29 @@
 
 import { useT } from "@/lib/i18n/useT"
 
-const BADGES: Record<string, { labelKey: string; color: string }> = {
-  ADMIN: { labelKey: "roles.admin", color: "bg-metro-chrome-dark text-white" },
-  INSTRUCTOR: { labelKey: "roles.instructor", color: "bg-metro-blue text-white" },
-  STUDENT: { labelKey: "roles.student", color: "bg-metro-green text-white" },
-  GUARDIAN: { labelKey: "roles.guardian", color: "bg-metro-blue-light text-metro-blue" },
+// App-wide role color convention:
+// admin=purple, instructor=navy, student=metro green, guardian=deep yellow
+export const ROLE_BADGE_STYLES: Record<string, string> = {
+  ADMIN: "bg-metro-role-admin text-white",
+  INSTRUCTOR: "bg-metro-role-instructor text-white",
+  STUDENT: "bg-metro-role-student text-white",
+  GUARDIAN: "bg-metro-role-guardian text-white",
 }
 
-export default function RoleBadge({ role }: { role: string | null }) {
+export const ROLE_LABEL_KEYS: Record<string, string> = {
+  ADMIN: "roles.admin",
+  INSTRUCTOR: "roles.instructor",
+  STUDENT: "roles.student",
+  GUARDIAN: "roles.guardian",
+}
+
+export default function RoleBadge({ role, className }: { role: string | null; className?: string }) {
   const t = useT()
-  const entry = BADGES[role ?? ""]
-  if (!entry) return <span className="text-metro-text-secondary">Unknown</span>
-  return <span className={`metro-badge mt-1 ${entry.color}`}>{t(entry.labelKey)}</span>
+  const key = role ?? ""
+  if (!ROLE_LABEL_KEYS[key]) return <span className="text-metro-text-secondary">Unknown</span>
+  return (
+    <span className={`metro-badge ${ROLE_BADGE_STYLES[key]} ${className ?? ""}`}>
+      {t(ROLE_LABEL_KEYS[key])}
+    </span>
+  )
 }
