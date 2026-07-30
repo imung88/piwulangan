@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation"
 import { useT } from "@/lib/i18n/useT"
 import LanguageSelector from "@/components/LanguageSelector"
 import RoleBadge from "@/components/RoleBadge"
-import { updateProfile } from "@/actions/profile"
+import { updateProfile, changePassword } from "@/actions/profile"
 
 type Props = {
+  canChangePassword: boolean
+  canEditProfile: boolean
   user: {
     name: string
     email: string | null
@@ -19,13 +21,18 @@ type Props = {
   }
 }
 
-export default function ProfileContent({ user }: Props) {
+export default function ProfileContent({ user, canChangePassword, canEditProfile }: Props) {
   const t = useT()
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [errors, setErrors] = useState<Record<string, string[]>>({})
+
+  const [changingPw, setChangingPw] = useState(false)
+  const [savingPw, setSavingPw] = useState(false)
+  const [pwSaved, setPwSaved] = useState(false)
+  const [pwErrors, setPwErrors] = useState<Record<string, string[]>>({})
 
   const displayName = user.name || "—"
   const initial = (displayName === "—" ? "?" : displayName).charAt(0).toUpperCase()
@@ -45,6 +52,24 @@ export default function ProfileContent({ user }: Props) {
       setEditing(false)
       setSaved(true)
       router.refresh()
+    }
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setPwErrors({})
+    setPwSaved(false)
+    setSavingPw(true)
+
+    const form = e.currentTarget
+    const result = await changePassword(new FormData(form))
+    setSavingPw(false)
+    if (result?.error) {
+      setPwErrors(result.error)
+    } else {
+      form.reset()
+      setChangingPw(false)
+      setPwSaved(true)
     }
   }
 
@@ -91,9 +116,13 @@ export default function ProfileContent({ user }: Props) {
               <RoleBadge role={user.role} className="mt-1" />
             </div>
             {saved && <p className="text-sm font-medium text-metro-green">{t("profile.saved")}</p>}
-            <button type="button" onClick={() => { setEditing(true); setSaved(false) }} className="metro-btn mt-2">
-              {t("profile.edit")}
-            </button>
+            {canEditProfile ? (
+              <button type="button" onClick={() => { setEditing(true); setSaved(false) }} className="metro-btn mt-2">
+                {t("profile.edit")}
+              </button>
+            ) : (
+              <p className="mt-2 text-sm text-metro-text-secondary">{t("profile.envManaged")}</p>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 p-8">
@@ -156,6 +185,61 @@ export default function ProfileContent({ user }: Props) {
           </form>
         )}
       </div>
+
+      <h2 className="metro-section-title">{t("profile.changePassword")}</h2>
+      {!canChangePassword ? (
+        <div className="metro-card p-6">
+          <p className="text-sm text-metro-text-secondary">{t("profile.passwordEnvManaged")}</p>
+        </div>
+      ) : (
+        <div className="metro-card p-6">
+          {!changingPw ? (
+            <div className="space-y-3">
+              {pwSaved && <p className="text-sm font-medium text-metro-green">{t("profile.passwordChanged")}</p>}
+              <button type="button" onClick={() => { setChangingPw(true); setPwSaved(false) }} className="metro-btn">
+                {t("profile.changePassword")}
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-metro-text-secondary">
+                  {t("profile.currentPassword")}
+                </label>
+                <input id="currentPassword" name="currentPassword" type="password" required autoComplete="current-password" className="metro-input mt-1" />
+                {pwErrors.currentPassword && <p className="mt-1 text-sm text-metro-error">{pwErrors.currentPassword[0]}</p>}
+              </div>
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-metro-text-secondary">
+                  {t("profile.newPassword")}
+                </label>
+                <input id="newPassword" name="newPassword" type="password" required minLength={6} autoComplete="new-password" className="metro-input mt-1" />
+                {pwErrors.newPassword && <p className="mt-1 text-sm text-metro-error">{pwErrors.newPassword[0]}</p>}
+              </div>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-metro-text-secondary">
+                  {t("profile.confirmPassword")}
+                </label>
+                <input id="confirmPassword" name="confirmPassword" type="password" required minLength={6} autoComplete="new-password" className="metro-input mt-1" />
+                {pwErrors.confirmPassword && <p className="mt-1 text-sm text-metro-error">{pwErrors.confirmPassword[0]}</p>}
+              </div>
+              {pwErrors.form && <div className="metro-error">{pwErrors.form[0]}</div>}
+              <div className="flex gap-3">
+                <button type="submit" disabled={savingPw} className="metro-btn">
+                  {savingPw ? t("profile.saving") : t("profile.save")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setChangingPw(false); setPwErrors({}) }}
+                  className="border-2 border-metro-border px-4 py-2 text-sm font-medium text-metro-text hover:bg-metro-bg"
+                >
+                  {t("profile.cancel")}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
 
       <h2 className="metro-section-title">{t("profile.settings")}</h2>
       <LanguageSelector />

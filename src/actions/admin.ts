@@ -7,6 +7,7 @@ import { serverT } from "@/lib/i18n/serverT";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { normalizePhone } from "@/lib/phone";
+import { isSuperadminId, isSuperadminEmail, isReservedSuperadminName } from "@/lib/superadmin";
 
 const createUserSchema = z.object({
   name: z.string().min(2).max(100),
@@ -47,6 +48,11 @@ async function resolveContact(
 
   if (!email && !phone) {
     return { error: { form: [await serverT("errors.identifierRequired")] } };
+  }
+
+  // The superadmin email is reserved for the env-controlled account.
+  if (email && !isSuperadminId(excludeUserId) && isSuperadminEmail(email)) {
+    return { error: { email: [await serverT("errors.emailExists")] } };
   }
 
   if (email) {
@@ -132,6 +138,10 @@ export async function createUser(formData: FormData): Promise<{ success?: boolea
 
   const { name, password, role } = parsed.data;
 
+  if (isReservedSuperadminName(name)) {
+    return { error: { name: [await serverT("errors.nameReserved")] } };
+  }
+
   const contact = await resolveContact(parsed.data.email, parsed.data.phone);
   if ("error" in contact) {
     return { error: contact.error };
@@ -152,6 +162,10 @@ export async function updateUser(userId: string, formData: FormData): Promise<{ 
   if (!session?.user) throw new Error("Not authenticated");
   if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
 
+  if (isSuperadminId(userId)) {
+    return { error: { form: [await serverT("errors.superadminReadOnly")] } };
+  }
+
   const parsed = updateUserSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -164,6 +178,10 @@ export async function updateUser(userId: string, formData: FormData): Promise<{ 
 
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors };
+  }
+
+  if (isReservedSuperadminName(parsed.data.name)) {
+    return { error: { name: [await serverT("errors.nameReserved")] } };
   }
 
   const contact = await resolveContact(parsed.data.email, parsed.data.phone, userId);
@@ -193,6 +211,10 @@ export async function deactivateUser(userId: string): Promise<{ success?: boolea
   if (!session?.user) throw new Error("Not authenticated");
   if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
 
+  if (isSuperadminId(userId)) {
+    return { error: await serverT("errors.superadminReadOnly") };
+  }
+
   // Prevent deactivating yourself
   if ((session.user as any).id === userId) {
     return { error: await serverT("errors.cannotDeactivateSelf") };
@@ -212,6 +234,10 @@ export async function activateUser(userId: string): Promise<{ success?: boolean;
   if (!session?.user) throw new Error("Not authenticated");
   if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
 
+  if (isSuperadminId(userId)) {
+    return { error: await serverT("errors.superadminReadOnly") };
+  }
+
   await db.user.update({
     where: { id: userId },
     data: { active: true },
@@ -225,6 +251,10 @@ export async function resetPassword(userId: string, newPassword: string): Promis
   const session = await auth();
   if (!session?.user) throw new Error("Not authenticated");
   if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+
+  if (isSuperadminId(userId)) {
+    return { error: await serverT("errors.superadminReadOnly") };
+  }
 
   if (!newPassword || newPassword.length < 6) {
     return { error: await serverT("errors.passwordMin") };

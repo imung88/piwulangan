@@ -6,7 +6,15 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // Clean existing data
+  const isProd = process.env.NODE_ENV === "production";
+  if (isProd) {
+    // The admin is provisioned at login from SUPERADMIN_EMAIL/PASSWORD, and
+    // demo data must never touch production. Nothing to seed here.
+    console.log("⏭️  Production: skipping demo seed (admin comes from env at login).");
+    return;
+  }
+
+  // Clean existing data (dev/demo only — never wipe production)
   await prisma.notification.deleteMany();
   await prisma.sessionAttendee.deleteMany();
   await prisma.classSession.deleteMany();
@@ -24,18 +32,11 @@ async function main() {
   await prisma.guardianStudent.deleteMany();
   await prisma.user.deleteMany();
 
+  // ─── Dev/demo data below (never runs in production) ───
+
   const password = await hash("password123", 12);
 
   // ─── Users ───
-
-  const admin = await prisma.user.create({
-    data: {
-      name: "Admin",
-      email: "admin@example.com",
-      passwordHash: password,
-      role: Role.ADMIN,
-    },
-  });
 
   const teacherA = await prisma.user.create({
     data: {

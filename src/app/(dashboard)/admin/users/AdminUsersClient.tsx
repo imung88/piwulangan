@@ -17,6 +17,7 @@ import {
   getLinkedStudents,
   getLinkedGuardians,
 } from "@/actions/guardians";
+import { SUPERADMIN_ID } from "@/lib/superadmin";
 
 type User = {
   id: string;
@@ -424,40 +425,48 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
             className="fixed z-50 w-44 border-2 border-metro-border bg-metro-surface shadow-lg"
             style={{ top: menu.y + 4, left: Math.max(8, menu.x - 176) }}
           >
-            <button
-              onClick={() => { setEditingUser(menu.user); setMenu(null); }}
-              className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
-            >
-              {t("adminUsers.edit")}
-            </button>
-            <button
-              onClick={() => { setResetPasswordUser(menu.user); setMenu(null); }}
-              className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
-            >
-              {t("adminUsers.resetPassword")}
-            </button>
-            {(menu.user.role === "GUARDIAN" || menu.user.role === "STUDENT") && (
-              <button
-                onClick={() => { setLinkingUser(menu.user); setMenu(null); }}
-                className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
-              >
-                {t("adminUsers.link")}
-              </button>
-            )}
-            {menu.user.active ? (
-              <button
-                onClick={() => { handleDeactivate(menu.user.id); setMenu(null); }}
-                className="block w-full px-4 py-2 text-left text-sm text-metro-error hover:bg-metro-bg"
-              >
-                {t("adminUsers.deactivate")}
-              </button>
+            {menu.user.id === SUPERADMIN_ID ? (
+              <p className="px-4 py-2 text-sm text-metro-text-secondary">
+                {t("adminUsers.superadminManaged")}
+              </p>
             ) : (
-              <button
-                onClick={() => { handleActivate(menu.user.id); setMenu(null); }}
-                className="block w-full px-4 py-2 text-left text-sm text-metro-green hover:bg-metro-bg"
-              >
-                {t("adminUsers.activate")}
-              </button>
+              <>
+                <button
+                  onClick={() => { setEditingUser(menu.user); setMenu(null); }}
+                  className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
+                >
+                  {t("adminUsers.edit")}
+                </button>
+                <button
+                  onClick={() => { setResetPasswordUser(menu.user); setMenu(null); }}
+                  className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
+                >
+                  {t("adminUsers.resetPassword")}
+                </button>
+                {(menu.user.role === "GUARDIAN" || menu.user.role === "STUDENT") && (
+                  <button
+                    onClick={() => { setLinkingUser(menu.user); setMenu(null); }}
+                    className="block w-full px-4 py-2 text-left text-sm text-metro-text hover:bg-metro-bg"
+                  >
+                    {t("adminUsers.link")}
+                  </button>
+                )}
+                {menu.user.active ? (
+                  <button
+                    onClick={() => { handleDeactivate(menu.user.id); setMenu(null); }}
+                    className="block w-full px-4 py-2 text-left text-sm text-metro-error hover:bg-metro-bg"
+                  >
+                    {t("adminUsers.deactivate")}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { handleActivate(menu.user.id); setMenu(null); }}
+                    className="block w-full px-4 py-2 text-left text-sm text-metro-green hover:bg-metro-bg"
+                  >
+                    {t("adminUsers.activate")}
+                  </button>
+                )}
+              </>
             )}
           </div>
         </>

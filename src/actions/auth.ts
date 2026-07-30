@@ -2,11 +2,23 @@
 
 import { hash } from "bcryptjs";
 import { z } from "zod";
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
 import { isEmail, normalizePhone } from "@/lib/phone";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { isReservedSuperadminName } from "@/lib/superadmin";
 import { AuthError } from "next-auth";
+
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  return (
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    h.get("x-real-ip")?.trim() ||
+    "unknown"
+  );
+}
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -15,6 +27,12 @@ const signupSchema = z.object({
 });
 
 export async function signup(formData: FormData) {
+  const ip = await clientIp();
+  const rl = checkRateLimit(`signup:${ip}`, { limit: 10, windowMs: 60 * 60 * 1000 });
+  if (!rl.allowed) {
+    return { error: { form: [await serverT("errors.tooManyAttempts")] } };
+  }
+
   const parsed = signupSchema.safeParse({
     name: formData.get("name"),
     identifier: formData.get("identifier"),
@@ -27,6 +45,10 @@ export async function signup(formData: FormData) {
 
   const { name, password } = parsed.data;
   const identifier = parsed.data.identifier.trim();
+
+  if (isReservedSuperadminName(name)) {
+    return { error: { name: [await serverT("errors.nameReserved")] } };
+  }
 
   let email: string | null = null;
   let phone: string | null = null;
@@ -81,6 +103,13 @@ export async function signup(formData: FormData) {
 }
 
 export async function login(formData: FormData) {
+  const ip = await clientIp();
+  const identifier = String(formData.get("identifier") ?? "").trim().toLowerCase();
+  const rl = checkRateLimit(`login:${ip}:${identifier}`);
+  if (!rl.allowed) {
+    return { error: await serverT("errors.tooManyAttempts") };
+  }
+
   try {
     await signIn("credentials", {
       identifier: formData.get("identifier"),

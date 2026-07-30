@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import ProfileContent from "./ProfileContent"
 import { db } from "@/lib/db"
+import { isSuperadminId } from "@/lib/superadmin"
 
 export default async function ProfilePage() {
   const { auth } = await import("@/lib/auth")
@@ -26,8 +27,12 @@ export default async function ProfilePage() {
     redirect("/login")
   }
 
+  const isSuperadmin = isSuperadminId((session.user as { id: string }).id)
+
   return (
     <ProfileContent
+      canChangePassword={!isSuperadmin}
+      canEditProfile={!isSuperadmin}
       user={{
         ...user,
         dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().slice(0, 10) : null,

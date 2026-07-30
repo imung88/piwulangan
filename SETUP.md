@@ -36,12 +36,16 @@ npm install
 cp .env.example .env.local
 ```
 
-The default `.env.local` works out of the box:
+Edit `.env.local`:
 
 ```
 DATABASE_URL="file:./dev.db"
 AUTH_SECRET="replac…ring"
 NEXTAUTH_URL="http://localhost:3000"
+
+# Superadmin login — you log in with these directly (no seeding needed).
+SUPERADMIN_EMAIL="you@example.com"
+SUPERADMIN_PASSWORD="choose-a-strong-password"
 ```
 
 Generate a random `AUTH_SECRET`:
@@ -51,6 +55,10 @@ openssl rand -base64 32
 ```
 
 Paste the output as the value of `AUTH_SECRET` in `.env.local`.
+
+> The admin account is provisioned automatically the first time you log in with
+> `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` — no seed required. Change these
+> values (here, or in host env for production) to change the admin login.
 
 > Note: Prisma also reads `.env` (not just `.env.local`), so keep `DATABASE_URL` in both if you customize it.
 
@@ -72,13 +80,17 @@ This creates `prisma/dev.db` with all tables.
 npm run db:seed
 ```
 
-This creates sample users, courses, lessons, and enrollments.
+This creates sample courses, lessons, and enrollments (dev only).
 
-**Test accounts (all passwords: `password123`):**
+**Admin:** you don't seed an admin — just log in with the `SUPERADMIN_EMAIL` /
+`SUPERADMIN_PASSWORD` you set in Step 3, and the admin account (name `superadmin`)
+is created automatically on first login.
+
+**Demo accounts — local dev only** (all passwords: `password123`). These are
+**not** created when `NODE_ENV=production`:
 
 | Role | Email | What you can do |
 |---|---|---|
-| Admin | `admin@example.com` | Everything — manage users, courses, schedules |
 | Instructor | `teacher@example.com` | Manage own courses, view own students |
 | Instructor | `teacherb@example.com` | Second teacher (Piano 101) |
 | Student | `alice@example.com` | View enrolled courses, track progress |
@@ -187,7 +199,7 @@ npm run db:reset     # Reset database (drop + migrate + seed)
 
 ## What to Try After Setup
 
-1. **Log in as admin** (`admin@example.com`) → see admin dashboard, create a course
+1. **Log in as admin** (your `SUPERADMIN_EMAIL`) → see admin dashboard, create a course
 2. **Log in as teacher** (`teacher@example.com`) → see "English Basics", edit content, view student progress
 3. **Log in as Alice** (`alice@example.com`) → see 2 courses, mark lessons complete, watch progress bar grow
 4. **Log in as guardian** (`guardian@example.com`) → see Alice's progress (read-only)
