@@ -42,7 +42,7 @@ chore: update dependencies
 2. **Describe what you did** and why in the PR description.
 3. **Include screenshots** if you changed the UI.
 4. **Make sure it builds** — run `npm run build` before submitting.
-5. **Make sure it's clean** — run `npm run lint` before submitting.
+5. **Make sure it's clean** — run `npm run lint` before submitting. (Linting is plain ESLint 9 via `eslint .`, using the flat config in `eslint.config.mjs` — not `next lint`.)
 6. **Update docs** if you changed behavior.
 
 ## Code Style

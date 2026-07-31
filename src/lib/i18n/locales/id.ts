@@ -39,7 +39,7 @@ export default {
     noAccount: "Belum punya akun?",
     signUp: "Daftar",
     createAccount: "Buat akun Anda",
-    joinPiwulangan: "Bergabung dengan Piwulangan untuk mulai belajar.",
+    joinApp: "Bergabung dengan {name} untuk mulai belajar.",
     name: "Nama Lengkap",
     namePlaceholder: "Nama lengkap Anda",
     confirmPassword: "Konfirmasi Kata Sandi",
@@ -82,6 +82,10 @@ export default {
     passwordChanged: "Kata sandi diperbarui",
     passwordEnvManaged: "Kata sandi akun ini dikelola melalui pengaturan environment.",
     envManaged: "Akun ini dikelola melalui pengaturan environment dan tidak dapat diubah di sini.",
+    appTitle: "Nama Aplikasi",
+    appTitleHint: "Ditampilkan di halaman masuk, sidebar, dan tab browser.",
+    appTitleSaved: "Nama aplikasi diperbarui",
+    appTitleInvalid: "Nama aplikasi harus antara 1 sampai 40 karakter.",
   },
 
   // Dashboard — Student

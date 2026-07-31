@@ -347,3 +347,10 @@ model Announcement {
   pinned    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+// ─── App Settings ───
+
+model AppSetting {
+  key   String @id
+  value String
+}

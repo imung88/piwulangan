@@ -12,6 +12,7 @@ import ToastProvider from "@/components/ui/Toast"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
 import { getMyNotifications } from "@/actions/notifications"
 import { useT } from "@/lib/i18n/useT"
+import { useAppTitle } from "@/lib/AppTitleContext"
 
 type Props = {
   children: React.ReactNode
@@ -37,6 +38,7 @@ function buildAdminNavItems(t: (p: string) => string) {
 
 function LayoutBody({ children, role, userName }: Props) {
   const t = useT()
+  const appTitle = useAppTitle()
   const navItems = buildNavItems(t)
   const adminNavItems = buildAdminNavItems(t)
   const pathname = usePathname()
@@ -66,9 +68,9 @@ function LayoutBody({ children, role, userName }: Props) {
       <header className="sticky top-0 z-40 flex items-center justify-between bg-metro-blue px-4 py-1.5 md:hidden">
         <Link
           href="/dashboard"
-          className="flex min-h-[44px] items-center text-lg font-light lowercase tracking-tight text-white"
+          className="flex min-h-[44px] items-center text-lg font-light tracking-tight text-white"
         >
-          piwulangan
+          {appTitle}
         </Link>
         <div className="flex items-center gap-1">
           {userName && (
@@ -117,8 +119,8 @@ function LayoutBody({ children, role, userName }: Props) {
       <div className="flex">
         <aside className="hidden md:flex w-64 flex-col bg-metro-blue min-h-screen">
           <div className="p-6">
-            <Link href="/dashboard" className="text-2xl font-light lowercase tracking-tight text-white">
-              piwulangan
+            <Link href="/dashboard" className="text-2xl font-light tracking-tight text-white">
+              {appTitle}
             </Link>
           </div>
 

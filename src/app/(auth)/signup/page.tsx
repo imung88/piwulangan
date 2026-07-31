@@ -3,12 +3,14 @@
 import { useState } from "react"
 import Link from "next/link"
 import { signup } from "@/actions/auth"
-import { useT } from "@/lib/i18n/useT"
+import { useT, format } from "@/lib/i18n/useT"
+import { useAppTitle } from "@/lib/AppTitleContext"
 
 export default function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(false)
   const t = useT()
+  const appTitle = useAppTitle()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -27,7 +29,7 @@ export default function SignupPage() {
     <div className="flex min-h-screen flex-col md:flex-row">
       <div className="bg-metro-blue px-6 py-4 md:flex md:h-screen md:w-1/2 md:flex-col md:justify-between md:p-12">
         <h1 className="text-xl font-bold tracking-tight text-white md:text-5xl">
-          Piwulangan
+          {appTitle}
         </h1>
         <div className="hidden md:block">
           <p className="text-lg text-white/80">
@@ -44,7 +46,7 @@ export default function SignupPage() {
       <div className="flex flex-1 flex-col justify-center bg-metro-surface px-6 py-12 md:p-12">
         <div className="mx-auto w-full max-w-sm">
           <h2 className="text-2xl font-bold text-metro-text md:text-3xl">{t("auth.createAccount")}</h2>
-          <p className="mt-1 text-sm text-metro-text-secondary">{t("auth.joinPiwulangan")}</p>
+          <p className="mt-1 text-sm text-metro-text-secondary">{format(t("auth.joinApp"), { name: appTitle })}</p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div>

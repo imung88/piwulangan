@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import ProfileContent from "./ProfileContent"
 import { db } from "@/lib/db"
 import { isSuperadminId } from "@/lib/superadmin"
+import { getAppTitle } from "@/lib/appSettings"
 
 export default async function ProfilePage() {
   const { auth } = await import("@/lib/auth")
@@ -28,11 +29,13 @@ export default async function ProfilePage() {
   }
 
   const isSuperadmin = isSuperadminId((session.user as { id: string }).id)
+  const appTitle = isSuperadmin ? await getAppTitle() : null
 
   return (
     <ProfileContent
       canChangePassword={!isSuperadmin}
       canEditProfile={!isSuperadmin}
+      appTitle={appTitle}
       user={{
         ...user,
         dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().slice(0, 10) : null,

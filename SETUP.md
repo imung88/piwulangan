@@ -176,6 +176,7 @@ You'll be redirected to the login page. Sign in with any test account.
 ### Admin & User Management
 - Admin user management (create, edit, delete, role assignment)
 - Guardian linking to student accounts
+- Superadmin can change the application name from the profile page (shown on the login page, sidebar, and browser tab)
 
 ---
 
@@ -200,10 +201,11 @@ npm run db:reset     # Reset database (drop + migrate + seed)
 ## What to Try After Setup
 
 1. **Log in as admin** (your `SUPERADMIN_EMAIL`) → see admin dashboard, create a course
-2. **Log in as teacher** (`teacher@example.com`) → see "English Basics", edit content, view student progress
-3. **Log in as Alice** (`alice@example.com`) → see 2 courses, mark lessons complete, watch progress bar grow
-4. **Log in as guardian** (`guardian@example.com`) → see Alice's progress (read-only)
-5. **Visit Prisma Studio** (`npm run db:studio`) → browse the database directly
+2. **Change the app name** (as superadmin) → Profile → Application Name; the login page, sidebar, and browser tab update
+3. **Log in as teacher** (`teacher@example.com`) → see "English Basics", edit content, view student progress
+4. **Log in as Alice** (`alice@example.com`) → see 2 courses, mark lessons complete, watch progress bar grow
+5. **Log in as guardian** (`guardian@example.com`) → see Alice's progress (read-only)
+6. **Visit Prisma Studio** (`npm run db:studio`) → browse the database directly
 
 ---
 

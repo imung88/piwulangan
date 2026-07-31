@@ -77,8 +77,8 @@ export async function createReport(
       return { error: await serverT("reports.errorInvalid") };
     }
   } else if (moduleId) {
-    const module = await db.module.findUnique({ where: { id: moduleId } });
-    if (!module || module.courseId !== courseId) {
+    const courseModule = await db.module.findUnique({ where: { id: moduleId } });
+    if (!courseModule || courseModule.courseId !== courseId) {
       return { error: await serverT("reports.errorInvalid") };
     }
   }

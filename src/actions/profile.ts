@@ -8,6 +8,7 @@ import { serverT } from "@/lib/i18n/serverT";
 import { normalizePhone } from "@/lib/phone";
 import { revalidatePath } from "next/cache";
 import { isSuperadminId, isReservedSuperadminName } from "@/lib/superadmin";
+import { APP_TITLE_KEY, APP_TITLE_MAX_LENGTH } from "@/lib/appSettings";
 
 const profileSchema = z.object({
   name: z.string().min(2).max(100),
@@ -88,6 +89,38 @@ export async function updateProfile(formData: FormData): Promise<{ success?: boo
     },
   });
 
+  revalidatePath("/profile");
+  return { success: true };
+}
+
+const appTitleSchema = z.object({
+  appTitle: z.string().trim().min(1).max(APP_TITLE_MAX_LENGTH),
+});
+
+export async function updateAppTitle(formData: FormData): Promise<{ success?: boolean; error?: Record<string, string[]> }> {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authenticated");
+  const userId = (session.user as { id: string }).id;
+
+  if (!isSuperadminId(userId)) {
+    throw new Error("Not authorized");
+  }
+
+  const parsed = appTitleSchema.safeParse({
+    appTitle: formData.get("appTitle"),
+  });
+
+  if (!parsed.success) {
+    return { error: { appTitle: [await serverT("profile.appTitleInvalid")] } };
+  }
+
+  await db.appSetting.upsert({
+    where: { key: APP_TITLE_KEY },
+    update: { value: parsed.data.appTitle },
+    create: { key: APP_TITLE_KEY, value: parsed.data.appTitle },
+  });
+
+  revalidatePath("/", "layout");
   revalidatePath("/profile");
   return { success: true };
 }

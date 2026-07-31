@@ -4,7 +4,7 @@
 
 | Layer | Choice | Why |
 |---|---|---|
-| **Framework** | Next.js 15.1 (App Router) | Full-stack React, SSR, file-based routing, great DX |
+| **Framework** | Next.js 15.5 (App Router) | Full-stack React, SSR, file-based routing, great DX |
 | **Language** | TypeScript | Type safety, better DX, catches bugs early |
 | **Database** | SQLite (local file) → Turso (libSQL) in production | Zero-setup local dev, serverless-friendly hosted SQLite, free tier, works with Prisma |
 | **ORM** | Prisma | Type-safe queries, great migration tooling |
@@ -67,9 +67,9 @@ piwulangan/
 │   │   │   ├── admin/
 │   │   │   │   └── users/             # Admin: user management
 │   │   │   │
-│   │   │   └── profile/
+│   │   │   └── profile/               # Own profile; superadmin also edits the app title here
 │   │   │
-│   │   ├── layout.tsx         # Root layout
+│   │   ├── layout.tsx         # Root layout (generateMetadata + AppTitleProvider, DB-driven app title)
 │   │   ├── page.tsx           # Landing / redirect
 │   │   └── globals.css
 │   │
@@ -84,6 +84,12 @@ piwulangan/
 │   │   ├── db.ts              # Prisma client singleton
 │   │   ├── schedule.ts        # Session queries (per role/course)
 │   │   ├── notifications.ts   # Notification helpers
+│   │   ├── appSettings.ts     # App title read (AppSetting key-value table, React cache)
+│   │   ├── AppTitleContext.tsx # Client context providing the app title to UI
+│   │   ├── coursePerms.ts     # Course permission checks
+│   │   ├── phone.ts           # Phone number normalization
+│   │   ├── rateLimit.ts       # Rate limiting helpers
+│   │   ├── superadmin.ts      # Env-based superadmin identity helpers
 │   │   ├── i18n/              # Cookie-based locale module (no URL prefix)
 │   │   │   ├── LocaleProvider.tsx  # React Context + cookie reader
 │   │   │   ├── useT.ts            # Client t("key.path") hook
@@ -101,6 +107,8 @@ piwulangan/
 │   │   ├── announcements.ts   # Announcement CRUD
 │   │   ├── notifications.ts   # Fetch/mark-read notifications
 │   │   ├── guardians.ts       # Guardian-student linking
+│   │   ├── profile.ts         # Own profile, password; app title (superadmin only)
+│   │   ├── reports.ts         # Student reports
 │   │   └── admin.ts           # Admin actions
 │   │
 │   ├── middleware.ts          # Auth gate + role-based route guards
@@ -110,6 +118,7 @@ piwulangan/
 ├── .env.example
 ├── .env.local                 # (gitignored)
 ├── next.config.mjs
+├── eslint.config.mjs          # ESLint 9 flat config (FlatCompat + eslint-config-next)
 ├── tailwind.config.ts
 ├── tsconfig.json
 ├── package.json

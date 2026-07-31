@@ -52,6 +52,10 @@ export default {
     passwordChanged: "Password updated",
     passwordEnvManaged: "This account's password is managed through environment settings.",
     envManaged: "This account is managed through environment settings and can't be edited here.",
+    appTitle: "Application Name",
+    appTitleHint: "Shown on the login page, the sidebar, and the browser tab.",
+    appTitleSaved: "Application name updated",
+    appTitleInvalid: "Application name must be between 1 and 40 characters.",
   },
 
   // Auth
@@ -69,7 +73,7 @@ export default {
     noAccount: "Don't have an account?",
     signUp: "Sign up",
     createAccount: "Create your account",
-    joinPiwulangan: "Join Piwulangan to start learning.",
+    joinApp: "Join {name} to start learning.",
     name: "Name",
     namePlaceholder: "Your full name",
     confirmPassword: "Confirm Password",

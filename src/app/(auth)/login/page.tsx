@@ -4,11 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import { login } from "@/actions/auth"
 import { useT } from "@/lib/i18n/useT"
+import { useAppTitle } from "@/lib/AppTitleContext"
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const t = useT()
+  const appTitle = useAppTitle()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -27,7 +29,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col md:flex-row">
       <div className="bg-metro-blue px-6 py-4 md:flex md:h-screen md:w-1/2 md:flex-col md:justify-between md:p-12">
         <h1 className="text-xl font-bold tracking-tight text-white md:text-5xl">
-          Piwulangan
+          {appTitle}
         </h1>
         <div className="hidden md:block">
           <p className="text-lg text-white/80">

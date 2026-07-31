@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation"
 import { useT } from "@/lib/i18n/useT"
 import LanguageSelector from "@/components/LanguageSelector"
 import RoleBadge from "@/components/RoleBadge"
-import { updateProfile, changePassword } from "@/actions/profile"
+import { updateProfile, changePassword, updateAppTitle } from "@/actions/profile"
 
 type Props = {
   canChangePassword: boolean
   canEditProfile: boolean
+  appTitle: string | null
   user: {
     name: string
     email: string | null
@@ -21,7 +22,7 @@ type Props = {
   }
 }
 
-export default function ProfileContent({ user, canChangePassword, canEditProfile }: Props) {
+export default function ProfileContent({ user, canChangePassword, canEditProfile, appTitle }: Props) {
   const t = useT()
   const router = useRouter()
   const [editing, setEditing] = useState(false)
@@ -33,6 +34,10 @@ export default function ProfileContent({ user, canChangePassword, canEditProfile
   const [savingPw, setSavingPw] = useState(false)
   const [pwSaved, setPwSaved] = useState(false)
   const [pwErrors, setPwErrors] = useState<Record<string, string[]>>({})
+
+  const [savingTitle, setSavingTitle] = useState(false)
+  const [titleSaved, setTitleSaved] = useState(false)
+  const [titleErrors, setTitleErrors] = useState<Record<string, string[]>>({})
 
   const displayName = user.name || "—"
   const initial = (displayName === "—" ? "?" : displayName).charAt(0).toUpperCase()
@@ -70,6 +75,22 @@ export default function ProfileContent({ user, canChangePassword, canEditProfile
       form.reset()
       setChangingPw(false)
       setPwSaved(true)
+    }
+  }
+
+  async function handleAppTitleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setTitleErrors({})
+    setTitleSaved(false)
+    setSavingTitle(true)
+
+    const result = await updateAppTitle(new FormData(e.currentTarget))
+    setSavingTitle(false)
+    if (result?.error) {
+      setTitleErrors(result.error)
+    } else {
+      setTitleSaved(true)
+      router.refresh()
     }
   }
 
@@ -242,6 +263,32 @@ export default function ProfileContent({ user, canChangePassword, canEditProfile
       )}
 
       <h2 className="metro-section-title">{t("profile.settings")}</h2>
+      {appTitle !== null && (
+        <div className="metro-card p-6">
+          <form onSubmit={handleAppTitleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="appTitle" className="block text-sm font-medium text-metro-text-secondary">
+                {t("profile.appTitle")}
+              </label>
+              <input
+                id="appTitle"
+                name="appTitle"
+                type="text"
+                required
+                maxLength={40}
+                defaultValue={appTitle}
+                className="metro-input mt-1"
+              />
+              <p className="mt-1 text-xs text-metro-text-secondary">{t("profile.appTitleHint")}</p>
+              {titleErrors.appTitle && <p className="mt-1 text-sm text-metro-error">{titleErrors.appTitle[0]}</p>}
+            </div>
+            {titleSaved && <p className="text-sm font-medium text-metro-green">{t("profile.appTitleSaved")}</p>}
+            <button type="submit" disabled={savingTitle} className="metro-btn">
+              {savingTitle ? t("profile.saving") : t("profile.save")}
+            </button>
+          </form>
+        </div>
+      )}
       <LanguageSelector />
     </div>
   )
