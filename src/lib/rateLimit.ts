@@ -1,3 +1,11 @@
+/**
+ * @module lib/rateLimit
+ * @overview Lightweight in-memory sliding-window rate limiter.
+ * @responsibilities
+ *   - Track request timestamps per key and enforce limits within time windows
+ * @exports
+ *   - `checkRateLimit`: Evaluates whether a request exceeds rate limit thresholds
+ */
 // Lightweight in-memory sliding-window rate limiter.
 //
 // NOTE: state lives in a module-level Map, so it is per-process. On serverless

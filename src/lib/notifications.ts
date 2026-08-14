@@ -1,3 +1,13 @@
+/**
+ * @module lib/notifications
+ * @overview Notification creation and guardian recipient resolution helpers.
+ * @responsibilities
+ *   - Resolve student IDs to include linked guardians
+ *   - Batch create notifications in database for users
+ * @exports
+ *   - `withGuardians`: Appends linked guardian IDs to student ID lists
+ *   - `notify`: Creates notification records for specified users
+ */
 import { db } from "./db";
 
 export async function withGuardians(studentIds: string[]) {

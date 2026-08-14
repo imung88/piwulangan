@@ -1,3 +1,11 @@
+/**
+ * @module lib/db
+ * @overview Prisma client singleton initialization with LibSQL adapter support.
+ * @responsibilities
+ *   - Instantiate PrismaClient with Turso/LibSQL adapter for production or SQLite for local dev
+ * @exports
+ *   - `db`: PrismaClient singleton instance
+ */
 import { PrismaClient } from "@prisma/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
 

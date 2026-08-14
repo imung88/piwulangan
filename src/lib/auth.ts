@@ -1,3 +1,13 @@
+/**
+ * @module lib/auth
+ * @overview NextAuth configuration with Prisma adapter and custom Credentials provider.
+ * @responsibilities
+ *   - Authenticate regular users against hashed database passwords
+ *   - Authenticate environment-derived superadmin credentials securely
+ *   - Lazily provision superadmin database record on first login
+ * @exports
+ *   - `handlers`, `signIn`, `signOut`, `auth`: NextAuth exports
+ */
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";

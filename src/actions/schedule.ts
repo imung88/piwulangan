@@ -1,3 +1,16 @@
+/**
+ * @module actions/schedule
+ * @overview Server actions for instructor availability, blocked dates, class sessions, and attendance tracking.
+ * @responsibilities
+ *   - Manage instructor weekly availability and blocked dates
+ *   - Create, update, cancel, and assign attendees for class sessions
+ *   - Record and update student attendance records with notifications
+ * @exports
+ *   - `setAvailability` / `removeAvailability` / `getInstructorAvailability`: Availability management
+ *   - `addBlockedDate` / `removeBlockedDate` / `getBlockedDates`: Blocked date management
+ *   - `createSession` / `updateSession` / `cancelSession` / `setSessionAttendees`: Class session management
+ *   - `markAttendance` / `markAllPresent`: Attendance recording
+ */
 "use server";
 
 import { z } from "zod";

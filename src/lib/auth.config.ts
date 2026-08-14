@@ -1,3 +1,11 @@
+/**
+ * @module lib/auth.config
+ * @overview Edge-safe NextAuth configuration without DB adapters or Node-specific crypto.
+ * @responsibilities
+ *   - Define JWT session callbacks and sign-in page routes for middleware usage
+ * @exports
+ *   - `authConfig`: NextAuth configuration object
+ */
 import type { NextAuthConfig } from "next-auth";
 
 // Edge-safe NextAuth config: no Prisma adapter, no bcryptjs, no providers.

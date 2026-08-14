@@ -1,3 +1,16 @@
+/**
+ * @module lib/i18n/serverT
+ * @overview Server-safe internationalization and locale resolution for Next.js server components.
+ * @responsibilities
+ *   - Resolve current locale from request cookies
+ *   - Load translation dictionaries (Indonesian / English) on the server
+ *   - Format translation strings with placeholder parameters
+ * @exports
+ *   - `resolveLocale`: Resolves locale from headers
+ *   - `formatT`: Interpolates parameters into translation strings
+ *   - `getServerT`: Returns a synchronous translation function for server components
+ *   - `serverT`: Translates a path string asynchronously
+ */
 // Server-safe locale resolver for Next.js server components.
 // Reads the `lang` cookie from the request headers so a server component
 // can pick the correct dictionary for static labels.

@@ -1,3 +1,14 @@
+/**
+ * @module actions/reports
+ * @overview Server actions for student reporting and feedback management.
+ * @responsibilities
+ *   - Create, update, and delete student progress/behavior reports in courses
+ *   - Notify students and guardians upon report creation
+ * @exports
+ *   - `createReport`: Creates a new student report
+ *   - `updateReport`: Updates an existing report
+ *   - `deleteReport`: Deletes a student report
+ */
 "use server";
 
 import { z } from "zod";

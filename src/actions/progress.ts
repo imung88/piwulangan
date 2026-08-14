@@ -1,3 +1,11 @@
+/**
+ * @module actions/progress
+ * @overview Server actions for tracking student lesson completion progress.
+ * @responsibilities
+ *   - Toggle completion status of individual lessons for enrolled students and instructors
+ * @exports
+ *   - `toggleProgress`: Toggles completion state of a lesson for the current user
+ */
 "use server";
 
 import { db } from "@/lib/db";

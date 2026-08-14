@@ -1,3 +1,15 @@
+/**
+ * @module lib/superadmin
+ * @overview Single source of truth for superadmin identification and reserved names.
+ * @responsibilities
+ *   - Define superadmin ID and reserved name constants
+ *   - Provide helper functions to verify superadmin ID, email, and name reservations
+ * @exports
+ *   - `SUPERADMIN_ID`, `SUPERADMIN_NAME`: Superadmin constants
+ *   - `isSuperadminId`: Checks if user ID matches superadmin
+ *   - `isReservedSuperadminName`: Checks if name is reserved
+ *   - `isSuperadminEmail`: Checks if email matches superadmin environment config
+ */
 // Single source of truth for identifying the environment-controlled superadmin.
 // The superadmin's identity is provisioned from SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD
 // on every login (see src/lib/auth.ts) and must not be mutable from the app.

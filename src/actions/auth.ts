@@ -1,3 +1,14 @@
+/**
+ * @module actions/auth
+ * @overview Server actions for authentication (signup, login, logout, rate-limiting).
+ * @responsibilities
+ *   - Handle user registration with email/phone validation and rate limiting
+ *   - Manage credential-based sign in and sign out sessions via NextAuth
+ * @exports
+ *   - `signup`: Registers a new student account
+ *   - `login`: Authenticates existing user credentials
+ *   - `logout`: Terminates active user session
+ */
 "use server";
 
 import { hash } from "bcryptjs";

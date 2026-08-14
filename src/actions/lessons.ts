@@ -1,3 +1,14 @@
+/**
+ * @module actions/lessons
+ * @overview Server actions for managing course modules, lessons, and learning resources.
+ * @responsibilities
+ *   - CRUD operations for course modules and lessons with ordering
+ *   - Management of learning resources (links, videos, documents) with URL normalization
+ * @exports
+ *   - `createModule` / `updateModule` / `deleteModule`: Module management
+ *   - `createLesson` / `updateLesson` / `deleteLesson`: Lesson management
+ *   - `addResource` / `updateResource` / `deleteResource`: Resource management
+ */
 "use server";
 
 import { z } from "zod";

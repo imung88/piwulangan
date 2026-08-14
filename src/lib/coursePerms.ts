@@ -1,3 +1,13 @@
+/**
+ * @module lib/coursePerms
+ * @overview Permission checks for course management and ownership.
+ * @responsibilities
+ *   - Verify whether a user can manage a course (admins, owners, co-instructors)
+ *   - Verify whether a user is the primary course owner
+ * @exports
+ *   - `canManageCourse`: Checks if user has management permissions
+ *   - `isCourseOwner`: Checks if user is course owner or admin
+ */
 import { db } from "@/lib/db";
 
 // Admins, the owning instructor, and co-instructors can manage a course.

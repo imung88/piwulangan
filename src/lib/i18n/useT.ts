@@ -1,3 +1,14 @@
+/**
+ * @module lib/i18n/useT
+ * @overview Client-side internationalization hook and formatting helpers.
+ * @responsibilities
+ *   - Provide synchronous translation hook `useT` for React client components
+ *   - Provide translation parameter formatting and localized day names
+ * @exports
+ *   - `format`: Interpolates parameters into translation strings
+ *   - `useT`: React hook for client-side translations
+ *   - `useDayNames`: React hook returning localized day names
+ */
 // Client-side `t()` hook — sync, pre-bundles both locales.
 // Interpolation helper for `{n}`, `{title}`, `{done}` ... placeholders in translations.
 // Usage:

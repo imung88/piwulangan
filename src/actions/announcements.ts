@@ -1,3 +1,16 @@
+/**
+ * @module actions/announcements
+ * @overview Server actions for managing course announcements and notifications.
+ * @responsibilities
+ *   - Create, update, delete, and pin/unpin course announcements
+ *   - Verify course management permissions for instructors and admins
+ *   - Dispatch notifications to enrolled students and their guardians
+ * @exports
+ *   - `createAnnouncement`: Creates a new course announcement
+ *   - `updateAnnouncement`: Updates an existing announcement
+ *   - `deleteAnnouncement`: Deletes an announcement
+ *   - `togglePin`: Toggles pin status of an announcement
+ */
 "use server";
 
 import { z } from "zod";

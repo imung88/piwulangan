@@ -1,3 +1,15 @@
+/**
+ * @module actions/guardians
+ * @overview Server actions for linking guardians and students.
+ * @responsibilities
+ *   - Create and remove associations between guardian and student accounts
+ *   - Query linked students for a guardian or linked guardians for a student
+ * @exports
+ *   - `linkGuardian`: Links a guardian account to a student account
+ *   - `unlinkGuardian`: Removes the guardian-student link
+ *   - `getLinkedStudents`: Retrieves students linked to a guardian
+ *   - `getLinkedGuardians`: Retrieves guardians linked to a student
+ */
 "use server";
 
 import { db } from "@/lib/db";

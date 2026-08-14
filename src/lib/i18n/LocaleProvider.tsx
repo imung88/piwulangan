@@ -1,3 +1,13 @@
+/**
+ * @module lib/i18n/LocaleProvider
+ * @overview React context provider and state management for client-side language switching.
+ * @responsibilities
+ *   - Manage locale state (`id` or `en`) and persist preference in cookies
+ *   - Synchronize locale changes across browser events and storage
+ * @exports
+ *   - `useLocale`: Hook to access and update current locale
+ *   - `default`: LocaleProvider component wrapper
+ */
 "use client"
 import { createContext, useContext, useMemo, useState, useEffect } from "react"
 

@@ -1,3 +1,15 @@
+/**
+ * @module actions/profile
+ * @overview Server actions for managing user profile settings, app title, and password changes.
+ * @responsibilities
+ *   - Update user profile details (name, email, phone, address, date of birth)
+ *   - Update global application title (Superadmin only)
+ *   - Handle secure password changes for regular users
+ * @exports
+ *   - `updateProfile`: Updates current user's profile
+ *   - `updateAppTitle`: Updates global application title
+ *   - `changePassword`: Changes current user's password
+ */
 "use server";
 
 import { z } from "zod";

@@ -1,3 +1,13 @@
+/**
+ * @module lib/phone
+ * @overview Phone number normalization and email detection utilities.
+ * @responsibilities
+ *   - Normalize Indonesian phone numbers to E.164 (+62) format
+ *   - Detect whether an identifier string is an email address
+ * @exports
+ *   - `normalizePhone`: Normalizes phone number strings
+ *   - `isEmail`: Checks if string contains email indicator
+ */
 // Normalizes Indonesian phone numbers to +62 E.164-style format.
 export function normalizePhone(input: string): string | null {
   const cleaned = input.replace(/[\s\-().]/g, "");

@@ -1,3 +1,19 @@
+/**
+ * @module actions/courses
+ * @overview Server actions for course creation, enrollment management, and co-instructor permissions.
+ * @responsibilities
+ *   - Manage course lifecycle (create, update, publish, archive, delete)
+ *   - Handle student enrollments (invite codes, open enrollment, manual assignment)
+ *   - Manage co-instructors and ownership transfer
+ * @exports
+ *   - `createCourse`: Creates a new course
+ *   - `updateCourse`: Updates course details
+ *   - `publishCourse` / `unpublishCourse`: Changes course visibility
+ *   - `deleteCourse` / `archiveCourse` / `unarchiveCourse`: Deletes or archives courses
+ *   - `enrollByCode` / `enrollOpen` / `unenrollSelf`: Student enrollment handling
+ *   - `enrollStudent` / `removeEnrollment`: Instructor/admin student management
+ *   - `addCoInstructor` / `removeCoInstructor` / `transferOwnership`: Teacher management
+ */
 "use server";
 
 import { z } from "zod";

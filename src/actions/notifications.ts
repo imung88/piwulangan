@@ -1,3 +1,14 @@
+/**
+ * @module actions/notifications
+ * @overview Server actions for user notifications management.
+ * @responsibilities
+ *   - Fetch user notifications and unread counts
+ *   - Mark individual or all notifications as read
+ * @exports
+ *   - `markRead`: Marks a single notification as read
+ *   - `markAllRead`: Marks all user notifications as read
+ *   - `getMyNotifications`: Retrieves current user notifications and unread count
+ */
 "use server";
 
 import { db } from "@/lib/db";

@@ -1,3 +1,18 @@
+/**
+ * @module actions/admin
+ * @overview Server actions for administrative user management (CRUD, roles, deactivation, password reset).
+ * @responsibilities
+ *   - Fetch users with filtering/search and pagination support
+ *   - Create and update user accounts with uniqueness and contact validation
+ *   - Handle user account activation, deactivation, and secure password resetting
+ * @exports
+ *   - `getUsers`: Retrieves filtered list of system users
+ *   - `createUser`: Creates a new user account (Admin only)
+ *   - `updateUser`: Updates existing user details
+ *   - `deactivateUser`: Deactivates a user account
+ *   - `activateUser`: Activates a user account
+ *   - `resetPassword`: Resets user password securely
+ */
 "use server";
 
 import { z } from "zod";

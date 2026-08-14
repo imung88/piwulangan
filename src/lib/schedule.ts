@@ -1,3 +1,15 @@
+/**
+ * @module lib/schedule
+ * @overview Query helpers and data access functions for class sessions and scheduling.
+ * @responsibilities
+ *   - Fetch class sessions for courses, students, instructors, or system-wide
+ *   - Retrieve course availability windows for instructors
+ * @exports
+ *   - `DAY_NAMES`: Array of days of the week
+ *   - `startOfToday`: Returns start-of-day Date object
+ *   - `getSessionById`, `getSessionsForCourse`, `getSessionsForStudent`, `getSessionsForStudents`, `getSessionsForInstructor`, `getAllSessions`: Session query helpers
+ *   - `getCourseAvailability`: Retrieves instructor availability for a course
+ */
 import { db } from "./db";
 
 export const DAY_NAMES = [
