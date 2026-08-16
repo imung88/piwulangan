@@ -54,6 +54,12 @@ chore: update dependencies
 - **Formatting** — Prettier with default settings
 - **UI** — Metro design system (square corners, solid colors, tokens in `globals.css`); touch targets ≥ 44px; every user-facing string goes through i18n (`useT` / `getServerT`) with key parity in `locales/{id,en}.ts`
 - **Role colors** — admin = purple, instructor = navy, student = Metro green, guardian = deep yellow. Always render roles with `<RoleBadge>` (`src/components/RoleBadge.tsx`); never inline role colors
+- **Performance** (Vercel React best practices — keep these when extending):
+  - Keep RSC → client props lean: pass only the fields the client renders, never whole ORM rows (see `dashboard/page.tsx` → `DashboardClient.tsx` for the pattern)
+  - Run independent DB queries in `Promise.all`; chain only when one query's result feeds the next
+  - Lazy-load heavy client-only UI with `next/dynamic` + `ssr: false` (see `ScheduleView.tsx` → `WeekCalendar`)
+  - Index repeated lookups with `Map`/`Set` instead of nested `.filter`/`.some` loops
+  - Derive values during render; don't mirror props/state into `useEffect`
 
 ## What We're Looking For
 

@@ -7,30 +7,96 @@ import RoleBadge from "@/components/RoleBadge"
 import PublishCourseButton from "@/components/PublishCourseButton"
 
 /* ------------------------------------------------------------------ */
-/*  DashboardClient — server-rendered data, client-side labels        */
+/*  DashboardClient — lean server data, client-side labels            */
+/*                                                                     */
+/*  The server page (./page.tsx) builds these summary shapes so that   */
+/*  only the fields rendered below cross the RSC → client boundary.    */
+/*  Keep this shape minimal: add a field here only if the UI uses it,  */
+/*  and never pass whole ORM rows (courses/modules/lessons) as props.  */
 /* ------------------------------------------------------------------ */
-type DashboardData = {
+
+export type EnrollmentCard = {
+  enrollmentId: string
+  courseId: string
+  title: string
+  instructorName?: string
+  totalLessons: number
+  completedLessons: number
+  percentage: number
+}
+
+export type CourseCard = {
+  id: string
+  title: string
+  visibility: "DRAFT" | "PUBLISHED" | "ARCHIVED"
+  studentCount: number
+  moduleCount: number
+}
+
+export type SessionCard = {
+  id: string
+  courseId: string
+  title: string
+  /** ISO date string — format client-side with `new Date(date)`. */
+  date: string
+  startTime: string
+  courseTitle: string
+  attendeeNames: string[]
+}
+
+export type AnnouncementCard = {
+  id: string
+  courseId: string
+  pinned: boolean
+  title: string
+  body: string
+  courseTitle: string
+  authorName: string
+  /** ISO date string */
+  createdAt: string
+}
+
+export type GuardianStudentCard = {
+  studentId: string
+  studentName: string
+  courses: EnrollmentCard[]
+}
+
+export type AttendanceCard = {
+  id: string
+  studentName: string
+  attendance: string | null
+  session: {
+    id: string
+    courseId: string
+    title: string
+    /** ISO date string */
+    date: string
+    courseTitle: string
+  }
+}
+
+export type DashboardData = {
   // student
-  enrollments?: any[]
-  progress?: any[]
-  bookings?: any[]
-  announcements?: any[]
+  enrollments?: EnrollmentCard[]
+  bookings?: SessionCard[]
+  announcements?: AnnouncementCard[]
   // instructor
-  courses?: any[]
-  todayBookings?: any[]
+  courses?: CourseCard[]
+  todayBookings?: SessionCard[]
   weekBookingsCount?: number
   highProgressCount?: number
   unmarkedCount?: number
-  unmarkedSessions?: any[]
+  unmarkedSessions?: SessionCard[]
   // guardian
-  links?: any[]
-  upcomingSessions?: any[]
-  recentAttendance?: any[]
+  links?: GuardianStudentCard[]
+  upcomingSessions?: SessionCard[]
+  recentAttendance?: AttendanceCard[]
   // admin
   totalUsers?: number
   totalCourses?: number
   sessionsToday?: number
-  userCounts?: any[]
+  userCounts?: { role: string; count: number }[]
 }
 
 type Props = { data: DashboardData; role: string; userName: string | null }
@@ -54,23 +120,6 @@ export default function DashboardClient({ data, role, userName }: Props) {
       </div>
     </div>
   )
-}
-
-/* ---- helpers ---- */
-function courseProgress(progress: any[], course: any) {
-  const totalLessons =
-    course.modules?.reduce(
-      (sum: number, mod: any) => sum + (mod.lessons?.length || 0),
-      0,
-    ) || 0
-  const completedLessons = progress.filter((p: any) =>
-    course.modules?.some((mod: any) =>
-      mod.lessons?.some((lesson: any) => lesson.id === p.lessonId),
-    ),
-  ).length
-  const percentage =
-    totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
-  return { totalLessons, completedLessons, percentage }
 }
 
 function SectionHeader({
@@ -143,7 +192,7 @@ function AnnouncementList({
   announcements,
   t,
 }: {
-  announcements: any[]
+  announcements: AnnouncementCard[]
   t: (p: string) => string
 }) {
   if (announcements.length === 0) return null
@@ -152,7 +201,7 @@ function AnnouncementList({
     <section>
       <h2 className="metro-section-title mb-4">{t("student.recentAnnouncements")}</h2>
       <div className="space-y-2">
-        {announcements.map((a: any) => (
+        {announcements.map((a) => (
           <Link
             key={a.id}
             href={`/courses/${a.courseId}`}
@@ -173,7 +222,7 @@ function AnnouncementList({
               {a.body}
             </p>
             <p className="mt-1 text-sm text-metro-text-secondary">
-              {a.course.title} · {a.author.name} ·{" "}
+              {a.courseTitle} · {a.authorName} ·{" "}
               {new Date(a.createdAt).toLocaleDateString()}
             </p>
           </Link>
@@ -191,8 +240,7 @@ function StudentDashboard({
   data: DashboardData
   t: (p: string) => string
 }) {
-  const { enrollments = [], progress = [], bookings = [], announcements = [] } =
-    data
+  const { enrollments = [], bookings = [], announcements = [] } = data
 
   return (
     <div className="space-y-6">
@@ -207,7 +255,7 @@ function StudentDashboard({
           <p className="text-sm text-metro-text-secondary">{t("student.noUpcomingSessions")}</p>
         ) : (
           <div className="space-y-2">
-            {bookings.map((booking: any) => (
+            {bookings.map((booking) => (
               <Link
                 key={booking.id}
                 href={`/courses/${booking.courseId}/schedule/${booking.id}`}
@@ -216,7 +264,7 @@ function StudentDashboard({
                 <div>
                   <p className="font-medium text-metro-text">{booking.title}</p>
                   <p className="text-sm text-metro-text-secondary">
-                    {booking.course.title} ·{" "}
+                    {booking.courseTitle} ·{" "}
                     {new Date(booking.date).toLocaleDateString()} at {booking.startTime}
                   </p>
                 </div>
@@ -241,28 +289,22 @@ function StudentDashboard({
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {enrollments.map((enrollment: any) => {
-              const course = enrollment.course
-              const { totalLessons, completedLessons, percentage } =
-                courseProgress(progress, course)
-
-              return (
-                <ProgressCard
-                  key={enrollment.id}
-                  href={`/courses/${course.id}`}
-                  title={course.title}
-                  subtitle={
-                    course.instructor?.name
-                      ? `${t("student.teacher")}: ${course.instructor.name}`
-                      : undefined
-                  }
-                  completedLessons={completedLessons}
-                  totalLessons={totalLessons}
-                  percentage={percentage}
-                  lessonsLabel={t("student.lessons")}
-                />
-              )
-            })}
+            {enrollments.map((enrollment) => (
+              <ProgressCard
+                key={enrollment.enrollmentId}
+                href={`/courses/${enrollment.courseId}`}
+                title={enrollment.title}
+                subtitle={
+                  enrollment.instructorName
+                    ? `${t("student.teacher")}: ${enrollment.instructorName}`
+                    : undefined
+                }
+                completedLessons={enrollment.completedLessons}
+                totalLessons={enrollment.totalLessons}
+                percentage={enrollment.percentage}
+                lessonsLabel={t("student.lessons")}
+              />
+            ))}
           </div>
         )}
       </section>
@@ -321,7 +363,7 @@ function InstructorDashboard({
         <section>
           <h2 className="metro-section-title mb-4">{t("instructor.needsAttendance")}</h2>
           <div className="space-y-2">
-            {unmarkedSessions.map((s: any) => (
+            {unmarkedSessions.map((s) => (
               <Link
                 key={s.id}
                 href={`/courses/${s.courseId}/schedule/${s.id}`}
@@ -331,7 +373,7 @@ function InstructorDashboard({
                 <div className="min-w-0">
                   <p className="font-medium text-metro-text truncate">{s.title}</p>
                   <p className="text-sm text-metro-text-secondary">
-                    {s.course.title} · {new Date(s.date).toLocaleDateString()}
+                    {s.courseTitle} · {new Date(s.date).toLocaleDateString()}
                   </p>
                 </div>
                 <span className="text-sm text-metro-orange font-medium shrink-0">
@@ -354,7 +396,7 @@ function InstructorDashboard({
           <p className="text-sm text-metro-text-secondary">{t("instructor.noSessionsToday")}</p>
         ) : (
           <div className="space-y-2">
-            {todayBookings.map((booking: any) => (
+            {todayBookings.map((booking) => (
               <Link
                 key={booking.id}
                 href={`/courses/${booking.courseId}/schedule/${booking.id}`}
@@ -365,8 +407,7 @@ function InstructorDashboard({
                     {booking.startTime} — {booking.title}
                   </p>
                   <p className="text-sm text-metro-text-secondary">
-                    {booking.course.title} ·{" "}
-                    {booking.attendees.map((a: any) => a.student.name).join(", ")}
+                    {booking.courseTitle} · {booking.attendeeNames.join(", ")}
                   </p>
                 </div>
               </Link>
@@ -390,7 +431,7 @@ function InstructorDashboard({
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {courses.map((course: any) => (
+            {courses.map((course) => (
               <div
                 key={course.id}
                 className="metro-card"
@@ -404,8 +445,8 @@ function InstructorDashboard({
                 <Link href={`/courses/${course.id}`} className="block">
                   <h3 className="text-base font-medium text-metro-text">{course.title}</h3>
                   <p className="text-sm text-metro-text-secondary mt-1 leading-relaxed">
-                    {course.enrollments.length} {t("instructor.students")} ·{" "}
-                    {course.modules.length} {t("instructor.modules")}
+                    {course.studentCount} {t("instructor.students")} ·{" "}
+                    {course.moduleCount} {t("instructor.modules")}
                   </p>
                   <span
                     className={
@@ -451,41 +492,31 @@ function GuardianDashboard({
 
   return (
     <div className="space-y-6">
-      {links.map((link: any) => {
-        const student = link.student
-
-        return (
-          <section key={link.id}>
-            <SectionHeader
-              title={format(t("guardian.progressOf"), { name: student.name })}
-              linkHref="/schedule"
-              linkLabel={t("guardian.viewSchedule")}
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              {student.enrollments?.map((enrollment: any) => {
-                const course = enrollment.course
-                const { totalLessons, completedLessons, percentage } =
-                  courseProgress(student.progress || [], course)
-
-                return (
-                  <ProgressCard
-                    key={enrollment.id}
-                    href={`/courses/${course.id}`}
-                    title={course.title}
-                    completedLessons={completedLessons}
-                    totalLessons={totalLessons}
-                    percentage={percentage}
-                    lessonsLabel={t("guardian.lessons")}
-                  />
-                )
-              })}
-              {(!student.enrollments || student.enrollments.length === 0) && (
-                <p className="text-sm text-metro-text-secondary">{t("guardian.notEnrolled")}</p>
-              )}
-            </div>
-          </section>
-        )
-      })}
+      {links.map((link) => (
+        <section key={link.studentId}>
+          <SectionHeader
+            title={format(t("guardian.progressOf"), { name: link.studentName })}
+            linkHref="/schedule"
+            linkLabel={t("guardian.viewSchedule")}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            {link.courses?.map((enrollment) => (
+              <ProgressCard
+                key={enrollment.enrollmentId}
+                href={`/courses/${enrollment.courseId}`}
+                title={enrollment.title}
+                completedLessons={enrollment.completedLessons}
+                totalLessons={enrollment.totalLessons}
+                percentage={enrollment.percentage}
+                lessonsLabel={t("guardian.lessons")}
+              />
+            ))}
+            {(!link.courses || link.courses.length === 0) && (
+              <p className="text-sm text-metro-text-secondary">{t("guardian.notEnrolled")}</p>
+            )}
+          </div>
+        </section>
+      ))}
       {links.length === 0 && (
         <p className="text-sm text-metro-text-secondary">{t("guardian.noLinkedStudents")}</p>
       )}
@@ -500,7 +531,7 @@ function GuardianDashboard({
             </p>
           ) : (
             <div className="space-y-2">
-              {upcomingSessions.map((s: any) => (
+              {upcomingSessions.map((s) => (
                 <Link
                   key={s.id}
                   href={`/courses/${s.courseId}/schedule/${s.id}`}
@@ -508,9 +539,9 @@ function GuardianDashboard({
                 >
                   <p className="font-medium text-metro-text">{s.title}</p>
                   <p className="text-sm text-metro-text-secondary">
-                    {s.course.title} · {new Date(s.date).toLocaleDateString()} · {s.startTime}
+                    {s.courseTitle} · {new Date(s.date).toLocaleDateString()} · {s.startTime}
                     {" · "}
-                    {s.attendees.map((a: any) => a.student.name).join(", ")}
+                    {s.attendeeNames.join(", ")}
                   </p>
                 </Link>
               ))}
@@ -524,7 +555,7 @@ function GuardianDashboard({
         <section>
           <h2 className="metro-section-title mb-4">{t("guardian.recentAttendance")}</h2>
           <div className="space-y-2">
-            {recentAttendance.map((r: any) => (
+            {recentAttendance.map((r) => (
               <Link
                 key={r.id}
                 href={`/courses/${r.session.courseId}/schedule/${r.session.id}`}
@@ -532,17 +563,17 @@ function GuardianDashboard({
               >
                 <div className="min-w-0">
                   <p className="font-medium text-metro-text truncate">
-                    {r.student.name} · {r.session.title}
+                    {r.studentName} · {r.session.title}
                   </p>
                   <p className="text-sm text-metro-text-secondary">
-                    {r.session.course.title} ·{" "}
+                    {r.session.courseTitle} ·{" "}
                     {new Date(r.session.date).toLocaleDateString()}
                   </p>
                 </div>
                 <span
                   className={
                     "text-sm font-medium shrink-0 " +
-                    (ATTENDANCE_COLORS[r.attendance] || "")
+                    (ATTENDANCE_COLORS[r.attendance as string] || "")
                   }
                 >
                   {attendanceLabel(r.attendance, t)}
@@ -574,11 +605,6 @@ function AdminDashboard({
     userCounts = [],
   } = data
 
-  const roleBreakdown = (userCounts as any[]).map((g) => ({
-    role: g.role.toLowerCase(),
-    count: g._count,
-  }))
-
   return (
     <div className="space-y-6">
       {/* Overview Stats */}
@@ -590,9 +616,7 @@ function AdminDashboard({
             <div>
               <span className="metro-tile-label block">{t("admin.totalUsers")}</span>
               <span className="mt-1 block text-xs text-white/80">
-                {roleBreakdown
-                  .map((r) => `${r.count} ${t(`roles.${r.role}`)}`)
-                  .join(" · ")}
+                {userCounts.map((r) => `${r.count} ${t(`roles.${r.role}`)}`).join(" · ")}
               </span>
             </div>
           </Link>

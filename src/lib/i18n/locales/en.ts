@@ -609,6 +609,7 @@ export default {
     joinLink: "Join link",
     reason: "Reason:",
     noSessionsThisWeek: "No sessions this week.",
+    loadingCalendar: "Loading calendar…",
   },
 
   // Dashboard schedule page

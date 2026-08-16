@@ -1,10 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { SessionItem } from "./types";
 import { useT } from "@/lib/i18n/useT";
 import SessionList from "./SessionList";
-import WeekCalendar from "./WeekCalendar";
+
+// WeekCalendar is only rendered after the user switches to calendar view, so
+// load it on demand instead of shipping it in every schedule page's initial
+// bundle. Keep this pattern for other heavy client-only UI.
+const WeekCalendar = dynamic(() => import("./WeekCalendar"), {
+  ssr: false,
+  loading: CalendarLoading,
+});
+
+function CalendarLoading() {
+  const t = useT();
+  return (
+    <div className="py-10 text-center text-sm text-metro-text-secondary">
+      {t("scheduleView.loadingCalendar")}
+    </div>
+  );
+}
 
 interface Props {
   sessions: SessionItem[];

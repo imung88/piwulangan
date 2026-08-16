@@ -610,6 +610,7 @@ export default {
     joinLink: "Tautan Gabung",
     reason: "Alasan:",
     noSessionsThisWeek: "Tidak ada sesi minggu ini.",
+    loadingCalendar: "Memuat kalender…",
   },
 
   // Dashboard schedule page

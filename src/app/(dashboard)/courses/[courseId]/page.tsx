@@ -50,23 +50,26 @@ export default async function CoursePage({
 
   if (!course) notFound();
 
-  const isOwner = await canManageCourse(userId, role, course);
+  // Owner/co-instructor check and guardian links are independent — fetch in parallel.
+  const [isOwner, guardianStudents] = await Promise.all([
+    canManageCourse(userId, role, course),
+    role === "GUARDIAN"
+      ? db.guardianStudent
+          .findMany({
+            where: {
+              guardianId: userId,
+              student: { enrollments: { some: { courseId: course.id } } },
+            },
+            include: { student: { select: { id: true, name: true } } },
+          })
+          .then((links) => links.map((l) => l.student))
+      : Promise.resolve([] as { id: string; name: string }[]),
+  ]);
   const isEnrolled = course.enrollments.length > 0;
 
   // Guardian: read-only view if a linked student is enrolled here
-  let guardianStudents: { id: string; name: string }[] = [];
-  if (role === "GUARDIAN") {
-    const links = await db.guardianStudent.findMany({
-      where: {
-        guardianId: userId,
-        student: { enrollments: { some: { courseId: course.id } } },
-      },
-      include: { student: { select: { id: true, name: true } } },
-    });
-    guardianStudents = links.map((l) => l.student);
-  }
-  const isGuardianViewer = guardianStudents.length > 0
-  const guardianStudentIds = guardianStudents.map((s) => s.id)
+  const isGuardianViewer = guardianStudents.length > 0;
+  const guardianStudentIds = guardianStudents.map((s) => s.id);
 
   // Server-side translations (async function — safe here)
   const labels = {
@@ -101,33 +104,6 @@ export default async function CoursePage({
   const moduleWord = labels.modulePlural
   const lessonWord = labels.lessonPlural
   const durationWord = labels.duration
-
-  // Next upcoming session (owner: any; student: only sessions they attend)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const nextSession =
-    isOwner || isEnrolled || isGuardianViewer
-      ? await db.classSession.findFirst({
-          where: {
-            courseId: course.id,
-            status: "SCHEDULED",
-            date: { gte: today },
-            ...(isOwner
-              ? {}
-              : {
-                  attendees: {
-                    some: {
-                      studentId: isGuardianViewer
-                        ? { in: guardianStudentIds }
-                        : userId,
-                    },
-                  },
-                }),
-          },
-          include: { lesson: { select: { id: true, title: true } } },
-          orderBy: [{ date: "asc" }, { startTime: "asc" }],
-        })
-      : null;
 
   // Check if student can view (enrolled, published, owner, or guardian of an enrolled student)
   if (!isOwner && !isEnrolled && !isGuardianViewer) {
@@ -179,24 +155,53 @@ export default async function CoursePage({
   // Find next incomplete lesson
   const nextLesson = allLessons.find((l) => !l.progress.some((p) => p.completed));
 
+  // Next upcoming session + guardian progress are independent of each other, so
+  // fetch in parallel. Both are deferred past the access check above so preview
+  // / non-enrolled visitors skip these queries entirely.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const [nextSession, guardianProgress] = await Promise.all([
+    isOwner || isEnrolled || isGuardianViewer
+      ? db.classSession.findFirst({
+          where: {
+            courseId: course.id,
+            status: "SCHEDULED",
+            date: { gte: today },
+            ...(isOwner
+              ? {}
+              : {
+                  attendees: {
+                    some: {
+                      studentId: isGuardianViewer
+                        ? { in: guardianStudentIds }
+                        : userId,
+                    },
+                  },
+                }),
+          },
+          include: { lesson: { select: { id: true, title: true } } },
+          orderBy: [{ date: "asc" }, { startTime: "asc" }],
+        })
+      : null,
+    isGuardianViewer
+      ? db.progress.findMany({
+          where: {
+            userId: { in: guardianStudentIds },
+            lessonId: { in: allLessons.map((l) => l.id) },
+            completed: true,
+          },
+          select: { userId: true, lessonId: true },
+        })
+      : [],
+  ]);
+
   // Guardian: linked students' completed lessons in this course
   const completedByStudent = new Map<string, Set<string>>();
-  if (isGuardianViewer) {
-    const lessonIds = allLessons.map((l) => l.id);
-    const guardianProgress = await db.progress.findMany({
-      where: {
-        userId: { in: guardianStudentIds },
-        lessonId: { in: lessonIds },
-        completed: true,
-      },
-      select: { userId: true, lessonId: true },
-    });
-    for (const p of guardianProgress) {
-      if (!completedByStudent.has(p.userId)) {
-        completedByStudent.set(p.userId, new Set());
-      }
-      completedByStudent.get(p.userId)!.add(p.lessonId);
+  for (const p of guardianProgress) {
+    if (!completedByStudent.has(p.userId)) {
+      completedByStudent.set(p.userId, new Set());
     }
+    completedByStudent.get(p.userId)!.add(p.lessonId);
   }
 
   return (
