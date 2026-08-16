@@ -17,14 +17,17 @@ export function DeleteModuleButton({
   const t = useT();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
     setLoading(true);
-    try {
-      await deleteModule(moduleId);
-    } finally {
-      setLoading(false);
-      setConfirming(false);
+    setError(null);
+    const res = await deleteModule(moduleId);
+    setLoading(false);
+    setConfirming(false);
+    if (!res.success) {
+      setError(res.error);
+      return;
     }
     router.refresh();
   }
@@ -49,6 +52,7 @@ export function DeleteModuleButton({
         onConfirm={handleDelete}
         onCancel={() => setConfirming(false)}
       />
+      {error && <p className="text-sm text-metro-error">{error}</p>}
     </>
   );
 }
@@ -65,14 +69,12 @@ export function AddModuleForm({ courseId }: { courseId: string }) {
     if (!title.trim()) return;
     setLoading(true);
     setError(null);
-    try {
-      await createModule(courseId, title.trim());
-    } catch {
-      setLoading(false);
-      setError(t("content.failedAdd"));
+    const res = await createModule(courseId, title.trim());
+    setLoading(false);
+    if (!res.success) {
+      setError(res.error);
       return;
     }
-    setLoading(false);
     setTitle("");
     router.refresh();
   }
@@ -114,18 +116,10 @@ export function AddLessonForm({ moduleId }: { moduleId: string }) {
     const fd = new FormData();
     fd.set("title", title.trim());
     if (duration) fd.set("duration", duration);
-    let res;
-    try {
-      res = await createLesson(moduleId, fd);
-    } catch {
-      setLoading(false);
-      setError(t("content.failedAdd"));
-      return;
-    }
+    const res = await createLesson(moduleId, fd);
     setLoading(false);
-    if (res && "error" in res && res.error) {
-      const messages = Object.values(res.error).flat().filter(Boolean).join(", ");
-      setError(messages || t("content.failedAdd"));
+    if (!res.success) {
+      setError(res.error);
       return;
     }
     setTitle("");

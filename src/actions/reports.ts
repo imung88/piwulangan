@@ -13,35 +13,11 @@
 
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { serverT, formatT } from "@/lib/i18n/serverT";
 import { revalidatePath } from "next/cache";
 import { notify, withGuardians } from "@/lib/notifications";
-import { canManageCourse } from "@/lib/coursePerms";
-
-type ActionResult = { success?: boolean; error?: any };
-
-async function requireUser() {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  return {
-    userId: (session.user as any).id as string,
-    role: (session.user as any).role as string,
-  };
-}
-
-async function requireCourseManager(courseId: string) {
-  const { userId, role } = await requireUser();
-  if (role !== "ADMIN" && role !== "INSTRUCTOR") {
-    throw new Error("Not authorized");
-  }
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
-  return { userId, role, course };
-}
+import { requireCourseManager } from "@/lib/authHelpers";
+import type { ActionResult } from "@/types/errors";
 
 const reportSchema = z.object({
   studentId: z.string().min(1),
@@ -59,7 +35,9 @@ export async function createReport(
   courseId: string,
   formData: FormData
 ): Promise<ActionResult> {
-  const { userId, course } = await requireCourseManager(courseId);
+  const cm = await requireCourseManager(courseId);
+  if (!cm.success) return cm;
+  const { userId, course } = cm.data;
 
   const parsed = reportSchema.safeParse({
     studentId: formData.get("studentId"),
@@ -68,7 +46,7 @@ export async function createReport(
     lessonId: formData.get("lessonId") || undefined,
   });
   if (!parsed.success) {
-    return { error: await serverT("reports.errorInvalid") };
+    return { success: false, error: await serverT("reports.errorInvalid") };
   }
   const { studentId, body, moduleId, lessonId } = parsed.data;
 
@@ -76,7 +54,7 @@ export async function createReport(
     where: { userId_courseId: { userId: studentId, courseId } },
   });
   if (!enrollment) {
-    return { error: await serverT("reports.errorNotEnrolled") };
+    return { success: false, error: await serverT("reports.errorNotEnrolled") };
   }
 
   if (lessonId) {
@@ -85,12 +63,12 @@ export async function createReport(
       include: { module: true },
     });
     if (!lesson || lesson.module.courseId !== courseId) {
-      return { error: await serverT("reports.errorInvalid") };
+      return { success: false, error: await serverT("reports.errorInvalid") };
     }
   } else if (moduleId) {
     const courseModule = await db.module.findUnique({ where: { id: moduleId } });
     if (!courseModule || courseModule.courseId !== courseId) {
-      return { error: await serverT("reports.errorInvalid") };
+      return { success: false, error: await serverT("reports.errorInvalid") };
     }
   }
 
@@ -123,16 +101,18 @@ export async function updateReport(
   const report = await db.studentReport.findUnique({
     where: { id: reportId },
   });
-  if (!report) throw new Error("Report not found");
-  const { userId, role } = await requireCourseManager(report.courseId);
-  if (role !== "ADMIN" && report.authorId !== userId) {
-    throw new Error("Not authorized");
+  if (!report) return { success: false, error: await serverT("errors.reportNotFound") };
+
+  const cm = await requireCourseManager(report.courseId);
+  if (!cm.success) return cm;
+  if (cm.data.role !== "ADMIN" && report.authorId !== cm.data.userId) {
+    return { success: false, error: await serverT("errors.unauthorized") };
   }
 
   const body = formData.get("body");
   const parsed = z.string().min(1).max(5000).safeParse(body);
   if (!parsed.success) {
-    return { error: await serverT("reports.errorInvalid") };
+    return { success: false, error: await serverT("reports.errorInvalid") };
   }
 
   await db.studentReport.update({
@@ -148,10 +128,12 @@ export async function deleteReport(reportId: string): Promise<ActionResult> {
   const report = await db.studentReport.findUnique({
     where: { id: reportId },
   });
-  if (!report) throw new Error("Report not found");
-  const { userId, role } = await requireCourseManager(report.courseId);
-  if (role !== "ADMIN" && report.authorId !== userId) {
-    throw new Error("Not authorized");
+  if (!report) return { success: false, error: await serverT("errors.reportNotFound") };
+
+  const cm = await requireCourseManager(report.courseId);
+  if (!cm.success) return cm;
+  if (cm.data.role !== "ADMIN" && report.authorId !== cm.data.userId) {
+    return { success: false, error: await serverT("errors.unauthorized") };
   }
 
   await db.studentReport.delete({ where: { id: reportId } });

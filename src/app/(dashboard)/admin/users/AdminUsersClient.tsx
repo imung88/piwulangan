@@ -85,15 +85,13 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
     setPage(1);
   }, [search, roleFilter]);
 
-  const errorText = (error: unknown) =>
-    typeof error === "string"
-      ? error
-      : Object.values(error as Record<string, string[]>).flat()[0] ?? t("adminUsers.validationError");
+  const errorText = (result: { error: string; fieldErrors?: Record<string, string[]> }) =>
+    result.fieldErrors ? Object.values(result.fieldErrors).flat()[0] ?? result.error : result.error;
 
   const handleCreateUser = async (formData: FormData) => {
     const result = await createUser(formData);
-    if (result?.error) {
-      setMessage({ type: "error", text: errorText(result.error) });
+    if (!result.success) {
+      setMessage({ type: "error", text: errorText(result) });
     } else {
       setMessage({ type: "success", text: t("adminUsers.userCreated") });
       setShowCreateForm(false);
@@ -103,8 +101,8 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
 
   const handleUpdateUser = async (userId: string, formData: FormData) => {
     const result = await updateUser(userId, formData);
-    if (result?.error) {
-      setMessage({ type: "error", text: errorText(result.error) });
+    if (!result.success) {
+      setMessage({ type: "error", text: errorText(result) });
     } else {
       setMessage({ type: "success", text: t("adminUsers.userUpdated") });
       setEditingUser(null);
@@ -114,8 +112,8 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
 
   const handleDeactivate = async (userId: string) => {
     const result = await deactivateUser(userId);
-    if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+    if (!result.success) {
+      setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: t("adminUsers.userDeactivated") });
       router.refresh();
@@ -124,8 +122,8 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
 
   const handleActivate = async (userId: string) => {
     const result = await activateUser(userId);
-    if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+    if (!result.success) {
+      setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: t("adminUsers.userActivated") });
       router.refresh();
@@ -134,8 +132,8 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
 
   const handleResetPassword = async (userId: string, newPassword: string) => {
     const result = await resetPassword(userId, newPassword);
-    if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+    if (!result.success) {
+      setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: t("adminUsers.passwordResetDone") });
       setResetPasswordUser(null);
@@ -146,12 +144,16 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
   useEffect(() => {
     if (linkingUser) {
       if (linkingUser.role === "GUARDIAN") {
-        getLinkedStudents(linkingUser.id).then(setLinkedUsers);
+        getLinkedStudents(linkingUser.id).then((res) => {
+          if (res.success) setLinkedUsers(res.data);
+        });
         // Get all students for the dropdown
         const students = users.filter((u) => u.role === "STUDENT");
         setAllStudents(students);
       } else if (linkingUser.role === "STUDENT") {
-        getLinkedGuardians(linkingUser.id).then(setLinkedUsers);
+        getLinkedGuardians(linkingUser.id).then((res) => {
+          if (res.success) setLinkedUsers(res.data);
+        });
         // Get all guardians for the dropdown
         const guardians = users.filter((u) => u.role === "GUARDIAN");
         setAllGuardians(guardians);
@@ -162,54 +164,54 @@ export default function AdminUsersClient({ users: initialUsers }: { users: User[
   const handleLinkGuardian = async () => {
     if (!linkingUser || !selectedStudentId) return;
     const result = await linkGuardian(linkingUser.id, selectedStudentId);
-    if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+    if (!result.success) {
+      setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: t("adminUsers.guardianLinked") });
       setSelectedStudentId("");
       // Refresh linked users
       const updated = await getLinkedStudents(linkingUser.id);
-      setLinkedUsers(updated);
+      if (updated.success) setLinkedUsers(updated.data);
     }
   };
 
   const handleUnlinkGuardian = async (studentId: string) => {
     if (!linkingUser) return;
     const result = await unlinkGuardian(linkingUser.id, studentId);
-    if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+    if (!result.success) {
+      setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: t("adminUsers.guardianUnlinked") });
       // Refresh linked users
       const updated = await getLinkedStudents(linkingUser.id);
-      setLinkedUsers(updated);
+      if (updated.success) setLinkedUsers(updated.data);
     }
   };
 
   const handleLinkStudent = async () => {
     if (!linkingUser || !selectedGuardianId) return;
     const result = await linkGuardian(selectedGuardianId, linkingUser.id);
-    if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+    if (!result.success) {
+      setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: t("adminUsers.guardianLinked") });
       setSelectedGuardianId("");
       // Refresh linked users
       const updated = await getLinkedGuardians(linkingUser.id);
-      setLinkedUsers(updated);
+      if (updated.success) setLinkedUsers(updated.data);
     }
   };
 
   const handleUnlinkStudent = async (guardianId: string) => {
     if (!linkingUser) return;
     const result = await unlinkGuardian(guardianId, linkingUser.id);
-    if (result?.error) {
-      setMessage({ type: "error", text: result.error as string });
+    if (!result.success) {
+      setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: t("adminUsers.guardianUnlinked") });
       // Refresh linked users
       const updated = await getLinkedGuardians(linkingUser.id);
-      setLinkedUsers(updated);
+      if (updated.success) setLinkedUsers(updated.data);
     }
   };
 

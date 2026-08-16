@@ -25,8 +25,8 @@ export default async function AttendanceRecordPage({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
+  const userId = session.user.id;
+  const role = session.user.role;
 
   const course = await db.course.findUnique({ where: { id: courseId } });
   if (!course) notFound();

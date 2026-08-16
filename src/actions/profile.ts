@@ -15,12 +15,13 @@
 import { z } from "zod";
 import { compare, hash } from "bcryptjs";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
 import { normalizePhone } from "@/lib/phone";
 import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/authHelpers";
 import { isSuperadminId, isReservedSuperadminName } from "@/lib/superadmin";
 import { APP_TITLE_KEY, APP_TITLE_MAX_LENGTH } from "@/lib/appSettings";
+import type { ActionResult } from "@/types/errors";
 
 const profileSchema = z.object({
   name: z.string().min(2).max(100),
@@ -31,13 +32,13 @@ const profileSchema = z.object({
   notes: z.string().max(1000).optional().or(z.literal("")),
 });
 
-export async function updateProfile(formData: FormData): Promise<{ success?: boolean; error?: Record<string, string[]> }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const userId = (session.user as { id: string }).id;
+export async function updateProfile(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user.success) return user;
+  const userId = user.data.id;
 
   if (isSuperadminId(userId)) {
-    return { error: { form: [await serverT("errors.superadminReadOnly")] } };
+    return { success: false, error: await serverT("errors.superadminReadOnly") };
   }
 
   const parsed = profileSchema.safeParse({
@@ -50,11 +51,19 @@ export async function updateProfile(formData: FormData): Promise<{ success?: boo
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   if (isReservedSuperadminName(parsed.data.name)) {
-    return { error: { name: [await serverT("errors.nameReserved")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { name: [await serverT("errors.nameReserved")] },
+    };
   }
 
   const email = parsed.data.email ? parsed.data.email.toLowerCase() : null;
@@ -63,12 +72,20 @@ export async function updateProfile(formData: FormData): Promise<{ success?: boo
   if (parsed.data.phone) {
     phone = normalizePhone(parsed.data.phone);
     if (!phone) {
-      return { error: { phone: [await serverT("errors.invalidIdentifier")] } };
+      return {
+        success: false,
+        error: await serverT("errors.validationFailed"),
+        fieldErrors: { phone: [await serverT("errors.invalidIdentifier")] },
+      };
     }
   }
 
   if (!email && !phone) {
-    return { error: { form: [await serverT("errors.identifierRequired")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { form: [await serverT("errors.identifierRequired")] },
+    };
   }
 
   if (email) {
@@ -76,7 +93,11 @@ export async function updateProfile(formData: FormData): Promise<{ success?: boo
       where: { email, id: { not: userId } },
     });
     if (existing) {
-      return { error: { email: [await serverT("errors.emailExists")] } };
+      return {
+        success: false,
+        error: await serverT("errors.validationFailed"),
+        fieldErrors: { email: [await serverT("errors.emailExists")] },
+      };
     }
   }
 
@@ -85,7 +106,11 @@ export async function updateProfile(formData: FormData): Promise<{ success?: boo
       where: { phone, id: { not: userId } },
     });
     if (existing) {
-      return { error: { phone: [await serverT("errors.phoneExists")] } };
+      return {
+        success: false,
+        error: await serverT("errors.validationFailed"),
+        fieldErrors: { phone: [await serverT("errors.phoneExists")] },
+      };
     }
   }
 
@@ -109,13 +134,12 @@ const appTitleSchema = z.object({
   appTitle: z.string().trim().min(1).max(APP_TITLE_MAX_LENGTH),
 });
 
-export async function updateAppTitle(formData: FormData): Promise<{ success?: boolean; error?: Record<string, string[]> }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const userId = (session.user as { id: string }).id;
+export async function updateAppTitle(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user.success) return user;
 
-  if (!isSuperadminId(userId)) {
-    throw new Error("Not authorized");
+  if (!isSuperadminId(user.data.id)) {
+    return { success: false, error: await serverT("errors.unauthorized") };
   }
 
   const parsed = appTitleSchema.safeParse({
@@ -123,7 +147,11 @@ export async function updateAppTitle(formData: FormData): Promise<{ success?: bo
   });
 
   if (!parsed.success) {
-    return { error: { appTitle: [await serverT("profile.appTitleInvalid")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { appTitle: [await serverT("profile.appTitleInvalid")] },
+    };
   }
 
   await db.appSetting.upsert({
@@ -143,15 +171,15 @@ const changePasswordSchema = z.object({
   confirmPassword: z.string().min(1),
 });
 
-export async function changePassword(formData: FormData): Promise<{ success?: boolean; error?: Record<string, string[]> }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const userId = (session.user as { id: string }).id;
+export async function changePassword(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user.success) return user;
+  const userId = user.data.id;
 
   // The superadmin's password is env-controlled and re-provisioned on every
   // login, so a DB change would be silently ignored. Reject defensively.
   if (isSuperadminId(userId)) {
-    return { error: { form: [await serverT("errors.superadminEnvManaged")] } };
+    return { success: false, error: await serverT("errors.superadminEnvManaged") };
   }
 
   const parsed = changePasswordSchema.safeParse({
@@ -161,25 +189,41 @@ export async function changePassword(formData: FormData): Promise<{ success?: bo
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const { currentPassword, newPassword, confirmPassword } = parsed.data;
 
   if (newPassword !== confirmPassword) {
-    return { error: { confirmPassword: [await serverT("errors.passwordMismatch")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { confirmPassword: [await serverT("errors.passwordMismatch")] },
+    };
   }
 
   if (newPassword === currentPassword) {
-    return { error: { newPassword: [await serverT("errors.samePassword")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { newPassword: [await serverT("errors.samePassword")] },
+    };
   }
 
-  const user = await db.user.findUnique({ where: { id: userId } });
-  if (!user) throw new Error("Not authenticated");
+  const dbUser = await db.user.findUnique({ where: { id: userId } });
+  if (!dbUser) return { success: false, error: await serverT("errors.userNotFound") };
 
-  const valid = await compare(currentPassword, user.passwordHash);
+  const valid = await compare(currentPassword, dbUser.passwordHash);
   if (!valid) {
-    return { error: { currentPassword: [await serverT("errors.currentPasswordWrong")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { currentPassword: [await serverT("errors.currentPasswordWrong")] },
+    };
   }
 
   const passwordHash = await hash(newPassword, 12);

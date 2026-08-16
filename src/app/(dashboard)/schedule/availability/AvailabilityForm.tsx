@@ -32,10 +32,10 @@ export default function AvailabilityForm({ courses }: { courses: Course[] }) {
     formData.set("endTime", endTime);
     if (courseId) formData.set("courseId", courseId);
 
-    const result = await setAvailability(formData) as any;
+    const result = await setAvailability(formData);
 
-    if (result?.error) {
-      setError(typeof result.error === "string" ? result.error : t("availability.adding"));
+    if (!result.success) {
+      setError(result.error);
       setLoading(false);
       return;
     }

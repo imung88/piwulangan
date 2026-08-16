@@ -39,12 +39,8 @@ export function CourseDetailsForm({
     fd.set("enrollmentMode", enrollmentMode);
     const res = await updateCourse(courseId, fd);
     setLoading(false);
-    if (res && "error" in res && res.error) {
-      const messages = Object.values(res.error)
-        .flat()
-        .filter(Boolean)
-        .join(", ");
-      setError(messages || t("settings.failedSave"));
+    if (!res.success) {
+      setError(res.error);
       return;
     }
     setSaved(true);

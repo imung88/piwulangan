@@ -12,10 +12,13 @@ export default async function AdminUsersPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const role = (session.user as any).role;
+  const role = session.user.role;
   if (role !== "ADMIN") redirect("/dashboard");
 
-  const users = (await getUsers()).map((u) => ({
+  const usersRes = await getUsers();
+  if (!usersRes.success) redirect("/login");
+
+  const users = usersRes.data.map((u) => ({
     ...u,
     dateOfBirth: u.dateOfBirth ? u.dateOfBirth.toISOString().slice(0, 10) : null,
   }));

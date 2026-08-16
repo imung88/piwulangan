@@ -59,8 +59,8 @@ export default function ReportsManageClient({
     if (lessonId) fd.set("lessonId", lessonId);
     startTransition(async () => {
       const res = await createReport(courseId, fd);
-      if (res?.error) {
-        toast.error(typeof res.error === "string" ? res.error : t("reports.errorInvalid"));
+      if (!res.success) {
+        toast.error(res.error);
         return;
       }
       toast.success(t("reports.created"));
@@ -76,8 +76,8 @@ export default function ReportsManageClient({
     fd.set("body", editBody);
     startTransition(async () => {
       const res = await updateReport(reportId, fd);
-      if (res?.error) {
-        toast.error(typeof res.error === "string" ? res.error : t("reports.errorInvalid"));
+      if (!res.success) {
+        toast.error(res.error);
         return;
       }
       toast.success(t("reports.updated"));
@@ -91,8 +91,8 @@ export default function ReportsManageClient({
     const id = deleteTarget.id;
     startTransition(async () => {
       const res = await deleteReport(id);
-      if (res?.error) {
-        toast.error(typeof res.error === "string" ? res.error : t("reports.errorInvalid"));
+      if (!res.success) {
+        toast.error(res.error);
       } else {
         toast.success(t("reports.deleted"));
       }

@@ -43,8 +43,8 @@ export function AddCoInstructorForm({
     setError(null);
     const res = await addCoInstructor(courseId, selected);
     setLoading(false);
-    if (res?.error) {
-      setError(typeof res.error === "string" ? res.error : t("settings.failedTeacherAction"));
+    if (!res.success) {
+      setError(res.error);
       return;
     }
     setSelected("");
@@ -90,12 +90,18 @@ export function RemoveCoInstructorButton({
   const t = useT();
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleRemove() {
     setLoading(true);
-    await removeCoInstructor(courseId, instructorId);
+    setError(null);
+    const res = await removeCoInstructor(courseId, instructorId);
     setLoading(false);
     setConfirming(false);
+    if (!res.success) {
+      setError(res.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -118,6 +124,7 @@ export function RemoveCoInstructorButton({
         onConfirm={handleRemove}
         onCancel={() => setConfirming(false)}
       />
+      {error && <p className="text-sm text-metro-error">{error}</p>}
     </>
   );
 }
@@ -148,8 +155,8 @@ export function TransferOwnershipForm({
     const res = await transferOwnership(courseId, selected);
     setLoading(false);
     setConfirming(false);
-    if (res?.error) {
-      setError(typeof res.error === "string" ? res.error : t("settings.failedTeacherAction"));
+    if (!res.success) {
+      setError(res.error);
       return;
     }
     setSelected("");
@@ -210,15 +217,15 @@ export function DeleteCourseButton({
 
   async function handleDelete() {
     setLoading(true);
-    try {
-      await deleteCourse(courseId);
-      toast.success(t("settings.deleted"));
-      router.push("/courses");
-    } catch {
-      toast.error(t("settings.failedTeacherAction"));
-      setLoading(false);
-      setConfirming(false);
+    const res = await deleteCourse(courseId);
+    setLoading(false);
+    setConfirming(false);
+    if (!res.success) {
+      toast.error(res.error);
+      return;
     }
+    toast.success(t("settings.deleted"));
+    router.push("/courses");
   }
 
   return (

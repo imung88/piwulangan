@@ -78,24 +78,15 @@ export function LessonEditForm({
     formData.set("title", title);
     formData.set("content", content);
     if (duration) formData.set("duration", duration);
-    try {
-      const result: any = await updateLesson(lessonId, formData);
-      setSaving(false);
+    const result = await updateLesson(lessonId, formData);
+    setSaving(false);
 
-      if (result?.error) {
-        const msgs =
-          typeof result.error === "string"
-            ? result.error
-            : Object.values(result.error).flat().join(", ");
-        setError(msgs || t("lesson.failedSave"));
-        return;
-      }
-      setExpanded(false);
-      router.refresh();
-    } catch {
-      setSaving(false);
-      setError(t("lesson.failedSave"));
+    if (!result.success) {
+      setError(result.error || t("lesson.failedSave"));
+      return;
     }
+    setExpanded(false);
+    router.refresh();
   }
 
   function handleCancel() {
@@ -110,38 +101,31 @@ export function LessonEditForm({
 
   async function handleAddResource() {
     setResourceError(null);
-    try {
-      const result: any = await addResource(
-        lessonId,
-        newResTitle.trim(),
-        newResUrl.trim(),
-        newResType
-      );
-      if (result?.error) {
-        setResourceError(
-          typeof result.error === "string" ? result.error : t("lesson.failedResource")
-        );
-        return;
-      }
-      setNewResTitle("");
-      setNewResUrl("");
-      setNewResType("LINK");
-      router.refresh();
-    } catch {
-      setResourceError(t("lesson.failedResource"));
+    const result = await addResource(
+      lessonId,
+      newResTitle.trim(),
+      newResUrl.trim(),
+      newResType
+    );
+    if (!result.success) {
+      setResourceError(result.error);
+      return;
     }
+    setNewResTitle("");
+    setNewResUrl("");
+    setNewResType("LINK");
+    router.refresh();
   }
 
   async function handleDeleteResource() {
     if (!deletingRes) return;
-    try {
-      await deleteResource(deletingRes.id);
-      setDeletingRes(null);
-      router.refresh();
-    } catch {
-      setDeletingRes(null);
-      setResourceError(t("lesson.failedResource"));
+    const res = await deleteResource(deletingRes.id);
+    setDeletingRes(null);
+    if (!res.success) {
+      setResourceError(res.error);
+      return;
     }
+    router.refresh();
   }
 
   function startEditResource(res: Resource) {
@@ -155,23 +139,17 @@ export function LessonEditForm({
   async function handleSaveResource() {
     if (!editingResId) return;
     setResourceError(null);
-    try {
-      const result: any = await updateResource(editingResId, {
-        title: editResTitle.trim(),
-        url: editResUrl.trim(),
-        type: editResType,
-      });
-      if (result?.error) {
-        setResourceError(
-          typeof result.error === "string" ? result.error : t("lesson.failedResource")
-        );
-        return;
-      }
-      setEditingResId(null);
-      router.refresh();
-    } catch {
-      setResourceError(t("lesson.failedResource"));
+    const result = await updateResource(editingResId, {
+      title: editResTitle.trim(),
+      url: editResUrl.trim(),
+      type: editResType,
+    });
+    if (!result.success) {
+      setResourceError(result.error);
+      return;
     }
+    setEditingResId(null);
+    router.refresh();
   }
 
   function resourceTypeIcon(type: string) {
@@ -542,11 +520,12 @@ export function LessonEditForm({
         cancelLabel={t("common.cancel")}
         onConfirm={async () => {
           setDeleting(true);
-          try {
-            await deleteLesson(lessonId);
-          } finally {
-            setDeleting(false);
-            setConfirmingDelete(false);
+          const res = await deleteLesson(lessonId);
+          setDeleting(false);
+          setConfirmingDelete(false);
+          if (!res.success) {
+            setError(res.error);
+            return;
           }
           router.refresh();
         }}

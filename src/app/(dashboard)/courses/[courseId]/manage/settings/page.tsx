@@ -12,7 +12,7 @@ import {
 } from "./TeacherActions";
 import { CourseDetailsForm } from "./CourseDetailsForm";
 import { PendingButton } from "@/components/ui/PendingButton";
-import { getServerT, formatT } from "@/lib/i18n/serverT";
+import { getServerT } from "@/lib/i18n/serverT";
 
 export default async function CourseSettingsPage({
   params,
@@ -24,8 +24,8 @@ export default async function CourseSettingsPage({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
+  const userId = session.user.id;
+  const role = session.user.role;
 
   const course = await db.course.findUnique({
     where: { id: courseId },

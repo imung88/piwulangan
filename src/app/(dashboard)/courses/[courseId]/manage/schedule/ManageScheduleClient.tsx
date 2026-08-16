@@ -119,12 +119,8 @@ export default function ManageScheduleClient({
     const result = await createSession(fd);
     setLoading(false);
 
-    if (result?.error) {
-      setError(
-        typeof result.error === "string"
-          ? result.error
-          : Object.values(result.error).flat().join(", ")
-      );
+    if (!result.success) {
+      setError(result.error);
       return;
     }
     closeForm();

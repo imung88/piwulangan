@@ -769,6 +769,16 @@ export default {
     invalidIdentifier: "Enter a valid email or phone number",
     identifierRequired: "At least one of email or phone number is required",
     loginFailedAfterSignup: "Login failed after signup. Please try logging in manually.",
+    unauthenticated: "Not authenticated",
+    unauthorized: "Not authorized",
+    validationFailed: "Please fix the highlighted fields",
+    moduleNotFound: "Module not found",
+    lessonNotFound: "Lesson not found",
+    resourceNotFound: "Resource not found",
+    announcementNotFound: "Announcement not found",
+    reportNotFound: "Report not found",
+    availabilityNotFound: "Availability not found",
+    blockedDateNotFound: "Blocked date not found",
   },
 
   // Shared / generic

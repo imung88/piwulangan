@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n/useT";
+import { useToast } from "@/components/ui/Toast";
 import { enrollStudent, removeEnrollment } from "@/actions/courses";
 
 interface StudentOption {
@@ -59,8 +60,8 @@ export function AddStudentForm({
     setError(null);
     const res = await enrollStudent(courseId, selected.id);
     setLoading(false);
-    if (res?.error) {
-      setError(typeof res.error === "string" ? res.error : t("courseManage.failedEnroll"));
+    if (!res.success) {
+      setError(res.error);
       return;
     }
     setSelected(null);
@@ -155,14 +156,19 @@ export function RemoveStudentButton({
 }) {
   const router = useRouter();
   const t = useT();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
 
   async function handleRemove() {
     const msg = t("courseManage.confirmRemove").replace("{name}", studentName);
     if (!confirm(msg)) return;
     setLoading(true);
-    await removeEnrollment(courseId, studentId);
+    const res = await removeEnrollment(courseId, studentId);
     setLoading(false);
+    if (!res.success) {
+      toast.error(res.error);
+      return;
+    }
     router.refresh();
   }
 

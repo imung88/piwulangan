@@ -47,11 +47,10 @@ function LayoutBody({ children, role, userName }: Props) {
   const [confirmSignOut, setConfirmSignOut] = useState(false)
 
   const loadNotifications = useCallback(async () => {
-    try {
-      const data = await getMyNotifications()
-      setUnreadCount(data.unreadCount)
-      setNotifications(data.notifications)
-    } catch {}
+    const res = await getMyNotifications()
+    if (!res.success) return
+    setUnreadCount(res.data.unreadCount)
+    setNotifications(res.data.notifications)
   }, [])
 
   useEffect(() => {

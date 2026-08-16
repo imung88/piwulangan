@@ -48,8 +48,8 @@ export default function CoursesClient({
     const result = await archiveCourse(archiving.id);
     setArchivePending(false);
     setArchiving(null);
-    if (result?.error) {
-      toast.error(result.error as string);
+    if (!result.success) {
+      toast.error(result.error);
     } else {
       toast.success(t("courses.courseArchived"));
       router.refresh();
@@ -59,22 +59,21 @@ export default function CoursesClient({
   const handleUnpublish = async () => {
     if (!unpublishing) return;
     setUnpublishPending(true);
-    try {
-      await unpublishCourse(unpublishing.id);
+    const result = await unpublishCourse(unpublishing.id);
+    setUnpublishPending(false);
+    setUnpublishing(null);
+    if (!result.success) {
+      toast.error(result.error);
+    } else {
       toast.success(t("courses.courseUnpublished"));
-      setUnpublishing(null);
       router.refresh();
-    } catch {
-      toast.error(t("settings.failedTeacherAction"));
-    } finally {
-      setUnpublishPending(false);
     }
   };
 
   const handleUnarchive = async (courseId: string) => {
     const result = await unarchiveCourse(courseId);
-    if (result?.error) {
-      toast.error(result.error as string);
+    if (!result.success) {
+      toast.error(result.error);
     } else {
       toast.success(t("courses.courseUnarchived"));
       router.refresh();

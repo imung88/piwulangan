@@ -23,7 +23,7 @@ export function PreviewEnroll({
     setError(null);
     const res = await enrollOpen(courseId);
     setLoading(false);
-    if (res?.error) {
+    if (!res.success) {
       setError(res.error);
       return;
     }
@@ -37,7 +37,7 @@ export function PreviewEnroll({
     setError(null);
     const res = await enrollByCode(code.trim());
     setLoading(false);
-    if (res?.error) {
+    if (!res.success) {
       setError(res.error);
       return;
     }

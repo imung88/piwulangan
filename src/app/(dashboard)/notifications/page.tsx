@@ -14,7 +14,7 @@ export default async function NotificationsPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const userId = (session.user as any).id;
+  const userId = session.user.id;
 
   const notifications = await db.notification.findMany({
     where: { userId },

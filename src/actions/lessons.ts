@@ -13,10 +13,10 @@
 
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
-import { canManageCourse } from "@/lib/coursePerms";
+import { requireCourseManager } from "@/lib/authHelpers";
 import { revalidatePath } from "next/cache";
+import type { ActionResult } from "@/types/errors";
 
 // Resource URLs must be absolute web links; a bare "example.com/file" would
 // otherwise render as a relative link pointing into the app itself.
@@ -38,18 +38,9 @@ function normalizeResourceUrl(raw: string): string | null {
 
 // ─── Modules ───
 
-export async function createModule(courseId: string, title: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
+export async function createModule(courseId: string, title: string): Promise<ActionResult> {
+  const cm = await requireCourseManager(courseId);
+  if (!cm.success) return cm;
 
   const maxOrder = await db.module.aggregate({
     where: { courseId },
@@ -68,21 +59,12 @@ export async function createModule(courseId: string, title: string) {
   return { success: true };
 }
 
-export async function updateModule(moduleId: string, title: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
+export async function updateModule(moduleId: string, title: string): Promise<ActionResult> {
+  const mod = await db.module.findUnique({ where: { id: moduleId } });
+  if (!mod) return { success: false, error: await serverT("errors.moduleNotFound") };
 
-  const mod = await db.module.findUnique({
-    where: { id: moduleId },
-    include: { course: true },
-  });
-  if (!mod) throw new Error("Module not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, mod.course))) {
-    throw new Error("Not authorized");
-  }
+  const cm = await requireCourseManager(mod.courseId);
+  if (!cm.success) return cm;
 
   await db.module.update({
     where: { id: moduleId },
@@ -93,21 +75,12 @@ export async function updateModule(moduleId: string, title: string) {
   return { success: true };
 }
 
-export async function deleteModule(moduleId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
+export async function deleteModule(moduleId: string): Promise<ActionResult> {
+  const mod = await db.module.findUnique({ where: { id: moduleId } });
+  if (!mod) return { success: false, error: await serverT("errors.moduleNotFound") };
 
-  const mod = await db.module.findUnique({
-    where: { id: moduleId },
-    include: { course: true },
-  });
-  if (!mod) throw new Error("Module not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, mod.course))) {
-    throw new Error("Not authorized");
-  }
+  const cm = await requireCourseManager(mod.courseId);
+  if (!cm.success) return cm;
 
   await db.module.delete({ where: { id: moduleId } });
 
@@ -123,21 +96,15 @@ const lessonSchema = z.object({
   duration: z.coerce.number().int().positive().optional(),
 });
 
-export async function createLesson(moduleId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
+export async function createLesson(
+  moduleId: string,
+  formData: FormData
+): Promise<ActionResult<{ lessonId: string }>> {
+  const mod = await db.module.findUnique({ where: { id: moduleId } });
+  if (!mod) return { success: false, error: await serverT("errors.moduleNotFound") };
 
-  const mod = await db.module.findUnique({
-    where: { id: moduleId },
-    include: { course: true },
-  });
-  if (!mod) throw new Error("Module not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, mod.course))) {
-    throw new Error("Not authorized");
-  }
+  const cm = await requireCourseManager(mod.courseId);
+  if (!cm.success) return cm;
 
   const parsed = lessonSchema.safeParse({
     title: formData.get("title"),
@@ -146,7 +113,11 @@ export async function createLesson(moduleId: string, formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const maxOrder = await db.lesson.aggregate({
@@ -165,24 +136,18 @@ export async function createLesson(moduleId: string, formData: FormData) {
   });
 
   revalidatePath(`/courses/${mod.courseId}/manage/content`);
-  return { success: true, lessonId: lesson.id };
+  return { success: true, data: { lessonId: lesson.id } };
 }
 
-export async function updateLesson(lessonId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
+export async function updateLesson(lessonId: string, formData: FormData): Promise<ActionResult> {
   const lesson = await db.lesson.findUnique({
     where: { id: lessonId },
-    include: { module: { include: { course: true } } },
+    include: { module: { select: { courseId: true } } },
   });
-  if (!lesson) throw new Error("Lesson not found");
+  if (!lesson) return { success: false, error: await serverT("errors.lessonNotFound") };
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, lesson.module.course))) {
-    throw new Error("Not authorized");
-  }
+  const cm = await requireCourseManager(lesson.module.courseId);
+  if (!cm.success) return cm;
 
   const parsed = lessonSchema.safeParse({
     title: formData.get("title"),
@@ -191,7 +156,11 @@ export async function updateLesson(lessonId: string, formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   await db.lesson.update({
@@ -209,21 +178,15 @@ export async function updateLesson(lessonId: string, formData: FormData) {
   return { success: true };
 }
 
-export async function deleteLesson(lessonId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
+export async function deleteLesson(lessonId: string): Promise<ActionResult> {
   const lesson = await db.lesson.findUnique({
     where: { id: lessonId },
-    include: { module: { include: { course: true } } },
+    include: { module: { select: { courseId: true } } },
   });
-  if (!lesson) throw new Error("Lesson not found");
+  if (!lesson) return { success: false, error: await serverT("errors.lessonNotFound") };
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, lesson.module.course))) {
-    throw new Error("Not authorized");
-  }
+  const cm = await requireCourseManager(lesson.module.courseId);
+  if (!cm.success) return cm;
 
   const courseId = lesson.module.courseId;
   await db.lesson.delete({ where: { id: lessonId } });
@@ -239,30 +202,24 @@ export async function addResource(
   title: string,
   url: string,
   type?: "LINK" | "VIDEO" | "DOCUMENT"
-) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
+): Promise<ActionResult> {
   const lesson = await db.lesson.findUnique({
     where: { id: lessonId },
-    include: { module: { include: { course: true } } },
+    include: { module: { select: { courseId: true } } },
   });
-  if (!lesson) throw new Error("Lesson not found");
+  if (!lesson) return { success: false, error: await serverT("errors.lessonNotFound") };
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, lesson.module.course))) {
-    throw new Error("Not authorized");
-  }
+  const cm = await requireCourseManager(lesson.module.courseId);
+  if (!cm.success) return cm;
 
   const count = await db.resource.count({ where: { lessonId } });
   if (count >= 5) {
-    return { error: await serverT("errors.maxResources") };
+    return { success: false, error: await serverT("errors.maxResources") };
   }
 
   const normalizedUrl = normalizeResourceUrl(url);
   if (!normalizedUrl) {
-    return { error: await serverT("errors.invalidUrl") };
+    return { success: false, error: await serverT("errors.invalidUrl") };
   }
 
   await db.resource.create({
@@ -275,21 +232,15 @@ export async function addResource(
   return { success: true };
 }
 
-export async function deleteResource(resourceId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
+export async function deleteResource(resourceId: string): Promise<ActionResult> {
   const resource = await db.resource.findUnique({
     where: { id: resourceId },
-    include: { lesson: { include: { module: { include: { course: true } } } } },
+    include: { lesson: { select: { moduleId: true, module: { select: { courseId: true } } } } },
   });
-  if (!resource) throw new Error("Resource not found");
+  if (!resource) return { success: false, error: await serverT("errors.resourceNotFound") };
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, resource.lesson.module.course))) {
-    throw new Error("Not authorized");
-  }
+  const cm = await requireCourseManager(resource.lesson.module.courseId);
+  if (!cm.success) return cm;
 
   const courseId = resource.lesson.module.courseId;
   await db.resource.delete({ where: { id: resourceId } });
@@ -302,25 +253,19 @@ export async function deleteResource(resourceId: string) {
 export async function updateResource(
   resourceId: string,
   data: { title: string; url: string; type?: "LINK" | "VIDEO" | "DOCUMENT" }
-) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
+): Promise<ActionResult> {
   const resource = await db.resource.findUnique({
     where: { id: resourceId },
-    include: { lesson: { include: { module: { include: { course: true } } } } },
+    include: { lesson: { select: { moduleId: true, module: { select: { courseId: true } } } } },
   });
-  if (!resource) throw new Error("Resource not found");
+  if (!resource) return { success: false, error: await serverT("errors.resourceNotFound") };
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, resource.lesson.module.course))) {
-    throw new Error("Not authorized");
-  }
+  const cm = await requireCourseManager(resource.lesson.module.courseId);
+  if (!cm.success) return cm;
 
   const normalizedUrl = normalizeResourceUrl(data.url);
   if (!normalizedUrl) {
-    return { error: await serverT("errors.invalidUrl") };
+    return { success: false, error: await serverT("errors.invalidUrl") };
   }
 
   await db.resource.update({

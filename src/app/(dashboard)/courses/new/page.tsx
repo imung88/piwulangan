@@ -7,7 +7,7 @@ export default async function NewCoursePage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const role = (session.user as any).role;
+  const role = session.user.role;
   if (role !== "ADMIN" && role !== "INSTRUCTOR") redirect("/courses");
 
   // Admins can create a course on behalf of any instructor

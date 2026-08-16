@@ -13,27 +13,30 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/authHelpers";
+import type { ActionResult } from "@/types/errors";
 
-export async function linkGuardian(guardianId: string, studentId: string): Promise<{ success?: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+export async function linkGuardian(
+  guardianId: string,
+  studentId: string
+): Promise<ActionResult> {
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   // Verify both users exist and have correct roles
   const guardian = await db.user.findUnique({ where: { id: guardianId } });
   const student = await db.user.findUnique({ where: { id: studentId } });
 
   if (!guardian || !student) {
-    return { error: await serverT("errors.userNotFound") };
+    return { success: false, error: await serverT("errors.userNotFound") };
   }
   if (guardian.role !== "GUARDIAN") {
-    return { error: await serverT("errors.notGuardian") };
+    return { success: false, error: await serverT("errors.notGuardian") };
   }
   if (student.role !== "STUDENT") {
-    return { error: await serverT("errors.notStudent") };
+    return { success: false, error: await serverT("errors.notStudent") };
   }
 
   // Check if link already exists
@@ -42,7 +45,7 @@ export async function linkGuardian(guardianId: string, studentId: string): Promi
   });
 
   if (existing) {
-    return { error: await serverT("errors.guardianAlreadyLinked") };
+    return { success: false, error: await serverT("errors.guardianAlreadyLinked") };
   }
 
   await db.guardianStudent.create({
@@ -53,10 +56,12 @@ export async function linkGuardian(guardianId: string, studentId: string): Promi
   return { success: true };
 }
 
-export async function unlinkGuardian(guardianId: string, studentId: string): Promise<{ success?: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+export async function unlinkGuardian(
+  guardianId: string,
+  studentId: string
+): Promise<ActionResult> {
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   await db.guardianStudent.delete({
     where: { guardianId_studentId: { guardianId, studentId } },
@@ -67,9 +72,8 @@ export async function unlinkGuardian(guardianId: string, studentId: string): Pro
 }
 
 export async function getLinkedStudents(guardianId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   const links = await db.guardianStudent.findMany({
     where: { guardianId },
@@ -80,13 +84,12 @@ export async function getLinkedStudents(guardianId: string) {
     },
   });
 
-  return links.map((link) => link.student);
+  return { success: true, data: links.map((link) => link.student) };
 }
 
 export async function getLinkedGuardians(studentId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   const links = await db.guardianStudent.findMany({
     where: { studentId },
@@ -97,5 +100,5 @@ export async function getLinkedGuardians(studentId: string) {
     },
   });
 
-  return links.map((link) => link.guardian);
+  return { success: true, data: links.map((link) => link.guardian) };
 }

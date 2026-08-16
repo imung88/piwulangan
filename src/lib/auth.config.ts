@@ -7,6 +7,7 @@
  *   - `authConfig`: NextAuth configuration object
  */
 import type { NextAuthConfig } from "next-auth";
+import type { Role } from "@prisma/client";
 
 // Edge-safe NextAuth config: no Prisma adapter, no bcryptjs, no providers.
 // Middleware imports only this; the Credentials provider + adapter live in auth.ts.
@@ -19,15 +20,24 @@ export const authConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role;
-        token.id = user.id;
+        // The Credentials provider always returns id + role (see src/lib/auth.ts
+        // authorize()); @auth/core's User type doesn't know about them.
+        const authUser = user as unknown as { id: string; role: Role };
+        token.role = authUser.role;
+        token.id = authUser.id;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).id = token.id;
+        // JWT is typed as Record<string, unknown>; read our fields via narrow
+        // casts and only stamp them when both are present (fails closed).
+        const role = token.role as Role | undefined;
+        const id = token.id as string | undefined;
+        if (role && id) {
+          session.user.role = role;
+          session.user.id = id;
+        }
       }
       return session;
     },

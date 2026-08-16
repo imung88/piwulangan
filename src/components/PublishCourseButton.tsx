@@ -24,16 +24,15 @@ export default function PublishCourseButton({
 
   const handlePublish = async () => {
     setPending(true)
-    try {
-      await publishCourse(courseId)
-      toast.success(t("courses.coursePublished"))
-      setConfirming(false)
-      router.refresh()
-    } catch {
-      toast.error(t("settings.failedTeacherAction"))
-    } finally {
-      setPending(false)
+    const res = await publishCourse(courseId)
+    setPending(false)
+    if (!res.success) {
+      toast.error(res.error)
+      return
     }
+    toast.success(t("courses.coursePublished"))
+    setConfirming(false)
+    router.refresh()
   }
 
   return (

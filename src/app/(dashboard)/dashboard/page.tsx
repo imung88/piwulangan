@@ -75,8 +75,8 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  const userId = (session.user as any).id
-  const role = (session.user as any).role
+  const userId = session.user.id
+  const role = session.user.role
 
   // Build lean, role-specific summary data. Only fields the client actually
   // renders are fetched/shaped here — see the card types in DashboardClient.tsx.
@@ -426,7 +426,7 @@ export default async function DashboardPage() {
     <DashboardClient
       data={dashboardData}
       role={role}
-      userName={(session.user as any).name ?? null}
+      userName={session.user.name ?? null}
     />
   )
 }

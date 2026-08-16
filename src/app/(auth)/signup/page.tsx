@@ -19,8 +19,8 @@ export default function SignupPage() {
 
     const formData = new FormData(e.currentTarget)
     const result = await signup(formData)
-    if (result?.error) {
-      setErrors(result.error as Record<string, string[]>)
+    if (!result.success) {
+      setErrors(result.fieldErrors ?? { form: [result.error] })
       setLoading(false)
     }
   }

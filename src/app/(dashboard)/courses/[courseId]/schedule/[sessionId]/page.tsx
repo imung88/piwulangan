@@ -18,8 +18,8 @@ export default async function SessionDetailPage({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
+  const userId = session.user.id;
+  const role = session.user.role;
 
   const [course, sessionRecord] = await Promise.all([
     db.course.findUnique({

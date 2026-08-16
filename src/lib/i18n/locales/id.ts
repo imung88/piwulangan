@@ -770,6 +770,16 @@ export default {
     invalidIdentifier: "Masukkan email atau nomor HP yang valid",
     identifierRequired: "Minimal salah satu dari email atau nomor HP wajib diisi",
     loginFailedAfterSignup: "Gagal masuk setelah pendaftaran. Silakan coba masuk secara manual.",
+    unauthenticated: "Belum masuk",
+    unauthorized: "Tidak memiliki izin",
+    validationFailed: "Perbaiki kolom yang ditandai",
+    moduleNotFound: "Modul tidak ditemukan",
+    lessonNotFound: "Pelajaran tidak ditemukan",
+    resourceNotFound: "Sumber daya tidak ditemukan",
+    announcementNotFound: "Pengumuman tidak ditemukan",
+    reportNotFound: "Laporan tidak ditemukan",
+    availabilityNotFound: "Ketersediaan tidak ditemukan",
+    blockedDateNotFound: "Tanggal diblokir tidak ditemukan",
   },
 
   // Shared / generic

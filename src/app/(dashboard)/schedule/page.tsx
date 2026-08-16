@@ -10,15 +10,15 @@ import {
 } from "@/lib/schedule";
 import { toSessionItem } from "@/components/schedule/types";
 import ScheduleView from "@/components/schedule/ScheduleView";
-import { getServerT, formatT } from "@/lib/i18n/serverT";
+import { getServerT } from "@/lib/i18n/serverT";
 
 export default async function SchedulePage() {
   const t = await getServerT();
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
+  const role = session.user.role;
+  const userId = session.user.id;
 
   const windowStart = new Date();
   windowStart.setDate(windowStart.getDate() - 60);

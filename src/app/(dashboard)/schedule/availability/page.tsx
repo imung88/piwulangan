@@ -13,8 +13,8 @@ export default async function AvailabilityPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const role = (session.user as any).role;
-  const userId = (session.user as any).id;
+  const role = session.user.role;
+  const userId = session.user.id;
 
   if (role !== "ADMIN" && role !== "INSTRUCTOR") {
     redirect("/dashboard");

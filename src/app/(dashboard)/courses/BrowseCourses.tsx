@@ -31,7 +31,7 @@ export default function BrowseCourses({ courses }: { courses: BrowseCourse[] }) 
     setError(null);
     const res = await enrollOpen(courseId);
     setBusyId(null);
-    if (res?.error) {
+    if (!res.success) {
       setError(res.error);
       return;
     }
@@ -44,7 +44,7 @@ export default function BrowseCourses({ courses }: { courses: BrowseCourse[] }) 
     setError(null);
     const res = await enrollByCode(code.trim());
     setBusyId(null);
-    if (res?.error) {
+    if (!res.success) {
       setError(res.error);
       return;
     }

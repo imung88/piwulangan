@@ -18,11 +18,11 @@
 
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
 import { notify } from "@/lib/notifications";
-import { canManageCourse, isCourseOwner } from "@/lib/coursePerms";
+import { requireUser, requireRole, requireCourseManager, requireCourseOwner } from "@/lib/authHelpers";
 import { revalidatePath } from "next/cache";
+import type { ActionResult } from "@/types/errors";
 
 const courseSchema = z.object({
   title: z.string().min(2).max(120),
@@ -40,11 +40,11 @@ function generateInviteCode(): string {
   return code;
 }
 
-export async function createCourse(formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  const role = (session.user as any).role;
-  if (role !== "ADMIN" && role !== "INSTRUCTOR") throw new Error("Not authorized");
+export async function createCourse(
+  formData: FormData
+): Promise<ActionResult<{ courseId: string }>> {
+  const user = await requireRole("ADMIN", "INSTRUCTOR");
+  if (!user.success) return user;
 
   const parsed = courseSchema.safeParse({
     title: formData.get("title"),
@@ -54,17 +54,25 @@ export async function createCourse(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const { title, description, coverImageUrl, enrollmentMode } = parsed.data;
 
-  let instructorId = (session.user as any).id;
+  let instructorId = user.data.id;
   const requestedInstructorId = formData.get("instructorId") as string | null;
-  if (role === "ADMIN" && requestedInstructorId) {
+  if (user.data.role === "ADMIN" && requestedInstructorId) {
     const target = await db.user.findUnique({ where: { id: requestedInstructorId } });
     if (!target || (target.role !== "INSTRUCTOR" && target.role !== "ADMIN")) {
-      return { error: { instructorId: ["Invalid instructor"] } };
+      return {
+        success: false,
+        error: await serverT("errors.validationFailed"),
+        fieldErrors: { instructorId: [await serverT("errors.notAnInstructor")] },
+      };
     }
     instructorId = target.id;
   }
@@ -81,21 +89,13 @@ export async function createCourse(formData: FormData) {
   });
 
   revalidatePath("/courses");
-  return { success: true, courseId: course.id };
+  return { success: true, data: { courseId: course.id } };
 }
 
-export async function updateCourse(courseId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
+export async function updateCourse(courseId: string, formData: FormData): Promise<ActionResult> {
+  const cm = await requireCourseManager(courseId);
+  if (!cm.success) return cm;
+  const { course } = cm.data;
 
   const parsed = courseSchema.safeParse({
     title: formData.get("title"),
@@ -105,7 +105,11 @@ export async function updateCourse(courseId: string, formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const { title, description, coverImageUrl, enrollmentMode } = parsed.data;
@@ -129,18 +133,9 @@ export async function updateCourse(courseId: string, formData: FormData) {
   return { success: true };
 }
 
-export async function publishCourse(courseId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
+export async function publishCourse(courseId: string): Promise<ActionResult> {
+  const cm = await requireCourseManager(courseId);
+  if (!cm.success) return cm;
 
   await db.course.update({
     where: { id: courseId },
@@ -151,18 +146,9 @@ export async function publishCourse(courseId: string) {
   return { success: true };
 }
 
-export async function unpublishCourse(courseId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
+export async function unpublishCourse(courseId: string): Promise<ActionResult> {
+  const cm = await requireCourseManager(courseId);
+  if (!cm.success) return cm;
 
   await db.course.update({
     where: { id: courseId },
@@ -173,18 +159,9 @@ export async function unpublishCourse(courseId: string) {
   return { success: true };
 }
 
-export async function deleteCourse(courseId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!isCourseOwner(userId, role, course)) {
-    throw new Error("Not authorized");
-  }
+export async function deleteCourse(courseId: string): Promise<ActionResult> {
+  const co = await requireCourseOwner(courseId);
+  if (!co.success) return co;
 
   await db.course.delete({ where: { id: courseId } });
 
@@ -192,61 +169,59 @@ export async function deleteCourse(courseId: string) {
   return { success: true };
 }
 
-export async function enrollByCode(code: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "STUDENT") {
-    return { error: await serverT("errors.onlyStudentsEnroll") };
-  }
+export async function enrollByCode(code: string): Promise<ActionResult<{ courseId: string }>> {
+  const user = await requireRole("STUDENT");
+  if (!user.success) return user;
 
   const course = await db.course.findUnique({
     where: { inviteCode: code.toUpperCase() },
   });
 
-  if (!course) return { error: await serverT("errors.invalidInviteCode") };
-  if (course.visibility !== "PUBLISHED") return { error: await serverT("errors.courseNotAvailable") };
+  if (!course) return { success: false, error: await serverT("errors.invalidInviteCode") };
+  if (course.visibility !== "PUBLISHED") {
+    return { success: false, error: await serverT("errors.courseNotAvailable") };
+  }
   if (course.enrollmentMode !== "INVITE_CODE") {
-    return { error: await serverT("errors.noInviteCodes") };
+    return { success: false, error: await serverT("errors.noInviteCodes") };
   }
 
-  const userId = (session.user as any).id;
+  const userId = user.data.id;
 
   // Check if already enrolled
   const existing = await db.enrollment.findUnique({
     where: { userId_courseId: { userId, courseId: course.id } },
   });
 
-  if (existing) return { error: await serverT("errors.alreadyEnrolled") };
+  if (existing) return { success: false, error: await serverT("errors.alreadyEnrolled") };
 
   await db.enrollment.create({
     data: { userId, courseId: course.id },
   });
 
   revalidatePath("/courses");
-  return { success: true, courseId: course.id };
+  return { success: true, data: { courseId: course.id } };
 }
 
-export async function enrollOpen(courseId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "STUDENT") {
-    return { error: await serverT("errors.onlyStudentsEnroll") };
-  }
+export async function enrollOpen(courseId: string): Promise<ActionResult<{ courseId: string }>> {
+  const user = await requireRole("STUDENT");
+  if (!user.success) return user;
 
   const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) return { error: await serverT("errors.courseNotFound") };
-  if (course.visibility !== "PUBLISHED") return { error: await serverT("errors.courseNotAvailable") };
+  if (!course) return { success: false, error: await serverT("errors.courseNotFound") };
+  if (course.visibility !== "PUBLISHED") {
+    return { success: false, error: await serverT("errors.courseNotAvailable") };
+  }
   if (course.enrollmentMode !== "OPEN") {
-    return { error: await serverT("errors.noOpenEnrollment") };
+    return { success: false, error: await serverT("errors.noOpenEnrollment") };
   }
 
-  const userId = (session.user as any).id;
+  const userId = user.data.id;
 
   const existing = await db.enrollment.findUnique({
     where: { userId_courseId: { userId, courseId } },
   });
 
-  if (existing) return { error: await serverT("errors.alreadyEnrolled") };
+  if (existing) return { success: false, error: await serverT("errors.alreadyEnrolled") };
 
   await db.enrollment.create({
     data: { userId, courseId },
@@ -254,19 +229,18 @@ export async function enrollOpen(courseId: string) {
 
   revalidatePath("/courses");
   revalidatePath(`/courses/${courseId}`);
-  return { success: true, courseId };
+  return { success: true, data: { courseId } };
 }
 
-export async function unenrollSelf(courseId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const userId = (session.user as any).id;
+export async function unenrollSelf(courseId: string): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user.success) return user;
+  const userId = user.data.id;
 
   const enrollment = await db.enrollment.findUnique({
     where: { userId_courseId: { userId, courseId } },
   });
-  if (!enrollment) return { error: await serverT("errors.notEnrolled") };
+  if (!enrollment) return { success: false, error: await serverT("errors.notEnrolled") };
 
   await db.enrollment.delete({
     where: { userId_courseId: { userId, courseId } },
@@ -298,24 +272,16 @@ export async function unenrollSelf(courseId: string) {
   return { success: true };
 }
 
-export async function enrollStudent(courseId: string, studentId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
+export async function enrollStudent(courseId: string, studentId: string): Promise<ActionResult> {
+  const cm = await requireCourseManager(courseId);
+  if (!cm.success) return cm;
+  const { course } = cm.data;
 
   const existing = await db.enrollment.findUnique({
     where: { userId_courseId: { userId: studentId, courseId } },
   });
 
-  if (existing) return { error: await serverT("errors.alreadyEnrolled") };
+  if (existing) return { success: false, error: await serverT("errors.alreadyEnrolled") };
 
   await db.enrollment.create({
     data: { userId: studentId, courseId },
@@ -330,18 +296,9 @@ export async function enrollStudent(courseId: string, studentId: string) {
   return { success: true };
 }
 
-export async function removeEnrollment(courseId: string, studentId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
+export async function removeEnrollment(courseId: string, studentId: string): Promise<ActionResult> {
+  const cm = await requireCourseManager(courseId);
+  if (!cm.success) return cm;
 
   await db.enrollment.delete({
     where: { userId_courseId: { userId: studentId, courseId } },
@@ -351,18 +308,9 @@ export async function removeEnrollment(courseId: string, studentId: string) {
   return { success: true };
 }
 
-export async function archiveCourse(courseId: string): Promise<{ success?: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!isCourseOwner(userId, role, course)) {
-    throw new Error("Not authorized");
-  }
+export async function archiveCourse(courseId: string): Promise<ActionResult> {
+  const co = await requireCourseOwner(courseId);
+  if (!co.success) return co;
 
   await db.course.update({
     where: { id: courseId },
@@ -374,18 +322,9 @@ export async function archiveCourse(courseId: string): Promise<{ success?: boole
   return { success: true };
 }
 
-export async function unarchiveCourse(courseId: string): Promise<{ success?: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!isCourseOwner(userId, role, course)) {
-    throw new Error("Not authorized");
-  }
+export async function unarchiveCourse(courseId: string): Promise<ActionResult> {
+  const co = await requireCourseOwner(courseId);
+  if (!co.success) return co;
 
   await db.course.update({
     where: { id: courseId },
@@ -397,39 +336,37 @@ export async function unarchiveCourse(courseId: string): Promise<{ success?: boo
   return { success: true };
 }
 
-export async function addCoInstructor(courseId: string, instructorUserId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!isCourseOwner(userId, role, course)) {
-    throw new Error("Not authorized");
-  }
+export async function addCoInstructor(
+  courseId: string,
+  instructorUserId: string
+): Promise<ActionResult> {
+  const co = await requireCourseOwner(courseId);
+  if (!co.success) return co;
+  const { course } = co.data;
 
   const target = await db.user.findUnique({ where: { id: instructorUserId } });
   if (!target || target.role !== "INSTRUCTOR") {
-    return { error: await serverT("errors.notAnInstructor") };
+    return { success: false, error: await serverT("errors.notAnInstructor") };
   }
   if (target.id === course.instructorId) {
-    return { error: await serverT("errors.alreadyOwner") };
+    return { success: false, error: await serverT("errors.alreadyOwner") };
   }
 
   const existing = await db.courseInstructor.findUnique({
     where: { courseId_userId: { courseId, userId: instructorUserId } },
   });
-  if (existing) return { error: await serverT("errors.alreadyCoInstructor") };
+  if (existing) return { success: false, error: await serverT("errors.alreadyCoInstructor") };
 
   await db.courseInstructor.create({
     data: { courseId, userId: instructorUserId },
   });
 
-  await notify([instructorUserId], "ENROLLMENT", `You were added as a teacher of ${course.title}`, {
-    link: `/courses/${courseId}`,
-  });
+  await notify(
+    [instructorUserId],
+    "ENROLLMENT",
+    `You were added as a teacher of ${course.title}`,
+    { link: `/courses/${courseId}` }
+  );
 
   revalidatePath(`/courses/${courseId}`);
   revalidatePath(`/courses/${courseId}/members`);
@@ -437,18 +374,12 @@ export async function addCoInstructor(courseId: string, instructorUserId: string
   return { success: true };
 }
 
-export async function removeCoInstructor(courseId: string, instructorUserId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!isCourseOwner(userId, role, course)) {
-    throw new Error("Not authorized");
-  }
+export async function removeCoInstructor(
+  courseId: string,
+  instructorUserId: string
+): Promise<ActionResult> {
+  const co = await requireCourseOwner(courseId);
+  if (!co.success) return co;
 
   await db.courseInstructor.deleteMany({
     where: { courseId, userId: instructorUserId },
@@ -460,25 +391,20 @@ export async function removeCoInstructor(courseId: string, instructorUserId: str
   return { success: true };
 }
 
-export async function transferOwnership(courseId: string, newInstructorId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!isCourseOwner(userId, role, course)) {
-    throw new Error("Not authorized");
-  }
+export async function transferOwnership(
+  courseId: string,
+  newInstructorId: string
+): Promise<ActionResult> {
+  const co = await requireCourseOwner(courseId);
+  if (!co.success) return co;
+  const { course } = co.data;
 
   const target = await db.user.findUnique({ where: { id: newInstructorId } });
   if (!target || (target.role !== "INSTRUCTOR" && target.role !== "ADMIN")) {
-    return { error: await serverT("errors.notAnInstructor") };
+    return { success: false, error: await serverT("errors.notAnInstructor") };
   }
   if (target.id === course.instructorId) {
-    return { error: await serverT("errors.alreadyOwner") };
+    return { success: false, error: await serverT("errors.alreadyOwner") };
   }
 
   await db.$transaction([

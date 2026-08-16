@@ -17,12 +17,13 @@
 
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { normalizePhone } from "@/lib/phone";
+import { requireRole } from "@/lib/authHelpers";
 import { isSuperadminId, isSuperadminEmail, isReservedSuperadminName } from "@/lib/superadmin";
+import type { ActionResult } from "@/types/errors";
 
 const createUserSchema = z.object({
   name: z.string().min(2).max(100),
@@ -91,10 +92,29 @@ async function resolveContact(
   return { email, phone };
 }
 
-export async function getUsers(search?: string, role?: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  dateOfBirth: Date | null;
+  notes: string | null;
+  role: string;
+  active: boolean;
+  createdAt: Date;
+  _count: {
+    guardianLinks: number;
+    studentLinks: number;
+  };
+};
+
+export async function getUsers(
+  search?: string,
+  role?: string
+): Promise<ActionResult<AdminUser[]>> {
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   const where: any = {};
   if (search) {
@@ -131,13 +151,12 @@ export async function getUsers(search?: string, role?: string) {
     orderBy: { createdAt: "desc" },
   });
 
-  return users;
+  return { success: true, data: users };
 }
 
-export async function createUser(formData: FormData): Promise<{ success?: boolean; error?: any }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+export async function createUser(formData: FormData): Promise<ActionResult> {
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   const parsed = createUserSchema.safeParse({
     name: formData.get("name"),
@@ -148,18 +167,30 @@ export async function createUser(formData: FormData): Promise<{ success?: boolea
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const { name, password, role } = parsed.data;
 
   if (isReservedSuperadminName(name)) {
-    return { error: { name: [await serverT("errors.nameReserved")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { name: [await serverT("errors.nameReserved")] },
+    };
   }
 
   const contact = await resolveContact(parsed.data.email, parsed.data.phone);
   if ("error" in contact) {
-    return { error: contact.error };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: contact.error,
+    };
   }
 
   const passwordHash = await hash(password, 12);
@@ -172,13 +203,12 @@ export async function createUser(formData: FormData): Promise<{ success?: boolea
   return { success: true };
 }
 
-export async function updateUser(userId: string, formData: FormData): Promise<{ success?: boolean; error?: any }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+export async function updateUser(userId: string, formData: FormData): Promise<ActionResult> {
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   if (isSuperadminId(userId)) {
-    return { error: { form: [await serverT("errors.superadminReadOnly")] } };
+    return { success: false, error: await serverT("errors.superadminReadOnly") };
   }
 
   const parsed = updateUserSchema.safeParse({
@@ -192,16 +222,28 @@ export async function updateUser(userId: string, formData: FormData): Promise<{ 
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   if (isReservedSuperadminName(parsed.data.name)) {
-    return { error: { name: [await serverT("errors.nameReserved")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { name: [await serverT("errors.nameReserved")] },
+    };
   }
 
   const contact = await resolveContact(parsed.data.email, parsed.data.phone, userId);
   if ("error" in contact) {
-    return { error: contact.error };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: contact.error,
+    };
   }
 
   await db.user.update({
@@ -221,18 +263,17 @@ export async function updateUser(userId: string, formData: FormData): Promise<{ 
   return { success: true };
 }
 
-export async function deactivateUser(userId: string): Promise<{ success?: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+export async function deactivateUser(userId: string): Promise<ActionResult> {
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   if (isSuperadminId(userId)) {
-    return { error: await serverT("errors.superadminReadOnly") };
+    return { success: false, error: await serverT("errors.superadminReadOnly") };
   }
 
   // Prevent deactivating yourself
-  if ((session.user as any).id === userId) {
-    return { error: await serverT("errors.cannotDeactivateSelf") };
+  if (user.data.id === userId) {
+    return { success: false, error: await serverT("errors.cannotDeactivateSelf") };
   }
 
   await db.user.update({
@@ -244,13 +285,12 @@ export async function deactivateUser(userId: string): Promise<{ success?: boolea
   return { success: true };
 }
 
-export async function activateUser(userId: string): Promise<{ success?: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+export async function activateUser(userId: string): Promise<ActionResult> {
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   if (isSuperadminId(userId)) {
-    return { error: await serverT("errors.superadminReadOnly") };
+    return { success: false, error: await serverT("errors.superadminReadOnly") };
   }
 
   await db.user.update({
@@ -262,17 +302,19 @@ export async function activateUser(userId: string): Promise<{ success?: boolean;
   return { success: true };
 }
 
-export async function resetPassword(userId: string, newPassword: string): Promise<{ success?: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  if ((session.user as any).role !== "ADMIN") throw new Error("Not authorized");
+export async function resetPassword(
+  userId: string,
+  newPassword: string
+): Promise<ActionResult> {
+  const user = await requireRole("ADMIN");
+  if (!user.success) return user;
 
   if (isSuperadminId(userId)) {
-    return { error: await serverT("errors.superadminReadOnly") };
+    return { success: false, error: await serverT("errors.superadminReadOnly") };
   }
 
   if (!newPassword || newPassword.length < 6) {
-    return { error: await serverT("errors.passwordMin") };
+    return { success: false, error: await serverT("errors.passwordMin") };
   }
 
   const passwordHash = await hash(newPassword, 12);

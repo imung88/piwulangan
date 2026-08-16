@@ -11,8 +11,8 @@ export default async function CoursesPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
+  const userId = session.user.id;
+  const role = session.user.role;
 
   let courses: any[] = [];
   let browseCourses: any[] = [];

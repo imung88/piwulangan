@@ -1,7 +1,14 @@
 # Comprehensive Error Handling Strategy & Implementation Plan
 
 ## 1. Executive Summary
-This document establishes the official error handling strategy for the **Piwulangan** project. Currently, server actions mix thrown `Error` instances with returned `{ error: ... }` objects. This plan outlines a clean, production-grade pattern separating **Operational Errors** (business logic / user input validation) from **System Faults** (infrastructure / unhandled crashes).
+This document establishes the official error handling strategy for the **Piwulangan** project. Server actions return a typed `ActionResult` discriminated union — operational errors are **returned**, system faults are **thrown** to Next.js error boundaries. See **Status** below for what is already implemented (2026-08-17).
+
+### Status (2026-08-17): IMPLEMENTED
+- **Phase 1 — Done.** `src/types/errors.ts` defines `ActionResult<T>` (with a conditional type so `data` is required exactly when `T` is not `void`) plus `ok()`/`fail()`/`getFieldErrors()` helpers.
+- **Phase 2 — Done.** All 11 files in `src/actions/` return `ActionResult`; zero `throw new Error` remain for operational errors. Auth/authz guards are centralized in `src/lib/authHelpers.ts` (`requireUser` / `requireRole` / `requireCourseManager` / `requireCourseOwner`), returning localized `errors.unauthenticated` / `errors.unauthorized` / `errors.courseNotFound`. Success payloads are nested under `data`; the loose per-file `ActionResult` types in `schedule.ts`/`reports.ts` are gone.
+- **Phase 3 — Done.** All client consumers use the uniform `if (!res.success) { ... res.error / fieldErrors }` pattern. No `typeof res.error === "string"` dances, no `"error" in res` checks, no `try/catch` around actions. Supporting work: `src/types/next-auth.d.ts` augments `Session.user` with typed `id`/`role`, removing ~90 `(session.user as any)` casts across pages, actions, and middleware.
+- **Phase 4 — Done.** `src/app/(dashboard)/error.tsx` catches system faults with a localized message + retry button.
+- **Remaining:** none for the core plan. Future actions should copy the pattern from any converted file (e.g. `src/actions/courses.ts`) and add any new `errors.*` keys to both locales (`src/lib/i18n/locales/en.ts` and `id.ts`).
 
 ---
 

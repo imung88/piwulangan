@@ -51,8 +51,8 @@ export default function ProfileContent({ user, canChangePassword, canEditProfile
 
     const result = await updateProfile(new FormData(e.currentTarget))
     setSaving(false)
-    if (result?.error) {
-      setErrors(result.error)
+    if (!result.success) {
+      setErrors(result.fieldErrors ?? { form: [result.error] })
     } else {
       setEditing(false)
       setSaved(true)
@@ -69,8 +69,8 @@ export default function ProfileContent({ user, canChangePassword, canEditProfile
     const form = e.currentTarget
     const result = await changePassword(new FormData(form))
     setSavingPw(false)
-    if (result?.error) {
-      setPwErrors(result.error)
+    if (!result.success) {
+      setPwErrors(result.fieldErrors ?? { form: [result.error] })
     } else {
       form.reset()
       setChangingPw(false)
@@ -86,8 +86,8 @@ export default function ProfileContent({ user, canChangePassword, canEditProfile
 
     const result = await updateAppTitle(new FormData(e.currentTarget))
     setSavingTitle(false)
-    if (result?.error) {
-      setTitleErrors(result.error)
+    if (!result.success) {
+      setTitleErrors(result.fieldErrors ?? { form: [result.error] })
     } else {
       setTitleSaved(true)
       router.refresh()

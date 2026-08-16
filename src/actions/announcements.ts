@@ -15,10 +15,11 @@
 
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { serverT } from "@/lib/i18n/serverT";
 import { notify, withGuardians } from "@/lib/notifications";
-import { canManageCourse } from "@/lib/coursePerms";
+import { requireCourseManager } from "@/lib/authHelpers";
 import { revalidatePath } from "next/cache";
+import type { ActionResult } from "@/types/errors";
 
 const announcementSchema = z.object({
   title: z.string().min(1).max(200),
@@ -26,18 +27,13 @@ const announcementSchema = z.object({
   pinned: z.boolean().optional(),
 });
 
-export async function createAnnouncement(courseId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
+export async function createAnnouncement(
+  courseId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const cm = await requireCourseManager(courseId);
+  if (!cm.success) return cm;
+  const { userId, course } = cm.data;
 
   const parsed = announcementSchema.safeParse({
     title: formData.get("title"),
@@ -46,7 +42,11 @@ export async function createAnnouncement(courseId: string, formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   await db.announcement.create({
@@ -80,21 +80,16 @@ export async function createAnnouncement(courseId: string, formData: FormData) {
 export async function updateAnnouncement(
   announcementId: string,
   formData: FormData
-) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
+): Promise<ActionResult> {
   const announcement = await db.announcement.findUnique({
     where: { id: announcementId },
-    include: { course: true },
   });
-  if (!announcement) throw new Error("Announcement not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, announcement.course))) {
-    throw new Error("Not authorized");
+  if (!announcement) {
+    return { success: false, error: await serverT("errors.announcementNotFound") };
   }
+
+  const cm = await requireCourseManager(announcement.courseId);
+  if (!cm.success) return cm;
 
   const parsed = announcementSchema.safeParse({
     title: formData.get("title"),
@@ -103,7 +98,11 @@ export async function updateAnnouncement(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   await db.announcement.update({
@@ -122,21 +121,16 @@ export async function updateAnnouncement(
   return { success: true };
 }
 
-export async function deleteAnnouncement(announcementId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
+export async function deleteAnnouncement(announcementId: string): Promise<ActionResult> {
   const announcement = await db.announcement.findUnique({
     where: { id: announcementId },
-    include: { course: true },
   });
-  if (!announcement) throw new Error("Announcement not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, announcement.course))) {
-    throw new Error("Not authorized");
+  if (!announcement) {
+    return { success: false, error: await serverT("errors.announcementNotFound") };
   }
+
+  const cm = await requireCourseManager(announcement.courseId);
+  if (!cm.success) return cm;
 
   await db.announcement.delete({ where: { id: announcementId } });
 
@@ -147,21 +141,16 @@ export async function deleteAnnouncement(announcementId: string) {
   return { success: true };
 }
 
-export async function togglePin(announcementId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
+export async function togglePin(announcementId: string): Promise<ActionResult> {
   const announcement = await db.announcement.findUnique({
     where: { id: announcementId },
-    include: { course: true },
   });
-  if (!announcement) throw new Error("Announcement not found");
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role;
-  if (!(await canManageCourse(userId, role, announcement.course))) {
-    throw new Error("Not authorized");
+  if (!announcement) {
+    return { success: false, error: await serverT("errors.announcementNotFound") };
   }
+
+  const cm = await requireCourseManager(announcement.courseId);
+  if (!cm.success) return cm;
 
   await db.announcement.update({
     where: { id: announcementId },

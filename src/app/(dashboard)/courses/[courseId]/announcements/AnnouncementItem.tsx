@@ -51,18 +51,10 @@ export function AnnouncementItem({
     fd.set("title", editTitle);
     fd.set("body", editBody);
     if (editPinned) fd.set("pinned", "on");
-    let res;
-    try {
-      res = await updateAnnouncement(id, fd);
-    } catch {
-      setBusy(false);
-      setError(t("courseManage.failedUpdate"));
-      return;
-    }
+    const res = await updateAnnouncement(id, fd);
     setBusy(false);
-    if (res && "error" in res && res.error) {
-      const messages = Object.values(res.error).flat().filter(Boolean).join(", ");
-      setError(messages || t("courseManage.failedUpdate"));
+    if (!res.success) {
+      setError(res.error);
       return;
     }
     setEditing(false);
@@ -71,16 +63,24 @@ export function AnnouncementItem({
 
   async function handleTogglePin() {
     setBusy(true);
-    await togglePin(id);
+    const res = await togglePin(id);
     setBusy(false);
+    if (!res.success) {
+      setError(res.error);
+      return;
+    }
     router.refresh();
   }
 
   async function handleDelete() {
     if (!confirm(format(t("courseManage.confirmDelete"), { title }))) return;
     setBusy(true);
-    await deleteAnnouncement(id);
+    const res = await deleteAnnouncement(id);
     setBusy(false);
+    if (!res.success) {
+      setError(res.error);
+      return;
+    }
     router.refresh();
   }
 

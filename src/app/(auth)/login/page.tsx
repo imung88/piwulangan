@@ -19,8 +19,8 @@ export default function LoginPage() {
 
     const formData = new FormData(e.currentTarget)
     const result = await login(formData)
-    if (result?.error) {
-      setError(typeof result.error === "string" ? result.error : t("auth.loginFailed"))
+    if (!result.success) {
+      setError(result.error)
       setLoading(false)
     }
   }

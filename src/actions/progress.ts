@@ -9,15 +9,16 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { serverT } from "@/lib/i18n/serverT";
+import { requireUser } from "@/lib/authHelpers";
 import { canManageCourse } from "@/lib/coursePerms";
 import { revalidatePath } from "next/cache";
+import type { ActionResult } from "@/types/errors";
 
-export async function toggleProgress(lessonId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-
-  const userId = (session.user as any).id;
+export async function toggleProgress(lessonId: string): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user.success) return user;
+  const { id: userId, role } = user.data;
 
   // Check enrollment
   const lesson = await db.lesson.findUnique({
@@ -35,16 +36,15 @@ export async function toggleProgress(lessonId: string) {
     },
   });
 
-  if (!lesson) throw new Error("Lesson not found");
+  if (!lesson) return { success: false, error: await serverT("errors.lessonNotFound") };
 
   // Only enrolled students, instructors, and admins can mark progress
-  const role = (session.user as any).role;
   const isInstructor = await canManageCourse(userId, role, lesson.module.course);
   const isAdmin = role === "ADMIN";
   const isEnrolled = lesson.module.course.enrollments.length > 0;
 
   if (!isEnrolled && !isInstructor && !isAdmin) {
-    throw new Error("Not enrolled in this course");
+    return { success: false, error: await serverT("errors.notEnrolled") };
   }
 
   // Check current progress

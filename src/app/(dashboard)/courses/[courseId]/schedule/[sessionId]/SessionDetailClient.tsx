@@ -150,12 +150,8 @@ export default function SessionDetailClient({
     fd.set("location", form.location);
     const result = await updateSession(session.id, fd);
     setLoading(false);
-    if (result?.error) {
-      setError(
-        typeof result.error === "string"
-          ? result.error
-          : Object.values(result.error).flat().join(", ")
-      );
+    if (!result.success) {
+      setError(result.error);
       return;
     }
     setEditing(false);
@@ -164,10 +160,15 @@ export default function SessionDetailClient({
 
   async function handleCancel() {
     setLoading(true);
-    await cancelSession(session.id, cancelReason || undefined);
+    setError(null);
+    const res = await cancelSession(session.id, cancelReason || undefined);
     setLoading(false);
     setCanceling(false);
     setCancelReason("");
+    if (!res.success) {
+      setError(res.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -176,12 +177,8 @@ export default function SessionDetailClient({
     setLoading(true);
     const result = await setSessionAttendees(session.id, rosterDraft);
     setLoading(false);
-    if (result?.error) {
-      setRosterError(
-        typeof result.error === "string"
-          ? result.error
-          : t("schedule.attendeeSaveFailed")
-      );
+    if (!result.success) {
+      setRosterError(result.error);
       return;
     }
     setEditingRoster(false);
@@ -207,32 +204,30 @@ export default function SessionDetailClient({
     fd.set("studentId", studentId);
     fd.set("attendance", attendance);
     fd.set("notes", notes ?? "");
-    try {
-      await markAttendance(fd);
-      setSavedTick(studentId);
-      setTimeout(() => setSavedTick((k) => (k === studentId ? null : k)), 2000);
-      router.refresh();
-    } catch {
+    const res = await markAttendance(fd);
+    setSavingKey(null);
+    if (!res.success) {
       setAtt((m) => ({ ...m, [studentId]: prev }));
-      toast.error(t("sessionDetail.attendanceFailed"));
-    } finally {
-      setSavingKey(null);
+      toast.error(res.error);
+      return;
     }
+    setSavedTick(studentId);
+    setTimeout(() => setSavedTick((k) => (k === studentId ? null : k)), 2000);
+    router.refresh();
   }
 
   async function handleMarkAllPresent() {
     const prev = att;
     setAtt(Object.fromEntries(session.attendees.map((a) => [a.studentId, "PRESENT"])));
     setSavingKey("*");
-    try {
-      await markAllPresent(session.id);
-      router.refresh();
-    } catch {
+    const res = await markAllPresent(session.id);
+    setSavingKey(null);
+    if (!res.success) {
       setAtt(prev);
-      toast.error(t("sessionDetail.attendanceFailed"));
-    } finally {
-      setSavingKey(null);
+      toast.error(res.error);
+      return;
     }
+    router.refresh();
   }
 
   const counts = { PRESENT: 0, LATE: 0, ABSENT: 0, NONE: 0 };

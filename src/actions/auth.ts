@@ -21,6 +21,7 @@ import { isEmail, normalizePhone } from "@/lib/phone";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { isReservedSuperadminName } from "@/lib/superadmin";
 import { AuthError } from "next-auth";
+import type { ActionResult } from "@/types/errors";
 
 async function clientIp(): Promise<string> {
   const h = await headers();
@@ -37,11 +38,11 @@ const signupSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export async function signup(formData: FormData) {
+export async function signup(formData: FormData): Promise<ActionResult> {
   const ip = await clientIp();
   const rl = checkRateLimit(`signup:${ip}`, { limit: 10, windowMs: 60 * 60 * 1000 });
   if (!rl.allowed) {
-    return { error: { form: [await serverT("errors.tooManyAttempts")] } };
+    return { success: false, error: await serverT("errors.tooManyAttempts") };
   }
 
   const parsed = signupSchema.safeParse({
@@ -51,14 +52,22 @@ export async function signup(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const { name, password } = parsed.data;
   const identifier = parsed.data.identifier.trim();
 
   if (isReservedSuperadminName(name)) {
-    return { error: { name: [await serverT("errors.nameReserved")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { name: [await serverT("errors.nameReserved")] },
+    };
   }
 
   let email: string | null = null;
@@ -67,13 +76,21 @@ export async function signup(formData: FormData) {
   if (isEmail(identifier)) {
     const emailCheck = z.string().email().safeParse(identifier.toLowerCase());
     if (!emailCheck.success) {
-      return { error: { identifier: [await serverT("errors.invalidIdentifier")] } };
+      return {
+        success: false,
+        error: await serverT("errors.validationFailed"),
+        fieldErrors: { identifier: [await serverT("errors.invalidIdentifier")] },
+      };
     }
     email = emailCheck.data;
   } else {
     phone = normalizePhone(identifier);
     if (!phone) {
-      return { error: { identifier: [await serverT("errors.invalidIdentifier")] } };
+      return {
+        success: false,
+        error: await serverT("errors.validationFailed"),
+        fieldErrors: { identifier: [await serverT("errors.invalidIdentifier")] },
+      };
     }
   }
 
@@ -83,7 +100,11 @@ export async function signup(formData: FormData) {
 
   if (existingUser) {
     const key = email ? "errors.emailExists" : "errors.phoneExists";
-    return { error: { identifier: [await serverT(key)] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { identifier: [await serverT(key)] },
+    };
   }
 
   const passwordHash = await hash(password, 12);
@@ -98,7 +119,9 @@ export async function signup(formData: FormData) {
     },
   });
 
-  // Auto-login after signup
+  // Auto-login after signup. On success NextAuth redirects (throwing
+  // NEXT_REDIRECT, which the framework handles); the success return below is
+  // only a type-safety fallback.
   try {
     await signIn("credentials", {
       identifier,
@@ -107,18 +130,19 @@ export async function signup(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: { form: [await serverT("errors.loginFailedAfterSignup")] } };
+      return { success: false, error: await serverT("errors.loginFailedAfterSignup") };
     }
     throw error;
   }
+  return { success: true };
 }
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData): Promise<ActionResult> {
   const ip = await clientIp();
   const identifier = String(formData.get("identifier") ?? "").trim().toLowerCase();
   const rl = checkRateLimit(`login:${ip}:${identifier}`);
   if (!rl.allowed) {
-    return { error: await serverT("errors.tooManyAttempts") };
+    return { success: false, error: await serverT("errors.tooManyAttempts") };
   }
 
   try {
@@ -129,10 +153,11 @@ export async function login(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: await serverT("errors.invalidCredentials") };
+      return { success: false, error: await serverT("errors.invalidCredentials") };
     }
     throw error;
   }
+  return { success: true };
 }
 
 export async function logout() {

@@ -15,25 +15,14 @@
 
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { serverT } from "@/lib/i18n/serverT";
 import { revalidatePath } from "next/cache";
 import { notify, withGuardians } from "@/lib/notifications";
-import { canManageCourse } from "@/lib/coursePerms";
+import { requireUser, requireRole, requireCourseManager } from "@/lib/authHelpers";
 import { toDateStr } from "@/components/schedule/types";
-
-type ActionResult = { success?: boolean; error?: any };
+import type { ActionResult } from "@/types/errors";
 
 const TIME_REGEX = /^\d{2}:\d{2}$/;
-
-async function requireUser() {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  return {
-    userId: (session.user as any).id as string,
-    role: (session.user as any).role as string,
-  };
-}
 
 function parseDateOnly(dateStr: string) {
   const d = new Date(dateStr);
@@ -45,20 +34,6 @@ function isPastDate(date: Date) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return date.getTime() < today.getTime();
-}
-
-/** ADMIN can manage any course; INSTRUCTOR their own or co-taught. */
-async function requireCourseManager(courseId: string) {
-  const { userId, role } = await requireUser();
-  if (role !== "ADMIN" && role !== "INSTRUCTOR") {
-    throw new Error("Not authorized");
-  }
-  const course = await db.course.findUnique({ where: { id: courseId } });
-  if (!course) throw new Error("Course not found");
-  if (!(await canManageCourse(userId, role, course))) {
-    throw new Error("Not authorized");
-  }
-  return { userId, role, course };
 }
 
 function revalidateScheduleViews(courseId: string) {
@@ -78,10 +53,9 @@ const availabilitySchema = z.object({
 });
 
 export async function setAvailability(formData: FormData): Promise<ActionResult> {
-  const { userId, role } = await requireUser();
-  if (role !== "ADMIN" && role !== "INSTRUCTOR") {
-    throw new Error("Not authorized");
-  }
+  const user = await requireRole("ADMIN", "INSTRUCTOR");
+  if (!user.success) return user;
+  const userId = user.data.id;
 
   const parsed = availabilitySchema.safeParse({
     dayOfWeek: Number(formData.get("dayOfWeek")),
@@ -91,13 +65,21 @@ export async function setAvailability(formData: FormData): Promise<ActionResult>
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const { dayOfWeek, startTime, endTime, courseId } = parsed.data;
 
   if (startTime >= endTime) {
-    return { error: { endTime: [await serverT("errors.endTimeAfterStart")] } };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: { endTime: [await serverT("errors.endTimeAfterStart")] },
+    };
   }
 
   const existing = await db.availability.findFirst({
@@ -120,12 +102,16 @@ export async function setAvailability(formData: FormData): Promise<ActionResult>
 }
 
 export async function removeAvailability(id: string): Promise<ActionResult> {
-  const { userId, role } = await requireUser();
+  const user = await requireUser();
+  if (!user.success) return user;
+  const { id: userId, role } = user.data;
 
   const availability = await db.availability.findUnique({ where: { id } });
-  if (!availability) throw new Error("Availability not found");
+  if (!availability) {
+    return { success: false, error: await serverT("errors.availabilityNotFound") };
+  }
   if (role !== "ADMIN" && availability.userId !== userId) {
-    throw new Error("Not authorized");
+    return { success: false, error: await serverT("errors.unauthorized") };
   }
 
   await db.availability.delete({ where: { id } });
@@ -135,11 +121,14 @@ export async function removeAvailability(id: string): Promise<ActionResult> {
 }
 
 export async function getInstructorAvailability(instructorId: string) {
-  await requireUser();
-  return db.availability.findMany({
+  const user = await requireUser();
+  if (!user.success) return user;
+
+  const availability = await db.availability.findMany({
     where: { userId: instructorId },
     orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
   });
+  return { success: true, data: availability };
 }
 
 // ─── Blocked Date Actions ───
@@ -150,10 +139,9 @@ const blockedDateSchema = z.object({
 });
 
 export async function addBlockedDate(formData: FormData): Promise<ActionResult> {
-  const { userId, role } = await requireUser();
-  if (role !== "ADMIN" && role !== "INSTRUCTOR") {
-    throw new Error("Not authorized");
-  }
+  const user = await requireRole("ADMIN", "INSTRUCTOR");
+  if (!user.success) return user;
+  const userId = user.data.id;
 
   const parsed = blockedDateSchema.safeParse({
     date: formData.get("date"),
@@ -161,13 +149,17 @@ export async function addBlockedDate(formData: FormData): Promise<ActionResult> 
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const date = parseDateOnly(parsed.data.date);
 
   const existing = await db.blockedDate.findFirst({ where: { userId, date } });
-  if (existing) return { error: await serverT("errors.dateAlreadyBlocked") };
+  if (existing) return { success: false, error: await serverT("errors.dateAlreadyBlocked") };
 
   await db.blockedDate.create({
     data: { userId, date, reason: parsed.data.reason },
@@ -178,12 +170,16 @@ export async function addBlockedDate(formData: FormData): Promise<ActionResult> 
 }
 
 export async function removeBlockedDate(id: string): Promise<ActionResult> {
-  const { userId, role } = await requireUser();
+  const user = await requireUser();
+  if (!user.success) return user;
+  const { id: userId, role } = user.data;
 
   const blocked = await db.blockedDate.findUnique({ where: { id } });
-  if (!blocked) throw new Error("Blocked date not found");
+  if (!blocked) {
+    return { success: false, error: await serverT("errors.blockedDateNotFound") };
+  }
   if (role !== "ADMIN" && blocked.userId !== userId) {
-    throw new Error("Not authorized");
+    return { success: false, error: await serverT("errors.unauthorized") };
   }
 
   await db.blockedDate.delete({ where: { id } });
@@ -193,14 +189,19 @@ export async function removeBlockedDate(id: string): Promise<ActionResult> {
 }
 
 export async function getBlockedDates(userId: string) {
-  const { userId: me, role } = await requireUser();
-  if (role !== "ADMIN" && userId !== me) {
-    throw new Error("Not authorized");
+  const user = await requireUser();
+  if (!user.success) return user;
+  const { role } = user.data;
+
+  if (role !== "ADMIN" && user.data.id !== userId) {
+    return { success: false, error: await serverT("errors.unauthorized") };
   }
-  return db.blockedDate.findMany({
+
+  const blockedDates = await db.blockedDate.findMany({
     where: { userId },
     orderBy: { date: "asc" },
   });
+  return { success: true, data: blockedDates };
 }
 
 // ─── Class Session Actions ───
@@ -235,19 +236,25 @@ export async function createSession(formData: FormData): Promise<ActionResult> {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const data = parsed.data;
-  const { course } = await requireCourseManager(data.courseId);
+  const cm = await requireCourseManager(data.courseId);
+  if (!cm.success) return cm;
+  const { course } = cm.data;
 
   if (data.startTime >= data.endTime) {
-    return { error: await serverT("errors.endTimeAfterStart") };
+    return { success: false, error: await serverT("errors.endTimeAfterStart") };
   }
 
   const firstDate = parseDateOnly(data.date);
-  if (isNaN(firstDate.getTime())) return { error: await serverT("errors.invalidDate") };
-  if (isPastDate(firstDate)) return { error: await serverT("errors.sessionInPast") };
+  if (isNaN(firstDate.getTime())) return { success: false, error: await serverT("errors.invalidDate") };
+  if (isPastDate(firstDate)) return { success: false, error: await serverT("errors.sessionInPast") };
 
   if (data.lessonId) {
     const lesson = await db.lesson.findUnique({
@@ -255,7 +262,7 @@ export async function createSession(formData: FormData): Promise<ActionResult> {
       include: { module: { select: { courseId: true } } },
     });
     if (!lesson || lesson.module.courseId !== data.courseId) {
-      return { error: await serverT("errors.lessonNotInCourse") };
+      return { success: false, error: await serverT("errors.lessonNotInCourse") };
     }
   }
 
@@ -270,7 +277,7 @@ export async function createSession(formData: FormData): Promise<ActionResult> {
     : data.studentIds.filter((id) => enrolledIds.has(id));
 
   if (attendeeIds.length === 0) {
-    return { error: await serverT("errors.selectStudent") };
+    return { success: false, error: await serverT("errors.selectStudent") };
   }
 
   const dates: Date[] = [];
@@ -334,12 +341,13 @@ export async function updateSession(
     where: { id: sessionId },
     include: { attendees: true, course: { select: { title: true } } },
   });
-  if (!existing) return { error: await serverT("errors.sessionNotFound") };
+  if (!existing) return { success: false, error: await serverT("errors.sessionNotFound") };
 
-  await requireCourseManager(existing.courseId);
+  const cm = await requireCourseManager(existing.courseId);
+  if (!cm.success) return cm;
 
   if (existing.status === "CANCELLED") {
-    return { error: await serverT("errors.cannotEditCancelled") };
+    return { success: false, error: await serverT("errors.cannotEditCancelled") };
   }
 
   const parsed = sessionUpdateSchema.safeParse({
@@ -353,18 +361,22 @@ export async function updateSession(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const data = parsed.data;
 
   if (data.startTime >= data.endTime) {
-    return { error: await serverT("errors.endTimeAfterStart") };
+    return { success: false, error: await serverT("errors.endTimeAfterStart") };
   }
 
   const date = parseDateOnly(data.date);
-  if (isNaN(date.getTime())) return { error: await serverT("errors.invalidDate") };
-  if (isPastDate(date)) return { error: await serverT("errors.cannotMovePast") };
+  if (isNaN(date.getTime())) return { success: false, error: await serverT("errors.invalidDate") };
+  if (isPastDate(date)) return { success: false, error: await serverT("errors.cannotMovePast") };
 
   if (data.lessonId) {
     const lesson = await db.lesson.findUnique({
@@ -372,7 +384,7 @@ export async function updateSession(
       include: { module: { select: { courseId: true } } },
     });
     if (!lesson || lesson.module.courseId !== existing.courseId) {
-      return { error: await serverT("errors.lessonNotInCourse") };
+      return { success: false, error: await serverT("errors.lessonNotInCourse") };
     }
   }
 
@@ -411,12 +423,13 @@ export async function cancelSession(
     where: { id: sessionId },
     include: { attendees: true, course: { select: { title: true } } },
   });
-  if (!existing) return { error: await serverT("errors.sessionNotFound") };
+  if (!existing) return { success: false, error: await serverT("errors.sessionNotFound") };
 
-  await requireCourseManager(existing.courseId);
+  const cm = await requireCourseManager(existing.courseId);
+  if (!cm.success) return cm;
 
   if (existing.status === "CANCELLED") {
-    return { error: await serverT("errors.alreadyCancelled") };
+    return { success: false, error: await serverT("errors.alreadyCancelled") };
   }
 
   await db.classSession.update({
@@ -429,7 +442,9 @@ export async function cancelSession(
     "SESSION_CANCELLED",
     `Session cancelled: ${existing.title}`,
     {
-      body: `${existing.course.title} — ${toDateStr(existing.date)} at ${existing.startTime}${reason ? `. Reason: ${reason}` : ""}`,
+      body: `${existing.course.title} — ${toDateStr(existing.date)} at ${existing.startTime}${
+        reason ? `. Reason: ${reason}` : ""
+      }`,
       link: `/courses/${existing.courseId}/schedule`,
     }
   );
@@ -446,9 +461,10 @@ export async function setSessionAttendees(
     where: { id: sessionId },
     include: { attendees: true, course: { select: { title: true } } },
   });
-  if (!existing) return { error: await serverT("errors.sessionNotFound") };
+  if (!existing) return { success: false, error: await serverT("errors.sessionNotFound") };
 
-  await requireCourseManager(existing.courseId);
+  const cm = await requireCourseManager(existing.courseId);
+  if (!cm.success) return cm;
 
   const enrollments = await db.enrollment.findMany({
     where: { courseId: existing.courseId },
@@ -458,7 +474,7 @@ export async function setSessionAttendees(
   const targetIds = studentIds.filter((id) => enrolledIds.has(id));
 
   if (targetIds.length === 0) {
-    return { error: await serverT("errors.selectStudent") };
+    return { success: false, error: await serverT("errors.selectStudent") };
   }
 
   const currentIds = existing.attendees.map((a) => a.studentId);
@@ -526,7 +542,11 @@ export async function markAttendance(formData: FormData): Promise<ActionResult> 
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+    return {
+      success: false,
+      error: await serverT("errors.validationFailed"),
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
 
   const { sessionId, studentId, attendance, notes } = parsed.data;
@@ -537,14 +557,15 @@ export async function markAttendance(formData: FormData): Promise<ActionResult> 
     where: { id: sessionId },
     include: { course: { select: { title: true } } },
   });
-  if (!classSession) return { error: await serverT("errors.sessionNotFound") };
+  if (!classSession) return { success: false, error: await serverT("errors.sessionNotFound") };
 
-  await requireCourseManager(classSession.courseId);
+  const cm = await requireCourseManager(classSession.courseId);
+  if (!cm.success) return cm;
 
   const attendee = await db.sessionAttendee.findUnique({
     where: { sessionId_studentId: { sessionId, studentId } },
   });
-  if (!attendee) return { error: await serverT("errors.studentNotAssigned") };
+  if (!attendee) return { success: false, error: await serverT("errors.studentNotAssigned") };
 
   const prevAttendance = attendee.attendance;
 
@@ -580,7 +601,9 @@ export async function markAttendance(formData: FormData): Promise<ActionResult> 
       "ATTENDANCE_ABSENT",
       `Marked absent: ${classSession.title}`,
       {
-        body: `${classSession.course.title} — ${toDateStr(classSession.date)}${newNotes ? `. ${newNotes}` : ""}`,
+        body: `${classSession.course.title} — ${toDateStr(classSession.date)}${
+          newNotes ? `. ${newNotes}` : ""
+        }`,
         link: `/courses/${classSession.courseId}/schedule`,
       }
     );
@@ -594,9 +617,10 @@ export async function markAllPresent(sessionId: string): Promise<ActionResult> {
   const classSession = await db.classSession.findUnique({
     where: { id: sessionId },
   });
-  if (!classSession) return { error: await serverT("errors.sessionNotFound") };
+  if (!classSession) return { success: false, error: await serverT("errors.sessionNotFound") };
 
-  await requireCourseManager(classSession.courseId);
+  const cm = await requireCourseManager(classSession.courseId);
+  if (!cm.success) return cm;
 
   await db.sessionAttendee.updateMany({
     where: { sessionId },

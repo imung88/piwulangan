@@ -12,17 +12,14 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { requireUser } from "@/lib/authHelpers";
 import { revalidatePath } from "next/cache";
+import type { ActionResult } from "@/types/errors";
 
-async function requireUserId(): Promise<string> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Not authenticated");
-  return (session.user as any).id;
-}
-
-export async function markRead(notificationId: string) {
-  const userId = await requireUserId();
+export async function markRead(notificationId: string): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user.success) return user;
+  const userId = user.data.id;
 
   await db.notification.updateMany({
     where: { id: notificationId, userId, readAt: null },
@@ -33,8 +30,10 @@ export async function markRead(notificationId: string) {
   return { success: true };
 }
 
-export async function markAllRead() {
-  const userId = await requireUserId();
+export async function markAllRead(): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user.success) return user;
+  const userId = user.data.id;
 
   await db.notification.updateMany({
     where: { userId, readAt: null },
@@ -46,7 +45,9 @@ export async function markAllRead() {
 }
 
 export async function getMyNotifications() {
-  const userId = await requireUserId();
+  const user = await requireUser();
+  if (!user.success) return user;
+  const userId = user.data.id;
 
   const [notifications, unreadCount] = await Promise.all([
     db.notification.findMany({
@@ -58,15 +59,18 @@ export async function getMyNotifications() {
   ]);
 
   return {
-    unreadCount,
-    notifications: notifications.map((n) => ({
-      id: n.id,
-      type: n.type,
-      title: n.title,
-      body: n.body,
-      link: n.link,
-      read: n.readAt !== null,
-      createdAt: n.createdAt.toISOString(),
-    })),
+    success: true,
+    data: {
+      unreadCount,
+      notifications: notifications.map((n) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        body: n.body,
+        link: n.link,
+        read: n.readAt !== null,
+        createdAt: n.createdAt.toISOString(),
+      })),
+    },
   };
 }

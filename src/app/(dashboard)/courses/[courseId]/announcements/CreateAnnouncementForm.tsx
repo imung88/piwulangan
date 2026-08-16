@@ -22,18 +22,10 @@ export function CreateAnnouncementForm({ courseId }: { courseId: string }) {
     fd.set("title", title);
     fd.set("body", body);
     if (pinned) fd.set("pinned", "on");
-    let res;
-    try {
-      res = await createAnnouncement(courseId, fd);
-    } catch {
-      setLoading(false);
-      setError(t("courseManage.failedAnnouncement"));
-      return;
-    }
+    const res = await createAnnouncement(courseId, fd);
     setLoading(false);
-    if (res && "error" in res && res.error) {
-      const messages = Object.values(res.error).flat().filter(Boolean).join(", ");
-      setError(messages || t("courseManage.failedAnnouncement"));
+    if (!res.success) {
+      setError(res.error);
       return;
     }
     setTitle("");
