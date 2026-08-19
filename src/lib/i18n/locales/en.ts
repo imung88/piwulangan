@@ -473,6 +473,23 @@ export default {
     confirmCancel: "Cancel session",
     keepSession: "Keep session",
     viewDetails: "View details →",
+    series: "series",
+    seriesWeek: "Week {week} of {total}",
+    editSeries: "Edit series",
+    cancelSeries: "Cancel series",
+    cancelSeriesConfirm: "Cancel all sessions in this series?",
+    cancelSeriesWarn: "All scheduled sessions in this series will be cancelled.",
+    seriesCancelled: "Series cancelled",
+    skipWeek: "Skip this week",
+    skipWeekConfirm: "Skip session for week {week}?",
+    skipWeekReason: "Reason (optional)",
+    weekSkipped: "Week skipped",
+    restoreWeek: "Restore this week",
+    weekRestored: "Week restored",
+    seriesUpdated: "Series updated",
+    conflictsDetected: "Scheduling conflicts detected",
+    instructorConflict: "Instructor has a conflicting session",
+    studentConflict: "Student has a conflicting session",
   },
 
   // Individual session detail page
@@ -779,6 +796,8 @@ export default {
     reportNotFound: "Report not found",
     availabilityNotFound: "Availability not found",
     blockedDateNotFound: "Blocked date not found",
+    invalidWeek: "Invalid week number",
+    seriesNotFound: "Session series not found",
   },
 
   // Shared / generic

@@ -33,6 +33,7 @@ model User {
   coursesCreated        Course[]           @relation("Instructor")
   coInstructorOf        CourseInstructor[] @relation("CoInstructor")
   sessionsAsInstructor  ClassSession[]     @relation("SessionInstructor")
+  seriesAsInstructor    SessionSeries[]    @relation("SessionInstructor")
   sessionAttendances    SessionAttendee[]  @relation("SessionStudent")
   availability          Availability[]
   blockedDates          BlockedDate[]
@@ -81,6 +82,7 @@ model Course {
   enrollments   Enrollment[]
   announcements Announcement[]
   sessions      ClassSession[]
+  series        SessionSeries[]
   availability  Availability[]
   reports       StudentReport[]
 
@@ -136,6 +138,7 @@ model Lesson {
   progress   Progress[]
   assignment Assignment?
   sessions   ClassSession[]
+  series     SessionSeries[]
   reports    StudentReport[]
 }
 
@@ -229,6 +232,9 @@ model ClassSession {
   location     String?
   status       SessionStatus @default(SCHEDULED)
   cancelReason String?
+  seriesId     String?
+  series       SessionSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  seriesWeek   Int?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -332,6 +338,40 @@ model StudentReport {
   updatedAt DateTime @updatedAt
 
   @@index([courseId, studentId])
+}
+
+// ─── Session Series (recurring sessions) ───
+
+model SessionSeries {
+  id           String   @id @default(cuid())
+  courseId     String
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructorId String
+  instructor   User     @relation("SessionInstructor", fields: [instructorId], references: [id])
+  title        String
+  description  String?
+  lessonId     String?
+  lesson       Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  location     String?
+  startTime    String
+  endTime      String
+  startDate    DateTime
+  repeatWeeks  Int      @default(1)
+  sessions     ClassSession[]
+  exceptions   SessionSeriesException[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SessionSeriesException {
+  id         String   @id @default(cuid())
+  seriesId   String
+  series     SessionSeries @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  weekNumber Int
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@unique([seriesId, weekNumber])
 }
 
 // ─── Announcements Module ───

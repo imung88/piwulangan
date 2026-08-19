@@ -16,25 +16,10 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { serverT } from "@/lib/i18n/serverT";
-import { revalidatePath } from "next/cache";
 import { notify, withGuardians } from "@/lib/notifications";
 import { requireUser, requireRole, requireCourseManager } from "@/lib/authHelpers";
-import { toDateStr } from "@/components/schedule/types";
-import type { ActionResult } from "@/types/errors";
-
-const TIME_REGEX = /^\d{2}:\d{2}$/;
-
-function parseDateOnly(dateStr: string) {
-  const d = new Date(dateStr);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function isPastDate(date: Date) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return date.getTime() < today.getTime();
-}
+import { parseDateOnly, isPastDate, toDateStr } from "@/lib/scheduleUtils";
+import { revalidatePath } from "next/cache";
 
 function revalidateScheduleViews(courseId: string) {
   revalidatePath("/schedule");
@@ -42,6 +27,9 @@ function revalidateScheduleViews(courseId: string) {
   revalidatePath(`/courses/${courseId}/schedule`);
   revalidatePath(`/courses/${courseId}/manage/schedule`);
 }
+import type { ActionResult } from "@/types/errors";
+
+const TIME_REGEX = /^\d{2}:\d{2}$/;
 
 // ─── Availability Actions ───
 
@@ -385,6 +373,59 @@ export async function updateSession(
     });
     if (!lesson || lesson.module.courseId !== existing.courseId) {
       return { success: false, error: await serverT("errors.lessonNotInCourse") };
+    }
+  }
+
+  // Check for instructor scheduling conflicts
+  const instructorConflict = await db.classSession.findFirst({
+    where: {
+      instructorId: existing.instructorId,
+      date,
+      status: { not: "CANCELLED" },
+      id: { not: sessionId },
+      AND: [
+        { startTime: { lt: data.endTime } },
+        { endTime: { gt: data.startTime } },
+      ],
+    },
+    select: { id: true, title: true },
+  });
+
+  if (instructorConflict) {
+    return {
+      success: false,
+      error: `Instructor already has a session "${instructorConflict.title}" at this time`,
+    };
+  }
+
+  // Check for student scheduling conflicts
+  const attendeeIds = existing.attendees.map((a) => a.studentId);
+  if (attendeeIds.length > 0) {
+    const studentConflict = await db.sessionAttendee.findFirst({
+      where: {
+        studentId: { in: attendeeIds },
+        session: {
+          date,
+          status: { not: "CANCELLED" },
+          id: { not: sessionId },
+          AND: [
+            { startTime: { lt: data.endTime } },
+            { endTime: { gt: data.startTime } },
+          ],
+        },
+      },
+      include: {
+        student: { select: { id: true, name: true } },
+        session: { select: { id: true, title: true } },
+      },
+      take: 1,
+    });
+
+    if (studentConflict) {
+      return {
+        success: false,
+        error: `Student "${studentConflict.student.name}" has a conflicting session "${studentConflict.session.title}" at this time`,
+      };
     }
   }
 

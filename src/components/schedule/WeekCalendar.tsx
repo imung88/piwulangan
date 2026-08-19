@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useT } from "@/lib/i18n/useT";
+import { mondayOf } from "@/lib/scheduleUtils";
 import {
   SessionItem,
   STATUS_COLORS,
@@ -18,14 +19,6 @@ interface Props {
   onWeekStartChange: (d: Date) => void;
   showCourse?: boolean;
   showAttendees?: boolean;
-}
-
-function mondayOf(d: Date) {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  const day = copy.getDay();
-  copy.setDate(copy.getDate() - ((day + 6) % 7));
-  return copy;
 }
 
 export default function WeekCalendar({

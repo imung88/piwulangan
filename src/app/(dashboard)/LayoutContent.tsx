@@ -71,13 +71,18 @@ function LayoutBody({ children, role, userName }: Props) {
         >
           {appTitle}
         </Link>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {userName && (
-            <div className="mr-1 flex min-w-0 flex-col items-end leading-tight">
-              <span className="max-w-[110px] truncate text-xs font-medium text-white">
-                {displayName}
-              </span>
-              {role && <RoleBadge role={role} className="mt-0.5 !text-[9px] !px-1.5" />}
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-white text-sm font-bold text-metro-blue">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex min-w-0 flex-col items-start">
+                <span className="max-w-[110px] truncate text-sm font-medium text-white">
+                  {displayName}
+                </span>
+                {role && <RoleBadge role={role} className="mt-0.5 !text-[9px] !px-1.5" />}
+              </div>
             </div>
           )}
           <Link
@@ -122,6 +127,26 @@ function LayoutBody({ children, role, userName }: Props) {
               {appTitle}
             </Link>
           </div>
+
+          {/* User profile section — moved to top for visibility */}
+          {userName && (
+            <div className="mx-4 mb-4 flex items-center gap-3 bg-white/10 p-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-white text-lg font-bold text-metro-blue">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white truncate">{displayName}</p>
+                {role && <RoleBadge role={role} className="mt-1" />}
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmSignOut(true)}
+                className="text-xs font-medium text-white/80 hover:text-white hover:underline"
+              >
+                {t("nav.signOut")}
+              </button>
+            </div>
+          )}
 
           <nav className="flex-1 py-2">
             {navItems.map((item) => (
@@ -168,26 +193,6 @@ function LayoutBody({ children, role, userName }: Props) {
             )}
           </nav>
 
-          <div className="p-6 border-t border-white/20">
-            {userName && (
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-metro-chrome-dark text-sm font-semibold text-white">
-                  {userName.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                  {role && <RoleBadge role={role} className="mt-0.5" />}
-                </div>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setConfirmSignOut(true)}
-              className="w-full min-h-[44px] text-left text-sm font-medium text-white hover:underline"
-            >
-              {t("nav.signOut")}
-            </button>
-          </div>
         </aside>
 
         <main className="min-w-0 flex-1 pb-24 md:pb-0">

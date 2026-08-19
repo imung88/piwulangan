@@ -4,6 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { SessionItem } from "./types";
 import { useT } from "@/lib/i18n/useT";
+import { mondayOf } from "@/lib/scheduleUtils";
 import SessionList from "./SessionList";
 
 // WeekCalendar is only rendered after the user switches to calendar view, so
@@ -28,14 +29,6 @@ interface Props {
   showCourse?: boolean;
   showAttendees?: boolean;
   showInstructor?: boolean;
-}
-
-function mondayOf(d: Date) {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  const day = copy.getDay();
-  copy.setDate(copy.getDate() - ((day + 6) % 7));
-  return copy;
 }
 
 export default function ScheduleView({

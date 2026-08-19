@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { canManageCourse } from "@/lib/coursePerms";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { getSessionsForCourse } from "@/lib/schedule";
 import ManageScheduleClient from "./ManageScheduleClient";
 import { toDateStr } from "@/components/schedule/types";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
@@ -39,7 +38,19 @@ export default async function ManageSchedulePage({
     redirect(`/courses/${course.id}`);
   }
 
-  const sessions = await getSessionsForCourse(course.id);
+  // Fetch sessions with series info
+  const sessions = await db.classSession.findMany({
+    where: { courseId: course.id },
+    include: {
+      course: { select: { id: true, title: true } },
+      instructor: { select: { id: true, name: true } },
+      lesson: { select: { id: true, title: true, moduleId: true } },
+      attendees: {
+        include: { student: { select: { id: true, name: true, email: true } } },
+      },
+    },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  });
 
   const students = course.enrollments.map((e) => e.user);
   const lessons = course.modules.flatMap((m) =>
@@ -88,6 +99,8 @@ export default async function ManageSchedulePage({
           cancelReason: s.cancelReason,
           lessonId: s.lesson?.id ?? null,
           lessonTitle: s.lesson?.title ?? null,
+          seriesId: s.seriesId,
+          seriesWeek: s.seriesWeek,
           attendees: s.attendees.map((a) => ({
             studentId: a.studentId,
             name: a.student.name,

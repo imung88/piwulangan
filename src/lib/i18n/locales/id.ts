@@ -474,6 +474,23 @@ export default {
     confirmCancel: "Batalkan sesi",
     keepSession: "Pertahankan sesi",
     viewDetails: "Lihat detail →",
+    series: "seri",
+    seriesWeek: "Minggu {week} dari {total}",
+    editSeries: "Edit seri",
+    cancelSeries: "Batalkan seri",
+    cancelSeriesConfirm: "Batalkan semua sesi dalam seri ini?",
+    cancelSeriesWarn: "Semua sesi terjadwal dalam seri ini akan dibatalkan.",
+    seriesCancelled: "Seri dibatalkan",
+    skipWeek: "Lewati minggu ini",
+    skipWeekConfirm: "Lewati sesi untuk minggu {week}?",
+    skipWeekReason: "Alasan (opsional)",
+    weekSkipped: "Minggu dilewati",
+    restoreWeek: "Pulihkan minggu ini",
+    weekRestored: "Minggu dipulihkan",
+    seriesUpdated: "Seri diperbarui",
+    conflictsDetected: "Konflik penjadwalan terdeteksi",
+    instructorConflict: "Pengajar memiliki sesi yang bentrok",
+    studentConflict: "Siswa memiliki sesi yang bentrok",
   },
 
   // Halaman detail sesi individual
@@ -780,6 +797,8 @@ export default {
     reportNotFound: "Laporan tidak ditemukan",
     availabilityNotFound: "Ketersediaan tidak ditemukan",
     blockedDateNotFound: "Tanggal diblokir tidak ditemukan",
+    invalidWeek: "Nomor minggu tidak valid",
+    seriesNotFound: "Seri sesi tidak ditemukan",
   },
 
   // Shared / generic

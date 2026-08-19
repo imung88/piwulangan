@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useT, format } from "@/lib/i18n/useT";
-import { createSession } from "@/actions/schedule";
+import { createSessionSeries, cancelSessionSeries } from "@/actions/sessionSeries";
 import {
   STATUS_COLORS,
   statusLabel,
   formatDateStr,
   todayStr,
 } from "@/components/schedule/types";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 interface Student {
   id: string;
@@ -35,6 +36,8 @@ interface ManagedSession {
   cancelReason: string | null;
   lessonId: string | null;
   lessonTitle: string | null;
+  seriesId: string | null;
+  seriesWeek: number | null;
   attendees: {
     studentId: string;
     name: string;
@@ -76,9 +79,23 @@ export default function ManageScheduleClient({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Series management state
+  const [showCancelSeriesConfirm, setShowCancelSeriesConfirm] = useState(false);
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
+
   const today = todayStr();
   const upcoming = sessions.filter((s) => s.date >= today);
   const past = sessions.filter((s) => s.date < today);
+
+  // Group sessions by series for visualization
+  const seriesMap = new Map<string, ManagedSession[]>();
+  for (const session of sessions) {
+    if (session.seriesId) {
+      const seriesSessions = seriesMap.get(session.seriesId) || [];
+      seriesSessions.push(session);
+      seriesMap.set(session.seriesId, seriesSessions);
+    }
+  }
 
   function openCreate() {
     setForm(EMPTY_FORM);
@@ -108,7 +125,7 @@ export default function ManageScheduleClient({
     fd.set("title", form.title);
     fd.set("description", form.description);
     fd.set("lessonId", form.lessonId);
-    fd.set("date", form.date);
+    fd.set("startDate", form.date);
     fd.set("startTime", form.startTime);
     fd.set("endTime", form.endTime);
     fd.set("location", form.location);
@@ -116,7 +133,8 @@ export default function ManageScheduleClient({
     fd.set("allEnrolled", String(allEnrolled));
     fd.set("studentIds", JSON.stringify(selectedStudents));
     fd.set("repeatWeeks", String(form.repeatWeeks));
-    const result = await createSession(fd);
+    
+    const result = await createSessionSeries(fd);
     setLoading(false);
 
     if (!result.success) {
@@ -124,6 +142,22 @@ export default function ManageScheduleClient({
       return;
     }
     closeForm();
+    router.refresh();
+  }
+
+  async function handleCancelSeries() {
+    if (!selectedSeriesId) return;
+    
+    setLoading(true);
+    const result = await cancelSessionSeries(selectedSeriesId);
+    setLoading(false);
+    setShowCancelSeriesConfirm(false);
+    setSelectedSeriesId(null);
+
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -139,6 +173,15 @@ export default function ManageScheduleClient({
       unmarked: counts.NONE,
     });
 
+    // Check if this session is part of a series
+    const isSeriesSession = s.seriesId !== null;
+    const seriesInfo = isSeriesSession 
+      ? format(t("schedule.seriesWeek"), { 
+          week: s.seriesWeek || 0, 
+          total: seriesMap.get(s.seriesId!)?.length || 0 
+        })
+      : null;
+
     return (
       <Link
         key={s.id}
@@ -152,6 +195,11 @@ export default function ManageScheduleClient({
               <span className={`metro-badge ${STATUS_COLORS[s.status] || ""}`}>
                 {statusLabel(s.status, t)}
               </span>
+              {isSeriesSession && (
+                <span className="metro-badge bg-metro-blue-light text-metro-blue">
+                  📅 {t("schedule.series")} · {seriesInfo}
+                </span>
+              )}
             </div>
             <div className="text-sm text-metro-text-secondary mt-1">
               {formatDateStr(s.date)} · {s.startTime}–{s.endTime}
@@ -404,6 +452,20 @@ export default function ManageScheduleClient({
 
       {renderSection(t("schedule.upcoming"), upcoming)}
       {renderSection(t("schedule.past"), past)}
+
+      {/* Cancel Series Confirmation Dialog */}
+      <ConfirmDialog
+        open={showCancelSeriesConfirm}
+        title={t("schedule.cancelSeriesConfirm")}
+        message={t("schedule.cancelSeriesWarn")}
+        confirmLabel={t("schedule.cancelSeries")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleCancelSeries}
+        onCancel={() => {
+          setShowCancelSeriesConfirm(false);
+          setSelectedSeriesId(null);
+        }}
+      />
     </div>
   );
 }
