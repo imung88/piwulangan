@@ -6,6 +6,7 @@ import { redirect, notFound } from "next/navigation";
 import { toggleProgress } from "@/actions/progress";
 import { PendingButton } from "@/components/ui/PendingButton";
 import { getServerT, formatT } from "@/lib/i18n/serverT";
+import { renderMarkdown } from "@/lib/markdown";
 
 export default async function LessonPage({
   params,
@@ -247,40 +248,4 @@ export default async function LessonPage({
       </div>
     </div>
   );
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-// Simple markdown renderer (paragraphs, headings, bold, italic, lists, code)
-function renderMarkdown(md: string): string {
-  return escapeHtml(md)
-    // Headings
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    // Bold and italic
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Inline code
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    // Blockquotes
-    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-    // Unordered lists
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    // Ordered lists
-    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-    // Paragraphs (double newlines)
-    .replace(/\n\n/g, '</p><p>')
-    // Single newlines to <br>
-    .replace(/\n/g, '<br>')
-    // Wrap in paragraph
-    .replace(/^(.+)/, '<p>$1')
-    .replace(/(.+)$/, '$1</p>');
 }

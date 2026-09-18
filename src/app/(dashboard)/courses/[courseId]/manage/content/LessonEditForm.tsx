@@ -406,6 +406,12 @@ export function LessonEditForm({
                     </div>
                   </div>
                   <div>
+                    <p className="font-medium text-metro-text mb-1">Links</p>
+                    <div className="bg-metro-bg p-2 font-mono">
+                      [link text](https://example.com)
+                    </div>
+                  </div>
+                  <div>
                     <p className="font-medium text-metro-text mb-1">Blockquote</p>
                     <div className="bg-metro-bg p-2 font-mono">
                       &gt; quoted text

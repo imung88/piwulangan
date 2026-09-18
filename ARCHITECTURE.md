@@ -4,7 +4,7 @@
 
 | Layer | Choice | Why |
 |---|---|---|
-| **Framework** | Next.js 15.5 (App Router) | Full-stack React, SSR, file-based routing, great DX |
+| **Framework** | Next.js 15.5.22 (App Router) | Full-stack React, SSR, file-based routing, great DX |
 | **Language** | TypeScript | Type safety, better DX, catches bugs early |
 | **Database** | SQLite (local file) → Turso (libSQL) in production | Zero-setup local dev, serverless-friendly hosted SQLite, free tier, works with Prisma |
 | **ORM** | Prisma | Type-safe queries, great migration tooling |
@@ -38,57 +38,113 @@ piwulangan/
 │   │   │   └── layout.tsx
 │   │   │
 │   │   ├── (dashboard)/       # Authenticated routes
-│   │   │   ├── dashboard/     # Role-aware home
+│   │   │   ├── dashboard/     # Role-aware home (DashboardClient.tsx)
 │   │   │   ├── announcements/ # Global announcements (sidebar link)
 │   │   │   │
 │   │   │   ├── courses/
-│   │   │   │   ├── page.tsx           # Course list
-│   │   │   │   ├── new/page.tsx       # Create course
+│   │   │   │   ├── page.tsx           # Course list (CoursesClient.tsx)
+│   │   │   │   ├── BrowseCourses.tsx  # Student course catalog
+│   │   │   │   ├── new/page.tsx       # Create course (NewCourseForm.tsx)
 │   │   │   │   └── [courseId]/
 │   │   │   │       ├── page.tsx       # Course overview
+│   │   │   │       ├── CourseActionsMenu.tsx  # Dropdown actions for course managers
+│   │   │   │       ├── CopyInviteCode.tsx     # Invite code copy button
+│   │   │   │       ├── PreviewEnroll.tsx      # Enrollment preview for non-enrolled
+│   │   │   │       ├── UnenrollButton.tsx     # Student self-unenroll
 │   │   │   │       ├── lessons/
 │   │   │   │       │   └── [lessonId]/page.tsx
-│   │   │   │       ├── announcements/ # Per-course announcements (view + inline manage for owners)
-│   │   │   │       ├── members/
-│   │   │   │       ├── schedule/      # Per-course sessions (list + week calendar)
-│   │   │   │       │   └── [sessionId]/  # Individual session: view + manage
-│   │   │   │       └── manage/        # Instructor/admin
-│   │   │   │           ├── content/
-│   │   │   │           ├── students/
-│   │   │   │           ├── schedule/  # Compact overview + create session
-│   │   │   │           └── settings/
+│   │   │   │       ├── announcements/         # Per-course announcements
+│   │   │   │       │   ├── page.tsx
+│   │   │   │       │   ├── AnnouncementItem.tsx
+│   │   │   │       │   └── CreateAnnouncementForm.tsx
+│   │   │   │       ├── members/               # Course member list
+│   │   │   │       ├── reports/               # Student progress reports
+│   │   │   │       │   ├── page.tsx           # Reports viewer (student/guardian/manager)
+│   │   │   │       │   └── attendance/        # Attendance record page
+│   │   │   │       │       └── page.tsx
+│   │   │   │       ├── schedule/              # Per-course sessions (list + week calendar)
+│   │   │   │       │   ├── page.tsx
+│   │   │   │       │   └── [sessionId]/       # Individual session: view + manage
+│   │   │   │       │       ├── page.tsx
+│   │   │   │       │       └── SessionDetailClient.tsx
+│   │   │   │       └── manage/                # Instructor/admin management
+│   │   │   │           ├── content/           # Module/lesson/resource CRUD
+│   │   │   │           │   ├── page.tsx
+│   │   │   │           │   ├── AddContentForms.tsx
+│   │   │   │           │   └── LessonEditForm.tsx
+│   │   │   │           ├── students/          # Roster management
+│   │   │   │           │   ├── page.tsx
+│   │   │   │           │   └── StudentActions.tsx
+│   │   │   │           ├── schedule/          # Compact overview + create session
+│   │   │   │           │   ├── page.tsx
+│   │   │   │           │   └── ManageScheduleClient.tsx
+│   │   │   │           ├── reports/           # Report management (create/edit/delete)
+│   │   │   │           │   ├── page.tsx
+│   │   │   │           │   └── ReportsManageClient.tsx
+│   │   │   │           └── settings/          # Course settings (details, teachers, archive)
+│   │   │   │               ├── page.tsx
+│   │   │   │               ├── CourseDetailsForm.tsx
+│   │   │   │               └── TeacherActions.tsx
 │   │   │   │
 │   │   │   ├── schedule/              # Core: always on
 │   │   │   │   ├── page.tsx           # Single role-aware view (admin sees all courses)
 │   │   │   │   └── availability/      # Instructor: set hours + blocked dates
+│   │   │   │       ├── page.tsx
+│   │   │   │       ├── AvailabilityForm.tsx
+│   │   │   │       ├── WeeklyAvailabilitySection.tsx
+│   │   │   │       └── BlockedDatesSection.tsx
 │   │   │   │
 │   │   │   ├── notifications/         # In-app notification list
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── NotificationsClient.tsx
 │   │   │   │
 │   │   │   ├── admin/
 │   │   │   │   └── users/             # Admin: user management
+│   │   │   │       ├── page.tsx
+│   │   │   │       └── AdminUsersClient.tsx
 │   │   │   │
-│   │   │   └── profile/               # Own profile; superadmin also edits the app title here
+│   │   │   ├── profile/               # Own profile; superadmin also edits the app title here
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── ProfileContent.tsx
+│   │   │   │
+│   │   │   ├── LayoutContent.tsx      # Client shell: desktop sidebar + mobile header
+│   │   │   ├── error.tsx              # Route-group error boundary (localized)
+│   │   │   └── loading.tsx            # Route-group loading skeleton (Metro)
 │   │   │
 │   │   ├── layout.tsx         # Root layout (generateMetadata + AppTitleProvider, DB-driven app title)
 │   │   ├── page.tsx           # Landing / redirect
 │   │   └── globals.css
 │   │
-│   ├── components/            # Shared components (NotificationBell, MobileNav,
-│   │   │                      #   LanguageSelector, RoleBadge, schedule/*, ui/*)
-│   │   ├── schedule/          # Calendar, session list, availability display
-│   │   └── ui/                # Metro primitives: ConfirmDialog, Toast, PendingButton
+│   ├── components/            # Shared components
+│   │   ├── LanguageSelector.tsx       # Locale switcher (cookie-based)
+│   │   ├── MobileNav.tsx             # Mobile bottom tab navigation (role-aware)
+│   │   ├── NotificationBell.tsx      # Bell icon with unread badge (60s polling)
+│   │   ├── PublishCourseButton.tsx    # Course publish/unpublish toggle
+│   │   ├── RoleBadge.tsx             # Colored role badge (admin=purple, instructor=navy, etc.)
+│   │   ├── schedule/                 # Calendar, session list, availability display
+│   │   │   ├── types.ts              # SessionItem type and shared schedule interfaces
+│   │   │   ├── WeekCalendar.tsx
+│   │   │   ├── SessionList.tsx
+│   │   │   ├── ScheduleView.tsx      # List ⇄ calendar toggle (dynamic import of WeekCalendar)
+│   │   │   └── AvailabilityDisplay.tsx
+│   │   └── ui/                       # Metro primitives
+│   │       ├── ConfirmDialog.tsx     # Replaces window.confirm on destructive actions
+│   │       ├── Toast.tsx             # Toast notification system
+│   │       └── PendingButton.tsx     # useFormStatus-based submit button
 │   │
 │   ├── lib/
 │   │   ├── auth.ts            # NextAuth (Credentials provider + Prisma adapter)
 │   │   ├── auth.config.ts     # Edge-safe NextAuth config (used by middleware)
-│   │   ├── db.ts              # Prisma client singleton
+│   │   ├── authHelpers.ts     # Shared auth/authz guards (requireUser, requireRole, requireCourseManager)
+│   │   ├── db.ts              # Prisma client singleton (env-aware: SQLite local, Turso production)
 │   │   ├── schedule.ts        # Session queries (per role/course)
-│   │   ├── notifications.ts   # Notification helpers
+│   │   ├── scheduleUtils.ts   # Date parsing/validation helpers (parseDateOnly, isPastDate, toDateStr)
+│   │   ├── notifications.ts   # Notification helpers (notify, withGuardians)
 │   │   ├── appSettings.ts     # App title read (AppSetting key-value table, React cache)
 │   │   ├── AppTitleContext.tsx # Client context providing the app title to UI
-│   │   ├── coursePerms.ts     # Course permission checks
-│   │   ├── phone.ts           # Phone number normalization
-│   │   ├── rateLimit.ts       # Rate limiting helpers
+│   │   ├── coursePerms.ts     # Course permission checks (canManageCourse, isCourseOwner)
+│   │   ├── phone.ts           # Phone number normalization (E.164)
+│   │   ├── rateLimit.ts       # In-memory sliding-window rate limiter
 │   │   ├── superadmin.ts      # Env-based superadmin identity helpers
 │   │   ├── i18n/              # Cookie-based locale module (no URL prefix)
 │   │   │   ├── LocaleProvider.tsx  # React Context + cookie reader
@@ -98,22 +154,24 @@ piwulangan/
 │   │   │       ├── id.ts          # Bahasa Indonesia (default)
 │   │   │       └── en.ts          # English
 │   │
-│   ├── actions/               # Server Actions
-│   │   ├── auth.ts            # Login, signup
-│   │   ├── courses.ts         # Course CRUD, enrollment
-│   │   ├── lessons.ts         # Module/lesson CRUD
-│   │   ├── schedule.ts        # Session CRUD, attendance, availability, blocked dates
-│   │   ├── progress.ts        # Mark complete
-│   │   ├── announcements.ts   # Announcement CRUD
+│   ├── actions/               # Server Actions (all "use server")
+│   │   ├── auth.ts            # Login, signup, logout
+│   │   ├── courses.ts         # Course CRUD, enrollment (open/code/manual, unenroll), archive
+│   │   ├── lessons.ts         # Module + Lesson CRUD, resources
+│   │   ├── schedule.ts        # Sessions (create/update/cancel/attendees/attendance), availability
+│   │   ├── sessionSeries.ts   # Recurring session series (create/update/cancel, exceptions)
+│   │   ├── progress.ts        # Mark complete / unmark
+│   │   ├── announcements.ts   # Announcement CRUD + pin (+ notifications)
 │   │   ├── notifications.ts   # Fetch/mark-read notifications
-│   │   ├── guardians.ts       # Guardian-student linking
-│   │   ├── profile.ts         # Own profile, password; app title (superadmin only)
-│   │   ├── reports.ts         # Student reports
-│   │   └── admin.ts           # Admin actions
+│   │   ├── guardians.ts       # Guardian-student linking (link, unlink, query)
+│   │   ├── profile.ts         # Own profile + password; app title (superadmin only)
+│   │   ├── reports.ts         # Student reports (create/update/delete)
+│   │   └── admin.ts           # User management (create, edit, deactivate, reset password)
 │   │
-│   ├── middleware.ts          # Auth gate + role-based route guards
+│   ├── middleware.ts          # Auth gate + role-based route guards + CSP headers
 │   └── types/                 # Shared TypeScript types
-│       └── next-auth.d.ts
+│       ├── errors.ts          # ActionResult<T> — shared result type for all server actions
+│       └── next-auth.d.ts     # Session type augmentation (role + id on user)
 │
 ├── .env.example
 ├── .env.local                 # (gitignored)
@@ -142,9 +200,17 @@ Client Component ("use client") → handles user interaction
 
 No REST API routes for CRUD. Use Next.js Server Actions for:
 - Creating/editing courses and lessons
-- Creating/editing sessions and availability
+- Creating/editing sessions and recurring session series
+- Managing instructor availability and blocked dates
+- Recording attendance (mark present/absent/late)
 - Marking lessons complete
-- Managing users and guardian links
+- Creating/editing announcements
+- Creating/editing student reports
+- Managing users, guardian links, and co-instructors
+- Profile updates and password changes
+- App title configuration (superadmin only)
+
+All 74 exported action functions live in `src/actions/` (12 files). Each returns `ActionResult<T>` (defined in `src/types/errors.ts`) — never throws for expected failures.
 
 This eliminates API boilerplate and keeps mutations co-located with their forms.
 
@@ -181,7 +247,7 @@ Instructors paste Google Drive links. Students submit text or URLs.
 
 ### 6. Course-Centric Scheduling (Core)
 
-Scheduling is always on. There is no slot-computation/booking engine — instructors and admins create `ClassSession` records directly (via `src/actions/schedule.ts`), and `src/lib/schedule.ts` provides role-aware read queries:
+Scheduling is always on. There is no slot-computation/booking engine — instructors and admins create `ClassSession` records directly (via `src/actions/schedule.ts` and `src/actions/sessionSeries.ts`), and `src/lib/schedule.ts` provides role-aware read queries:
 
 ```
 getSessionsForCourse(courseId)
@@ -202,6 +268,8 @@ Instructor availability (`Availability`) and `BlockedDate` records are informati
 
 **Multi-teacher support:** Each course has one instructor. The admin can schedule sessions across different instructors; the admin calendar queries all instructors' sessions side by side.
 
+**Recurring session series:** Instructors and admins can create weekly recurring sessions (up to 12 weeks) via `src/actions/sessionSeries.ts`. Series are stored as `SessionSeries` records with linked `ClassSession` children. Individual weeks can be skipped or cancelled via `SessionSeriesException` records without affecting the rest of the series. Updating a series propagates changes to all non-cancelled sessions in the series.
+
 ### 7. Internationalization (id/en)
 
 Cookie-based locale (`lang`), no URL prefix. Bahasa Indonesia is the default.
@@ -218,7 +286,7 @@ Primary users are non-technical people on phones. Conventions enforced across th
 - **Touch targets ≥ 44px** for all interactive controls (attendance buttons, row action menus, form submits).
 - **Tables become card lists on mobile:** data tables are wrapped in `hidden md:block overflow-x-auto`, with a parallel `md:hidden` card list (`divide-y divide-metro-border`). See `manage/students/page.tsx` and `admin/users/AdminUsersClient.tsx`.
 - **Optimistic updates for attendance:** `SessionDetailClient` updates local state immediately, re-syncs via `useEffect` after `router.refresh()`, and reverts + toasts on failure.
-- **Shared UI primitives** in `src/components/ui/`: `ConfirmDialog` (replaces `window.confirm` on destructive actions), `Toast`, and `PendingButton` (`useFormStatus`-based submit button for server-action forms).
+- **Shared UI primitives** in `src/components/ui/`: `ConfirmDialog` (replaces `window.confirm` on destructive actions), `Toast` (toast notification system with React context), and `PendingButton` (`useFormStatus`-based submit button that shows a loading state during server action submission).
 - **Route-group boundaries:** `(dashboard)/loading.tsx` (Metro skeleton) and `(dashboard)/error.tsx` (localized retry card) cover all authenticated pages.
 - **Deep links:** dashboard session cards link straight to `/courses/{courseId}/schedule/{sessionId}` so instructors can mark attendance in one tap.
 - **Role colors (app-wide standard):** admin = purple, instructor = navy blue, student = Metro green, guardian = deep yellow. Tokens: `--metro-role-{admin,instructor,student,guardian}` in `globals.css` (+ Tailwind `metro-role-*`). Always render roles through `<RoleBadge>` (or its exported `ROLE_BADGE_STYLES` map) in `src/components/RoleBadge.tsx` — never inline role colors.
@@ -310,6 +378,14 @@ DATABASE_URL=file:./dev.db
 # Auth
 AUTH_SECRET=generate-a-random-string-here
 NEXTAUTH_URL=http://localhost:3000  # set to your Vercel URL in production
+
+# Superadmin (env-controlled, provisioned on first login — no seed needed)
+SUPERADMIN_EMAIL=admin@example.com
+SUPERADMIN_PASSWORD=replace-with-a-strong-password
+
+# Production only (Turso — see MIGRATION.md Phase 2)
+# TURSO_DATABASE_URL=libsql://piwulangan-<org>.turso.io
+# TURSO_AUTH_TOKEN=<token>
 ```
 
 ### Local Development
@@ -338,20 +414,25 @@ See [SETUP.md](./SETUP.md) for the full local setup guide (migrations, seed data
 - Notifications are polled once per 60s in the layout and shared with `NotificationBell` via props.
 - Middleware uses the edge-safe `auth.config.ts` (no Prisma/bcryptjs in the middleware bundle).
 
-**Deferred:** Prisma query reshaping (`select`/`_count`); splitting large client components (`ManageScheduleClient`, `AdminUsersClient`, `DashboardClient`); locale-splitting the client i18n bundle (~38 KB for both dictionaries).
+**Deferred:** Prisma query reshaping (`select`/`_count` to reduce over-fetching); splitting large client components (`ManageScheduleClient`, `AdminUsersClient`, `DashboardClient`); locale-splitting the client i18n bundle (~38 KB for both dictionaries); 320px viewport sweep for ultra-small screens.
 
 ---
 
 ## Security Checklist
 
-- [ ] All routes protected by middleware (role-based)
-- [ ] Passwords hashed with bcrypt (cost factor 12)
-- [ ] CSRF protection via Server Actions
-- [ ] SQL injection prevented by Prisma (parameterized queries)
-- [ ] XSS prevented by React (auto-escaping)
-- [ ] Rate limiting on auth endpoints
-- [ ] HTTP-only cookies for session
-- [ ] Soft-delete (no hard deletes)
-- [ ] Guardian can only view linked students' data
-- [ ] Student can only view enrolled courses
-- [ ] Instructor can only manage own courses
+- [x] All routes protected by middleware (role-based)
+- [x] Passwords hashed with bcrypt (cost factor 12)
+- [x] CSRF protection via Server Actions
+- [x] SQL injection prevented by Prisma (parameterized queries)
+- [x] XSS prevented by React (auto-escaping)
+- [x] Rate limiting on auth endpoints (in-memory sliding-window, per-IP)
+- [x] HTTP-only cookies for session (NextAuth JWT strategy)
+- [ ] Soft-delete (no hard deletes) — not implemented; courses and users are hard-deleted
+- [x] Guardian can only view linked students' data (middleware + server action guards)
+- [x] Student can only view enrolled courses (enrollment checks in actions)
+- [x] Instructor can only manage own courses (requireCourseManager / requireCourseOwner)
+- [x] CSP headers set via middleware (Content-Security-Policy with nonce-based script loading)
+- [x] Superadmin account protected by env vars (SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD)
+- [x] Superadmin profile edits blocked (isSuperadminId guard in profile and admin actions)
+- [x] Timing-safe comparison for superadmin password (crypto.timingSafeEqual)
+- [ ] Secrets hardcoded in source — `Math.random()` used for invite code generation (not cryptographically secure)

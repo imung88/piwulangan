@@ -49,10 +49,13 @@ Piwulangan menyediakan empat peran utama dengan hak akses berbeda:
 
 ### Penjadwalan & Kalender (Scheduling)
 - Pembuatan, pengubahan, dan pembatalan sesi kelas oleh admin atau instruktur  
+- **Seri sesi berulang** (recurring series) — buat jadwal mingguan hingga 12 minggu sekaligus, batalkan atau lewati per-minggu  
 - Pengaturan **ketersediaan mingguan** dan **tanggal tidak tersedia** bagi instruktur  
 - Tampilan kalender mingguan untuk ringkasan jadwal  
 - Pencatatan kehadiran (Hadir / Terlambat / Tidak Hadir) dengan catatan tambahan  
+- Tautan "Tandai semua Hadir" untuk mempercepat pencatatan  
 - Murid dan wali dapat melihat jadwal masing-masing (read-only)  
+- Notifikasi otomatis saat sesi dibuat, diubah, atau dibatalkan  
 
 ### Dashboard
 - Dashboard berbeda untuk setiap peran: murid, instruktur, admin, dan wali  
@@ -63,15 +66,28 @@ Piwulangan menyediakan empat peran utama dengan hak akses berbeda:
 - Pengumuman global untuk seluruh pengguna  
 
 ### Laporan & Absensi (Reports)
-- Laporan progres murid, kehadiran, dan performa kursus bagi admin dan instruktur  
+- **Laporan tertulis** (bukan nilai/grades) — instruktur menulis umpan balik progres per murid, per modul atau pelajaran  
+- Halaman **rekaman kehadiran** — ringkasan hadir/terlambat/tidak hadir ditampilkan dalam kartu, plus riwayat sesi lengkap  
+- Wali dapat melihat laporan dan kehadiran murid yang terhubung  
+- Murid dapat melihat laporan dan kehadiran milik mereka sendiri  
 
 ### Notifikasi
 - Notifikasi dalam aplikasi untuk perubahan jadwal, materi baru, dan aktivitas penting  
 
+### Enrolment & Akses
+- Tiga mode enrolment: **Terbuka** (murid daftar sendiri), **Kode Undangan** (masukkan kode 6 karakter), atau **Manual** (ditambahkan oleh admin/instruktur)  
+- Murid dapat meninggalkan kursus secara mandiri (self-unenroll)  
+- Pratinjau kursus untuk pengunjung yang belum terdaftar (hanya judul dan deskripsi)  
+
 ### Multi-kursus & Multi-instruktur
 - Mendukung banyak instruktur dalam satu sistem  
+- **Ko-instruktur** — admin dapat menambahkan instruktur tambahan ke kursus yang sama  
+- **Alih kepemilikan** — admin dapat memindahkan kepemilikan kursus ke instruktur lain  
 - Murid dapat mengikuti beberapa kursus sekaligus  
-- Wali dapat terhubung dengan lebih dari satu murid  
+- Wali dapat terhubung dengan lebih dari satu murid oleh admin  
+
+### Arsip Kursus
+- Admin dapat mengarsipkan dan memulihkan kursus tanpa menghapus datanya  
 
 ### Pengaturan Profil
 - Pengguna dapat memperbarui profil dan kata sandi  
@@ -100,9 +116,26 @@ Tidak memerlukan Docker atau server database terpisah. Basis data lokal mengguna
 
 ---
 
+## 📱 Desain Mobile-First
+
+Piwulangan dirancang untuk pengguna non-teknis yang mengakses melalui perangkat seluler:
+
+- **Navigasi tab bawah** — lima tab tetap (Beranda, Kursus, Jadwal, Pengumuman, Profil) dengan target sentuh ≥ 64px  
+- **Header seluler** — nama aplikasi, lonceng notifikasi, dan tombol Keluar  
+- **Tabel menjadi daftar kartu** pada layar kecil  
+- **Tipografi proporsional** — ukuran teks besar dan mudah dibaca di layar kecil  
+- **Palette warna peran** — admin (ungu), instruktur (navy), murid (hijau), wali (kuning)  
+
+---
+
 ## 📚 Dokumentasi Tambahan
 
-- **SETUP.md** — panduan setup pengembangan  
+- **SETUP.md** — panduan setup pengembangan lokal  
+- **ARCHITECTURE.md** — arsitektur teknis, struktur proyek, dan keputusan desain  
+- **CONTRIBUTING.md** — panduan kontribusi  
+- **MIGRATION.md** — rencana migrasi database (SQLite → Turso)  
+- **error_handling.md** — strategi penanganan kesalahan  
+- **SECURITY_UPGRADE.md** — catatan migrasi keamanan Next.js 15.5  
 
 ---
 
